@@ -541,8 +541,8 @@ function ringGeometry(rnd, out, R = val.pR, wScale = 1) {
   for (let i = 0; i < val.cDouble; i++) {
     const span = 0.5 + rnd() * 2.4;
     const st = rnd() * Math.PI * 2;
-    // 주로 바깥쪽에 둔다. 링 안쪽을 비우는 방침 때문이다.
-    const off = (rnd() < 0.2 ? -0.5 : 1) * val.cDoubleGap * (0.7 + rnd() * 0.8);
+    // 바깥쪽에만 둔다. 링 안쪽을 비우는 방침 때문이다.
+    const off = val.cDoubleGap * (0.7 + rnd() * 0.8);
     const pts = arcPts(R + off, st, span, (rnd() - 0.5) * 0.012 * J,
                        Math.max(18, Math.round(span * 34)));
     strip(pts, profile(pts.length, val.pRingBase * wScale * (0.30 + rnd() * 0.45),
@@ -556,8 +556,7 @@ function ringGeometry(rnd, out, R = val.pR, wScale = 1) {
 // 문장이 복잡해도 덩어리가 1~3군데뿐이고, 복잡함은 덩어리 안의 밀도로 온다.
 function bloomAt(word, angle, out, ctx) {
   const depth = ctx.depth ?? 0;
-  const R = (ctx.R ?? val.pR) * (1 - depth * 0.16);
-  const dk = 1 - depth * 0.14;
+  const R = ctx.R ?? val.pR;
   const f = featureOf(word);
   const o = conceptParams(f);
   const rnd = rng(fnv1a(`${word}|${angle.toFixed(3)}|${depth}`));
@@ -570,9 +569,17 @@ function bloomAt(word, angle, out, ctx) {
   // 덩어리의 호 범위를 먼저 정한다. 가시가 이 범위 전체에 돋아나야 한다.
   const span0 = val.cBloomSpan * o.spanK;
   const st0 = angle - span0 * 0.5;
-  // 링 바깥 면. 덩어리와 가시는 모두 이 선 밖에만 존재한다 —
-  // 링 안쪽에는 아무것도 두지 않는다.
-  const surf = R + val.pRingBase * 0.5;
+
+  // ── 링 바깥 면 ──
+  // 덩어리·가시·반점·고리가 모두 이 선 밖에만 존재한다. 링 안쪽에는
+  // 아무것도 두지 않는다.
+  //
+  // 한 덩어리에 개념이 여러 개 담기면 depth 로 겹쳐 쌓는데, **바깥으로**
+  // 쌓아야 한다. 안쪽으로 쌓으면 개념이 많을 때 반경이 0을 지나 음수가 되어
+  // 원 안이 표시로 가득 찬다.
+  const surf = R + val.pRingBase * 0.5 + depth * val.cBloomThick * 0.80;
+  // 바깥으로 갈수록 조금씩 작아진다
+  const dk = 1 / (1 + depth * 0.20);
 
   const layers = val.cLayers;
   let peak = null, peakAng = angle;
@@ -661,9 +668,9 @@ function bloomAt(word, angle, out, ctx) {
 function nameSpiral(angle, count, seedKey, out, ctx = {}) {
   const rnd = rng(fnv1a(seedKey));
   const depth = ctx.depth ?? 0;
-  const R = (ctx.R ?? val.pR) * (1 - depth * 0.16);
+  const R = ctx.R ?? val.pR;
   const J = val.cJitter;
-  const surf = R + val.pRingBase * 0.5;
+  const surf = R + val.pRingBase * 0.5 + depth * val.cBloomThick * 0.80;
   const step = val.cBloomThick * 0.95;
   for (let i = 0; i < count; i++) {
     const r = surf + i * step, a = angle + i * 0.13;
@@ -678,39 +685,57 @@ function nameSpiral(angle, count, seedKey, out, ctx = {}) {
 }
 
 // ── 로고그램 조립 ──
-// 링 하나 = 문장 하나. 문장이 여러 개면 동심 링으로 쌓는다.
+//
+// **링은 언제나 하나다.** 문장이 여러 개여도 동심 링으로 쌓지 않는다.
+// 동심 링은 안쪽 링이 바깥 링 안에 들어가므로, 원 안을 비운다는 방침과
+// 정면으로 충돌한다. 대신 문장들이 **하나의 링을 각도로 나눠 갖는다** —
+// 문장 i 는 원둘레의 i 번째 구획을 차지한다.
+//
+// 역할 지도는 각 구획 안으로 압축된다. 문장이 하나면 역할 지도가 원 전체를
+// 쓰고, 셋이면 각 문장이 120° 안에서 같은 순서로 배치된다.
 //
 // 덩어리 배치 — 개념을 cZones개의 덩어리에 나눠 담는다. 개념마다 자기
-// 덩어리를 만들면 15개일 때 15군데가 되어 원형 윤곽이 깨진다. 실제
-// 로고그램은 덩어리가 1~3군데뿐이고 복잡함은 그 안의 밀도로 온다.
-// 덩어리 각도는 역할 지도에서 나온다 — 그 덩어리에 담긴 개념들의 슬롯 평균.
+// 덩어리를 만들면 개념이 많을 때 원형 윤곽이 깨진다. 실제 로고그램은
+// 덩어리가 1~3군데뿐이고 복잡함은 그 안의 밀도로 온다.
 const SLOT_ORDER = ['행위','주체','대상','양상','시간','장소',
                     '행위수식','주체수식','대상수식','정도','시간수식','방향'];
 
+/** 최대 개수. 이를 넘으면 조형이 무너진다. */
+const MAX_WORDS = 10;
+const MAX_SENTENCES = 5;
+
 function spreadWords(words) {
-  return words.map((w, i) => ({ word: w, role: SLOT_ORDER[i % 12] }));
+  return words.slice(0, MAX_WORDS).map((w, i) => ({ word: w, role: SLOT_ORDER[i % 12] }));
 }
 const S = (...pairs) => pairs.map(([word, role]) => ({ word, role }));
 
-const WORDS_15 = ['사랑','시간','나','너','아이','약속','선택','빛',
-                  '물','하늘','기다림','영원','기쁨','슬픔','용기'];
+const WORDS_10 = ['사랑','시간','나','너','아이','약속','선택','빛','물','하늘'];
 
 const PRESETS = {
-  '사랑': { rings: [{ concepts: S(['사랑','행위']) }] },
-  '미움': { rings: [{ concepts: S(['미움','행위']) }] },
-  '단어 5개': { rings: [{ concepts: spreadWords(WORDS_15.slice(0, 5)) }] },
-  '단어 15개': { rings: [{ concepts: spreadWords(WORDS_15) }] },
-  '문장 1개': { rings: [{ concepts: S(['사랑','행위'], ['나','주체'], ['너','대상']) }] },
-  '역할 반전': { rings: [{ concepts: S(['사랑','행위'], ['너','주체'], ['나','대상']) }] },
+  '사랑': { parts: [{ concepts: S(['사랑','행위']) }] },
+  '미움': { parts: [{ concepts: S(['미움','행위']) }] },
+  '단어 5개': { parts: [{ concepts: spreadWords(WORDS_10.slice(0, 5)) }] },
+  '단어 10개': { parts: [{ concepts: spreadWords(WORDS_10) }] },
+  '문장 1개': { parts: [{ concepts: S(['사랑','행위'], ['나','주체'], ['너','대상']) }] },
+  '역할 반전': { parts: [{ concepts: S(['사랑','행위'], ['너','주체'], ['나','대상']) }] },
   '문장 3개': {
-    rings: [
+    parts: [
       { concepts: S(['사랑','행위'], ['나','주체'], ['너','대상']) },
       { concepts: S(['기다림','행위'], ['너','주체'], ['영원','시간수식']) },
       { concepts: S(['약속','행위'], ['우리','주체'], ['시간','시간']) },
     ],
   },
+  '문장 5개': {
+    parts: [
+      { concepts: S(['사랑','행위'], ['나','주체'], ['너','대상']) },
+      { concepts: S(['기다림','행위'], ['너','주체'], ['영원','시간수식']) },
+      { concepts: S(['약속','행위'], ['우리','주체'], ['시간','시간']) },
+      { concepts: S(['기쁨','행위'], ['아이','주체'], ['빛','대상']) },
+      { concepts: S(['선택','행위'], ['나','주체'], ['오늘','시간']) },
+    ],
+  },
   '이름 포함': {
-    rings: [{
+    parts: [{
       concepts: S(['사랑','행위'], ['나','주체']),
       names: [{ role: '대상', count: 3, key: '루이즈' }],
     }],
@@ -720,7 +745,7 @@ let preset = '문장 1개';
 let freeInput = '';
 
 function specFromText(text) {
-  const words = text.split(/[\s,·]+/).filter(Boolean).slice(0, 24);
+  const words = text.split(/[\s,·]+/).filter(Boolean).slice(0, MAX_WORDS);
   if (words.length === 0) return null;
   const concepts = [], names = [];
   let i = 0;
@@ -730,26 +755,34 @@ function specFromText(text) {
     else names.push({ role, count: Math.max(1, Math.min(5, [...w].length)), key: w });
     i++;
   }
-  return { rings: [{ concepts, names }] };
+  return { parts: [{ concepts, names }] };
 }
 
-/** 개념들을 덩어리에 배분하고, 각 덩어리의 각도를 구성원 슬롯에서 낸다 */
-function assignZones(items, zones, seed) {
+const wrapPi = (a) => {
+  let x = a;
+  while (x > Math.PI) x -= Math.PI * 2;
+  while (x < -Math.PI) x += Math.PI * 2;
+  return x;
+};
+
+/**
+ * 개념들을 덩어리에 배분하고 각 덩어리의 각도를 구성원 슬롯에서 낸다.
+ * `center` 와 `squeeze` 로 역할 지도를 구획 안으로 압축한다.
+ */
+function assignZones(items, zones, seed, center, squeeze) {
   const rnd = rng(fnv1a('zone|' + seed));
   const base = rnd() * Math.PI * 2;
   const buckets = Array.from({ length: zones }, () => []);
   items.forEach((it, i) => buckets[i % zones].push(it));
   return buckets.map((members, zi) => {
-    // 덩어리 위치 — 구성원 슬롯 각도의 평균 (원형 평균)
+    // 덩어리 위치 — 구성원 슬롯 각도의 원형 평균
     let sx = 0, sy = 0;
     for (const m of members) {
       const a = slotAngle(ROLE_SLOT[m.role] ?? 0, 0.5);
       sx += Math.cos(a); sy += Math.sin(a);
     }
-    const angle = members.length
-      ? Math.atan2(sy, sx)
-      : base + (zi / zones) * Math.PI * 2;
-    return { angle, members };
+    const raw = members.length ? Math.atan2(sy, sx) : base + (zi / zones) * Math.PI * 2;
+    return { angle: center + wrapPi(raw) * squeeze, members };
   }).filter((z) => z.members.length > 0);
 }
 
@@ -757,20 +790,33 @@ function buildGeometry() {
   const out = [];
   const spec = (freeInput.trim() && specFromText(freeInput)) || PRESETS[preset];
   const tag = freeInput.trim() || preset;
-  const nRings = spec.rings.length;
-  spec.rings.forEach((ring, ri) => {
-    const R = val.pR * (1 - ri * 0.26);
-    const wScale = 1 - ri * 0.18;
-    ringGeometry(rng(fnv1a(`ring|${tag}|${ri}`)), out, R, wScale);
+  const parts = spec.parts.slice(0, MAX_SENTENCES);
+  const nParts = parts.length;
 
-    const items = [...(ring.concepts ?? []).map((c) => ({ ...c, kind: 'c' })),
-                   ...(ring.names ?? []).map((n) => ({ ...n, kind: 'n' }))];
-    const zones = assignZones(items, Math.min(val.cZones, Math.max(1, items.length)), `${tag}|${ri}`);
-    const nIn = Math.max(1, items.length);
+  // 링은 하나뿐이다
+  const R = val.pR;
+  ringGeometry(rng(fnv1a(`ring|${tag}`)), out, R, 1);
+
+  // 전체 성분 수 — 복잡도 예산의 분모. 문장이 늘어도 총량이 대체로 일정하다.
+  const total = parts.reduce(
+    (n, p) => n + (p.concepts?.length ?? 0) + (p.names?.length ?? 0), 0);
+  const nIn = Math.max(1, total);
+
+  parts.forEach((part, pi) => {
+    // 문장 i 의 구획 중심. 구획 안으로 역할 지도를 압축한다.
+    const center = (pi / nParts) * Math.PI * 2 - Math.PI / 2;
+    const squeeze = 1 / nParts;
+
+    const items = [...(part.concepts ?? []).map((c) => ({ ...c, kind: 'c' })),
+                   ...(part.names ?? []).map((n) => ({ ...n, kind: 'n' }))];
+    const zones = assignZones(
+      items, Math.min(val.cZones, Math.max(1, items.length)), `${tag}|${pi}`, center, squeeze);
+
     for (const z of zones) {
       z.members.forEach((m, mi) => {
-        // 같은 덩어리 안에서는 각도를 살짝 흩고 깊이를 준다
-        const a = z.angle + (mi - (z.members.length - 1) / 2) * val.cBloomSpan * 0.35;
+        // 같은 덩어리 안에서는 각도를 살짝 흩고, 깊이는 바깥으로 쌓는다
+        const a = z.angle
+          + (mi - (z.members.length - 1) / 2) * val.cBloomSpan * 0.30 * squeeze;
         if (m.kind === 'n') {
           nameSpiral(a, m.count, `name|${m.key}`, out, { R, depth: mi, n: nIn });
         } else {
@@ -779,7 +825,7 @@ function buildGeometry() {
       });
     }
   });
-  return { data: new Float32Array(out), rings: nRings };
+  return { data: new Float32Array(out), rings: 1, parts: nParts };
 }
 
 // ═════════════════════════ WebGL ═════════════════════════
@@ -837,11 +883,11 @@ const SU = {};
 ['uMask','uRes','uT','uGrid','uShowMask'].forEach((n) => (SU[n] = gl.getUniformLocation(smokeProg, n)));
 const PL = {}; Object.keys(DEF).forEach((k) => (PL[k] = gl.getUniformLocation(smokeProg, k)));
 
-let ringCount = 1;
+let partCount = 1;
 function rebuildGeometry() {
-  const { data, rings } = buildGeometry();
+  const { data, parts } = buildGeometry();
   geoCount = data.length / 2;
-  ringCount = rings;
+  partCount = parts;
   gl.bindBuffer(gl.ARRAY_BUFFER, geoBuf);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
   renderMask();
@@ -1010,7 +1056,7 @@ let frames = 0, last = performance.now(), t0 = performance.now();
   if (animating || spray) { tNow = 3.7 + (now - t0) / 1000; draw(); }
   frames++;
   if (now - last > 700) {
-    fpsEl.textContent = `${Math.round(frames*1000/(now-last))} fps · 링 ${ringCount}개 · 삼각형 ${Math.round(geoCount/3)}개 · ${cvs.width}×${cvs.height}`;
+    fpsEl.textContent = `${Math.round(frames*1000/(now-last))} fps · 구획 ${partCount}개 · 삼각형 ${Math.round(geoCount/3)}개 · ${cvs.width}×${cvs.height}`;
     frames = 0; last = now;
   }
   requestAnimationFrame(loop);
