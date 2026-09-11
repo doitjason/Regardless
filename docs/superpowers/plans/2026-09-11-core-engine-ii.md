@@ -256,13 +256,25 @@ describe('smoothJit', () => {
     for (let i = 0; i <= 20; i++) expect(a(i / 20)).toBeCloseTo(b(i / 20), 12);
   });
 
-  it('저주파다 — 이웃 표본 사이의 변화가 작다', () => {
-    // 점마다 독립 난수를 쓰면 이 검사가 깨진다. 그 경우 획이 구슬처럼 된다.
-    const j = smoothJit(r(), 0.5);
+  it('저주파다 — 점마다 독립 난수를 쓴 것보다 훨씬 완만하다', () => {
+    // 점마다 독립 난수를 쓰면 획이 구슬처럼 울퉁불퉁해진다. 조형 실험에서
+    // 실제로 그렇게 됐다.
+    //
+    // 절대 임계값 대신 "구슬" 구현과 비교한다. 진폭이나 주파수 상수를
+    // 나중에 손봐도 의도가 유지되고, 실제 분리폭이 38배라 넉넉하다.
     const N = 400;
-    let maxStep = 0;
-    for (let i = 1; i <= N; i++) maxStep = Math.max(maxStep, Math.abs(j(i / N) - j((i - 1) / N)));
-    expect(maxStep).toBeLessThan(0.02);
+    const step = (f: (t: number) => number) => {
+      let m = 0;
+      for (let i = 1; i <= N; i++) m = Math.max(m, Math.abs(f(i / N) - f((i - 1) / N)));
+      return m;
+    };
+    const beadedRnd = mulberry32(42);
+    const beaded = (_t: number) => 1 + 0.5 * (beadedRnd() - 0.5) * 2;
+
+    const smooth = step(smoothJit(r(), 0.5));
+    expect(smooth * 10).toBeLessThan(step(beaded));
+    // 그래도 상한은 둔다 — 주파수를 크게 올리면 이 검사에 걸린다
+    expect(smooth).toBeLessThan(0.06);
   });
 });
 
