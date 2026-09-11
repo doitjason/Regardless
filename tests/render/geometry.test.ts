@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  sampleCubic, taperOutline, ringOutline, minWidthOf, type Pt,
+  sampleCubic, taperOutline, ringOutline, minWidthOf, type Pt, type WidthFn,
 } from '../../src/render/geometry';
 import { parsePathPoints } from '../helpers/path';
 
@@ -86,6 +86,37 @@ describe('ringOutline', () => {
     };
     expect(Math.sign(area(outer!))).not.toBe(Math.sign(area(inner!)));
   });
+
+  it('굵기가 지름을 넘어도 안쪽 윤곽이 중심을 넘지 않고, 고리 형태(반대 부호 면적)를 유지한다', () => {
+    const r = 100;
+    const d = ringOutline(0, 0, r, () => 500, 60);
+    for (const [x, y] of parsePathPoints(d)) {
+      const rad = Math.hypot(x, y);
+      expect(rad).toBeGreaterThanOrEqual(0);
+    }
+    const [outer, inner] = d.split('Z').slice(0, 2);
+    const area = (sub: string): number => {
+      const pts = parsePathPoints(sub);
+      let a = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i]!, q = pts[(i + 1) % pts.length]!;
+        a += p[0] * q[1] - q[0] * p[1];
+      }
+      return a / 2;
+    };
+    expect(Math.sign(area(outer!))).not.toBe(Math.sign(area(inner!)));
+  });
+
+  it('정상 범위의 굵기에서는 clamp가 결과를 바꾸지 않는다 (결정성 재확인)', () => {
+    const d1 = ringOutline(150, 150, 100, () => 10);
+    const d2 = ringOutline(150, 150, 100, () => 10);
+    expect(d1).toBe(d2);
+    for (const [x, y] of parsePathPoints(d1)) {
+      const rad = Math.hypot(x - 150, y - 150);
+      expect(rad).toBeGreaterThanOrEqual(95 - 0.01);
+      expect(rad).toBeLessThanOrEqual(105 + 0.01);
+    }
+  });
 });
 
 describe('minWidthOf', () => {
@@ -99,5 +130,43 @@ describe('minWidthOf', () => {
 
   it('중간이 최소인 함수도 잡는다', () => {
     expect(minWidthOf((t) => Math.abs(t - 0.5) * 10 + 0.5)).toBeCloseTo(0.5, 2);
+  });
+
+  it('기본 표본 수(1024)는 옛 표본 수(128)가 놓치는 좁은 골을 잡아낸다', () => {
+    // 옛 기본값 128에서는 표본 간격이 1/128 ≈ 0.0078125다. 그 표본점들 사이,
+    // 폭이 전체 구간의 1/300 정도인 좁은 골을 만들어 표본점을 피해가게 배치한다.
+    const oldSampleStep = 1 / 128;
+    const dipCenter = oldSampleStep * 2.5; // 옛 표본점(2/128, 3/128) 사이 중앙
+    const dipHalfWidth = 1 / 600; // 전체 구간의 대략 1/300 폭
+    const notch: WidthFn = (t) =>
+      Math.abs(t - dipCenter) < dipHalfWidth ? 0.5 : 5;
+
+    // 옛 기본값(128 표본)은 이 골을 놓쳐 최솟값을 과대평가한다.
+    const oldEstimate = minWidthOf(notch, 128);
+    expect(oldEstimate).toBeCloseTo(5, 6);
+
+    // 새 기본값(1024 표본, 인자 생략)은 골을 잡아낸다.
+    const newEstimate = minWidthOf(notch);
+    expect(newEstimate).toBeCloseTo(0.5, 6);
+  });
+});
+
+describe('좌표 직렬화', () => {
+  it('아주 작은 음수 좌표로 만든 패스는 "-0.000"을 포함하지 않는다', () => {
+    const d = taperOutline(
+      [[-0.00001, -0.00002], [10, 0.00003], [20, -0.00004]],
+      () => 0.00005,
+    );
+    expect(d).not.toContain('-0.000');
+  });
+
+  it('원점 중심 고리는 "-0.000"을 포함하지 않는다', () => {
+    const d = ringOutline(0, 0, 100, () => 8, 60);
+    expect(d).not.toContain('-0.000');
+  });
+
+  it('일반적인 음수 좌표는 여전히 부호를 유지한다', () => {
+    const d = taperOutline([[-50, 0], [-40, 0]], () => 0);
+    expect(d).toContain('-50.000');
   });
 });
