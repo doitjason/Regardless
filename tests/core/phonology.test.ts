@@ -102,6 +102,71 @@ describe('consonantFeatures', () => {
   });
 });
 
+describe('자질 유일성', () => {
+  it('서로 다른 자모는 서로 다른 자질을 갖는다', () => {
+    // 커버리지 가드는 각 id가 중립값이 아닌지만 본다. 두 id가 서로 같은지는
+    // 보지 않으므로, 겹종성 11개가 단자음과 똑같은 값으로 채워져도 통과했다.
+    // 그 결과 갈/갉/갊/갋/갌/갍/갎/갏 이 모두 같은 그림이 됐다.
+    const ids = new Set<string>();
+    for (let cp = 0xac00; cp <= 0xd7a3; cp++) {
+      const s = decomposeHangul(String.fromCodePoint(cp))!;
+      ids.add(s.onset);
+      if (s.coda !== '') ids.add(s.coda);
+    }
+    const seen = new Map<string, string>();
+    for (const id of ids) {
+      const key = JSON.stringify(consonantFeatures(id));
+      const prev = seen.get(key);
+      expect(prev, `자모 "${id}" 와 "${prev}" 의 자질이 같다`).toBeUndefined();
+      seen.set(key, id);
+    }
+  });
+
+  it('겹종성이 첫 자음과 구별된다', () => {
+    for (const [cluster, first] of [
+      ['gs', 'g'], ['nj', 'n'], ['nh', 'n'], ['lg', 'l'], ['lm', 'l'], ['lb', 'l'],
+      ['ls', 'l'], ['lt', 'l'], ['lp', 'l'], ['lh', 'l'], ['bs', 'b'],
+    ] as const) {
+      expect(consonantFeatures(cluster), `${cluster} vs ${first}`)
+        .not.toEqual(consonantFeatures(first));
+    }
+  });
+
+  it('겹종성의 주 자질은 첫 자음을 따른다', () => {
+    for (const [cluster, first] of [
+      ['gs', 'g'], ['nj', 'n'], ['lg', 'l'], ['bs', 'b'],
+    ] as const) {
+      const c = consonantFeatures(cluster), f = consonantFeatures(first);
+      expect(c.place).toBe(f.place);
+      expect(c.manner).toBe(f.manner);
+      expect(c.tense).toBe(f.tense);
+    }
+  });
+
+  it('단자음은 두 번째 자음 자질을 갖지 않는다', () => {
+    for (const id of ['g', 'kk', 'n', 'd', 'l', 'm', 'b', 's', 'j', 'h', '']) {
+      const f = consonantFeatures(id);
+      expect(f.secondPlace, id).toBeNull();
+      expect(f.secondManner, id).toBeNull();
+      expect(f.secondTense, id).toBeNull();
+    }
+  });
+
+  it('서로 다른 중성은 서로 다른 자질을 갖는다', () => {
+    const ids = new Set<string>();
+    for (let cp = 0xac00; cp <= 0xd7a3; cp++) {
+      ids.add(decomposeHangul(String.fromCodePoint(cp))!.nucleus);
+    }
+    const seen = new Map<string, string>();
+    for (const id of ids) {
+      const key = JSON.stringify(vowelFeatures(id));
+      const prev = seen.get(key);
+      expect(prev, `중성 "${id}" 와 "${prev}" 의 자질이 같다`).toBeUndefined();
+      seen.set(key, id);
+    }
+  });
+});
+
 describe('vowelFeatures', () => {
   it('고모음이 저모음보다 height가 크다', () => {
     expect(vowelFeatures('i').height).toBeGreaterThan(vowelFeatures('a').height);
