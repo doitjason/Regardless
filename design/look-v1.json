@@ -5,6 +5,8 @@
   "pRingAmp": 0.039,
   "pWobble": 0.03,
 
+  "cBudget": 0.7,
+  "cFill": 1.4,
   "cSweep": 1.06,
   "cSweepSpan": 0.86,
   "cBlade": 0.7,
