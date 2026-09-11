@@ -259,7 +259,8 @@ const P = [
   ['털 · 반점', [
     ['cFringe',    '가시 개수',      0, 90, 1, 52, 1],
     ['cFringeLen', '가시 길이',      0.01, 0.24, 0.005, 0.075, 1],
-    ['cFringeFine','가시 굵기',      0.0008, 0.0100, 0.0002, 0.0034, 1],
+    ['cFringeFine','가시 굵기',      0.0010, 0.0300, 0.0005, 0.0075, 1],
+    ['cFringeTip', '가시 끝 뭉툭함', 0.00, 0.70, 0.02, 0.30, 1],
     ['cFringeBend','가시 휨',        0.00, 1.60, 0.02, 0.50, 1],
     ['cFringeSpan','가시 퍼짐 각도', 0.20, 1.80, 0.02, 0.95, 1],
     ['cWhisker',   '긴 가시 개수',   0, 16, 1, 5, 1],
@@ -434,6 +435,9 @@ function profile(n, w0, w1, kind, rnd, jit) {
     else if (kind === 'lens')  v = w0 * Math.pow(Math.sin(Math.PI * t), 0.62) + w1;
     else if (kind === 'bloom') v = w0 * Math.pow(Math.sin(Math.PI * t), 0.38) + w1;
     else if (kind === 'spike') v = w0 * Math.pow(1 - t, 2.2) + w1;
+    // 가시 — 끝이 바늘처럼 뾰족해지지 않는다. 참고 이미지의 가시는 끝을
+    // 약간 뭉툭하게 남긴다. 지수를 완만하게 두고 w1 을 뿌리 대비 비율로 준다.
+    else if (kind === 'hair')  v = w0 * Math.pow(1 - t, 1.35) + w1;
     else                       v = w0 * (1 - t) + w1 * t;
     w.push(Math.max(0.0004, v * j(t)));
   }
@@ -494,8 +498,9 @@ function fringe(at, outAng, count, len, wide, bend, rnd, out) {
     const b = (rnd() - 0.5) * bend;
     const tip = [at[0] + Math.cos(a) * L, at[1] + Math.sin(a) * L];
     const mid = [at[0] + Math.cos(a + b) * L * 0.55, at[1] + Math.sin(a + b) * L * 0.55];
-    const pts = bezPts(at, mid, tip, 5);
-    strip(pts, profile(pts.length, wide * (0.7 + rnd() * 0.8), 0.0003, 'spike', rnd, 0.4), out);
+    const pts = bezPts(at, mid, tip, 7);
+    const root = wide * (0.7 + rnd() * 0.8);
+    strip(pts, profile(pts.length, root, root * val.cFringeTip, 'hair', rnd, 0.4), out);
   }
 }
 
