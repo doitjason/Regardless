@@ -13,42 +13,35 @@
   canvas{display:block;width:100%;height:auto}
   .bar{position:absolute;left:0;right:0;height:1.2%;background:#14181a;z-index:2}
   .bar.t{top:0}.bar.b{bottom:0}
-  #hud{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;
-    font-size:11px;color:var(--tx2)}
-  #panel{width:318px;flex:none;background:var(--pan);border-left:1px solid var(--line);
+  #hud{font-size:11px;color:var(--tx2);text-align:center}
+  #panel{width:322px;flex:none;background:var(--pan);border-left:1px solid var(--line);
     overflow-y:auto;padding:10px 12px 40px}
-  h1{font-size:12px;margin:2px 0 10px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx)}
-  details{border-top:1px solid var(--line);padding:6px 0}
-  details[open]{padding-bottom:8px}
+  h1{font-size:12px;margin:2px 0 8px;letter-spacing:.06em;text-transform:uppercase}
+  details{border-top:1px solid var(--line);padding:5px 0}
   summary{cursor:pointer;font-size:11px;letter-spacing:.05em;text-transform:uppercase;
     color:var(--acc);padding:4px 0;user-select:none}
-  .row{display:grid;grid-template-columns:1fr 46px;gap:6px;align-items:center;margin:5px 0}
-  .row label{font-size:11px;color:var(--tx)}
+  .row{display:grid;grid-template-columns:1fr 48px;gap:6px;align-items:center;margin:5px 0}
+  .row label{font-size:11px}
   .row .v{font-size:10px;color:var(--tx2);text-align:right;font-variant-numeric:tabular-nums}
   input[type=range]{grid-column:1/3;width:100%;height:16px;margin:0;accent-color:var(--acc)}
-  .btns{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+  .btns{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0}
   button{background:#20262a;color:var(--tx);border:1px solid var(--line);border-radius:4px;
     padding:5px 9px;font:inherit;font-size:11px;cursor:pointer}
   button:hover{background:#283034;color:#cfd8d9}
   button.on{background:var(--acc);color:#0d1011;border-color:var(--acc)}
-  textarea{width:100%;height:120px;background:#0d1011;color:var(--tx);border:1px solid var(--line);
+  textarea{width:100%;height:110px;background:#0d1011;color:var(--tx);border:1px solid var(--line);
     border-radius:4px;font:10px/1.4 ui-monospace,monospace;padding:6px;resize:vertical}
   .note{font-size:10.5px;color:var(--tx2);margin:6px 0 0}
-  /* 좁은 창에서는 세로로 쌓는다 */
   @media (max-width:820px){
     #app{flex-direction:column;height:auto}
     #panel{width:100%;border-left:0;border-top:1px solid var(--line)}
-    #left{padding:8px}
   }
 </style>
 
 <div id="app">
   <div id="left">
     <div id="stage"><div class="bar t"></div><canvas id="c"></canvas><div class="bar b"></div></div>
-    <div id="hud">
-      <span id="fps">—</span>
-      <span>· 스페이스 일렁임 · G 격자 · R 분사 재생 · S PNG</span>
-    </div>
+    <div id="hud"><span id="fps">—</span> · 스페이스 일렁임 · G 격자 · R 분사 · P 종이 · M 마스크 · S PNG</div>
   </div>
   <div id="panel">
     <h1>룩 랩</h1>
@@ -56,48 +49,47 @@
     <div class="btns">
       <button id="bGrid">격자</button>
       <button id="bAnim" class="on">일렁임</button>
-      <button id="bSpray">분사 재생</button>
+      <button id="bPaper">종이</button>
+      <button id="bMask">마스크</button>
+      <button id="bSpray">분사</button>
       <button id="bPng">PNG</button>
     </div>
     <div id="groups"></div>
     <details open>
       <summary>설정 내보내기</summary>
       <div class="btns">
-        <button id="bCopy">JSON 복사</button>
-        <button id="bReset">기본값</button>
+        <button id="bCopy">JSON 복사</button><button id="bReset">기본값</button>
       </div>
       <textarea id="out" readonly></textarea>
-      <p class="note">마음에 드는 조합이 나오면 이 JSON을 저에게 주세요. 그게 확정 스펙이 됩니다.</p>
+      <p class="note">마음에 드는 조합이 나오면 이 JSON을 주세요. 그게 확정 스펙이 됩니다.</p>
     </details>
   </div>
 </div>
 
+<!-- 1단계: 골격을 삼각형으로 마스크 텍스처에 렌더 -->
+<script type="x-shader/x-vertex" id="maskVs">#version 300 es
+in vec2 aPos;
+uniform float uHalf, uAspect;
+void main(){ gl_Position = vec4(aPos.x / (uHalf * uAspect), aPos.y / uHalf, 0.0, 1.0); }
+</script>
+<script type="x-shader/x-fragment" id="maskFs">#version 300 es
+precision highp float;
+out vec4 o;
+void main(){ o = vec4(1.0); }
+</script>
+
+<!-- 2단계: 마스크 밉맵을 거리장 대용으로 써서 먹물·연기를 만든다 -->
 <script type="x-shader/x-fragment" id="fs">#version 300 es
 precision highp float;
 out vec4 outColor;
+uniform sampler2D uMask;
+uniform vec2 uRes;
+uniform float uT, uGrid, uShowMask;
 
-#define MAXS 20
-uniform vec2  uRes;
-uniform float uT;
-uniform float uGrid;
-
-uniform int   uN;
-uniform vec2  uA[MAXS];
-uniform vec2  uB[MAXS];
-uniform vec2  uC[MAXS];
-uniform vec2  uW[MAXS];     // w0, w1
-uniform vec4  uSp[MAXS];    // splay: baseAng, len, spread, width  (len<=0 → 없음)
-
-// 골격
-uniform float pR, pRingBase, pRingAmp, pRingMin, pRingMax, pWobble, pWScale, pSplayScale;
-// 먹물
-uniform float pSoft, pErode, pContrast, pFloor, pCore, pGrainA, pGrainX, pGrainAmp;
-// 연기
+uniform float pSoft, pErode, pContrast, pFloor, pCore, pGrainAmp, pGrainA, pGrainX, pDScale;
 uniform float pFray, pFrayFall, pWisp, pWispFall, pPlume, pPlumeFall, pGate, pDissolve, pTopFade;
-// 색
-uniform float pInk, pInkCore, pBgTop, pBgMid, pBgBot, pFog, pGrain, pVig;
-// 분사
-uniform float pProg, pSprayAng, pLeadTurb, pFrontSoft;
+uniform float pInk, pInkCore, pBgTop, pBgMid, pBgBot, pFog, pGrain, pVig, pPaper;
+uniform float pProg, pSprayAng, pLeadTurb, pFrontSoft, pR;
 
 const float PI = 3.14159265;
 
@@ -108,199 +100,168 @@ vec2 hash2(vec2 p){
 float gnoise(vec2 p){
   vec2 i = floor(p), f = fract(p);
   vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(dot(hash2(i + vec2(0,0)), f - vec2(0,0)),
-                 dot(hash2(i + vec2(1,0)), f - vec2(1,0)), u.x),
-             mix(dot(hash2(i + vec2(0,1)), f - vec2(0,1)),
-                 dot(hash2(i + vec2(1,1)), f - vec2(1,1)), u.x), u.y);
+  return mix(mix(dot(hash2(i+vec2(0,0)), f-vec2(0,0)), dot(hash2(i+vec2(1,0)), f-vec2(1,0)), u.x),
+             mix(dot(hash2(i+vec2(0,1)), f-vec2(0,1)), dot(hash2(i+vec2(1,1)), f-vec2(1,1)), u.x), u.y);
 }
 float fbm(vec2 p, int oct){
   float a = 0.5, s = 0.0;
   mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
-  for (int i = 0; i < 8; i++){
-    if (i >= oct) break;
-    s += a * gnoise(p); p = m * p; a *= 0.5;
-  }
+  for (int i = 0; i < 8; i++){ if (i >= oct) break; s += a*gnoise(p); p = m*p; a *= 0.5; }
   return s;
 }
 // fbm은 실제로 대체로 ±0.25 범위다. 0..1로 펴서 임계값을 쓸 수 있게 한다.
 float n01(float v){ return clamp(v * 1.9 + 0.5, 0.0, 1.0); }
 
-float sdSeg(vec2 p, vec2 a, vec2 b, float w){
-  vec2 pa = p - a, ba = b - a;
-  float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-9), 0.0, 1.0);
-  return length(pa - ba * h) - w;
-}
-vec2 bez(vec2 a, vec2 b, vec2 c, float t){
-  float u = 1.0 - t; return u*u*a + 2.0*u*t*b + t*t*c;
-}
-
-// 링 굵기 — 사인파가 아니라 노이즈. 극단적으로 변한다.
-float ringW(float ang){
-  vec2 u = vec2(cos(ang), sin(ang));
-  float a = fbm(u * 2.4 + vec2(7.0, 3.0), 4);
-  float b = fbm(u * 6.0 + vec2(23.0, 11.0), 3);
-  float c = fbm(u * 14.0 + vec2(51.0, 31.0), 2);
-  return clamp(pRingBase + (a * 1.6 + b * 0.75 + c * 0.30) * pRingAmp, pRingMin, pRingMax);
-}
-
-float sdShape(vec2 p){
-  float ang = atan(p.y, p.x);
-  float d = abs(length(p) - pR) - ringW(ang);
-  d -= fbm(vec2(cos(ang), sin(ang)) * 1.8 + 61.0, 3) * pWobble;
-
-  for (int i = 0; i < MAXS; i++){
-    if (i >= uN) break;
-    vec2 a = uA[i], b = uB[i], c = uC[i];
-    float w0 = uW[i].x * pWScale, w1 = uW[i].y * pWScale;
-    vec2 prev = a;
-    for (int k = 1; k <= 8; k++){
-      float t = float(k) / 8.0;
-      vec2 cur = bez(a, b, c, t);
-      d = min(d, sdSeg(p, prev, cur, mix(w0, w1, t)));
-      prev = cur;
-    }
-    // 붓털처럼 갈라진 끝
-    if (uSp[i].y > 0.0){
-      float L = uSp[i].y * pSplayScale;
-      for (int k = 0; k < 5; k++){
-        float f = (float(k) - 2.0) / 2.0;
-        float aa = uSp[i].x + f * uSp[i].z;
-        float LL = L * (0.55 + 0.45 * (1.0 - abs(f)));
-        d = min(d, sdSeg(p, c, c + vec2(cos(aa), sin(aa)) * LL, uSp[i].w * pWScale));
-      }
-    }
-  }
-  return d;
-}
+float mask(vec2 uv, float lod){ return textureLod(uMask, uv, lod).r; }
 
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y * 1.62;
-
-  float d = sdShape(p);
   float ang = atan(p.y, p.x);
 
+  float m0 = mask(uv, 0.0);
+  float m1 = mask(uv, 1.7);
+  float m3 = mask(uv, 3.6);
+  float m5 = mask(uv, 5.8);
+
+  if (uShowMask > 0.5) { outColor = vec4(vec3(m0), 1.0); return; }
+
+  // 흐린 마스크를 부호 있는 거리 대용으로 쓴다. 해석적 SDF보다 싸고,
+  // 획 개수에 상관없이 비용이 일정하다.
+  float d = (0.5 - m1) * pDScale;
+  float od = max(0.0, d);
+
   // ── 분사: 한 점에서 양방향으로 동시에 번진다 ──
-  // 시계방향으로 쓸면 우리가 제거한 "읽는 방향"이 되살아난다.
-  float dA = abs(mod(ang - pSprayAng + PI, 2.0 * PI) - PI) / PI;   // 0..1, 양방향 대칭
+  float dA = abs(mod(ang - pSprayAng + PI, 2.0*PI) - PI) / PI;
   float dR = clamp(abs(length(p) - pR) / 0.42, 0.0, 1.0);
   float arrive = dA * 0.74 + dR * 0.26;
   float front = pProg * 1.18;
   float reveal = smoothstep(front, front - pFrontSoft, arrive);
-  float lead = exp(-pow((arrive - front + pFrontSoft * 0.5) / max(pFrontSoft * 0.55, 0.02), 2.0));
-  lead *= step(0.001, pProg) * step(pProg, 0.999);
+  float lead = exp(-pow((arrive - front + pFrontSoft*0.5) / max(pFrontSoft*0.55, 0.02), 2.0))
+             * step(0.001, pProg) * step(pProg, 0.999);
 
-  // ── 획의 결 방향 ──
-  // 먹물은 획을 따라 끌린다. 결을 만들려면 접선 방향이 필요하다.
-  vec2 tang = vec2(1.0, 0.0);
-  if (d < 0.14) {
-    float e = 0.0017;
-    vec2 g = vec2(sdShape(p + vec2(e, 0.0)) - d, sdShape(p + vec2(0.0, e)) - d);
-    if (length(g) > 1e-7) { g = normalize(g); tang = vec2(-g.y, g.x); }
-  }
+  // ── 획의 결 방향 — 흐린 마스크의 기울기에서 접선을 얻는다 ──
+  vec2 tx = 1.0 / vec2(textureSize(uMask, 0));
+  vec2 g = vec2(mask(uv + vec2(tx.x*3.0, 0.0), 1.7) - mask(uv - vec2(tx.x*3.0, 0.0), 1.7),
+                mask(uv + vec2(0.0, tx.y*3.0), 1.7) - mask(uv - vec2(0.0, tx.y*3.0), 1.7));
+  vec2 tang = length(g) > 1e-5 ? normalize(vec2(-g.y, g.x)) : vec2(1.0, 0.0);
   vec2 nr = vec2(-tang.y, tang.x);
   vec2 pa = vec2(dot(p, tang) * pGrainA, dot(p, nr) * pGrainX);
 
-  vec2 w1 = vec2(fbm(p * 2.2 + vec2(11.3, 4.1) + uT * 0.030, 4),
-                 fbm(p * 2.2 + vec2(27.7, 19.2) - uT * 0.024, 4));
-  vec2 w2 = vec2(fbm(p * 5.0 + w1 * 1.1 + vec2(3.1, 51.7) + uT * 0.055, 4),
-                 fbm(p * 5.0 + w1 * 1.1 + vec2(41.9, 7.3) - uT * 0.045, 4));
+  vec2 w1 = vec2(fbm(p*2.2 + vec2(11.3, 4.1) + uT*0.030, 4),
+                 fbm(p*2.2 + vec2(27.7, 19.2) - uT*0.024, 4));
+  vec2 w2 = vec2(fbm(p*5.0 + w1*1.1 + vec2(3.1, 51.7) + uT*0.055, 4),
+                 fbm(p*5.0 + w1*1.1 + vec2(41.9, 7.3) - uT*0.045, 4));
+  float nLow   = fbm(p*2.4 + w1*0.9, 4);
+  float nMid   = fbm(p*8.5 + w2*2.2, 5);
+  float nHi    = fbm(p*21.0 + w2*3.4, 4);
+  float nFil   = fbm(p*15.0 + w2*5.0 + nLow*2.2, 5);
+  float nGrain = fbm(pa + w2*2.0, 5);
 
-  float nLow   = fbm(p * 2.4 + w1 * 0.9, 4);
-  float nMid   = fbm(p * 8.5 + w2 * 2.2, 5);
-  float nHi    = fbm(p * 21.0 + w2 * 3.4, 4);
-  float nFil   = fbm(p * 15.0 + w2 * 5.0 + nLow * 2.2, 5);
-  float nGrain = fbm(pa + w2 * 2.0, 5);
-
-  float od = max(0.0, d);
   float turb = 1.0 + lead * pLeadTurb;
 
   // ── 획 자체가 먹물 ──
-  // 깨끗한 도형을 만들고 아지랑이를 덮는 게 아니다.
-  // 획의 내부 밀도가 처음부터 불균일해야 한다.
-  float interior = smoothstep(0.010, -pSoft, d + (nMid * 0.022 + nHi * 0.014) * pErode * turb);
+  // 깨끗한 도형에 아지랑이를 덮는 게 아니다. 내부 밀도가 처음부터 불균일해야 한다.
+  float interior = smoothstep(0.010, -pSoft, d + (nMid*0.022 + nHi*0.014) * pErode * turb);
   float substance = pow(n01(nGrain * pGrainAmp + nLow * 0.55), pContrast);
   float body = interior * (pFloor + (1.0 - pFloor) * substance);
   float coreInk = smoothstep(-0.004, -0.030, d) * smoothstep(0.34, 0.86, substance);
 
-  float fray  = pow(smoothstep(0.26, 0.92, n01(nHi)), 1.4) * exp(-od * pFrayFall);
-  float wisp  = pow(smoothstep(0.38, 0.96, n01(nFil)), 1.45) * exp(-od * pWispFall / turb);
+  float fray = pow(smoothstep(0.26, 0.92, n01(nHi)), 1.4) * exp(-od * pFrayFall);
+  float wisp = pow(smoothstep(0.38, 0.96, n01(nFil)), 1.45) * exp(-od * pWispFall / turb);
+  // 연기 기둥은 가장 흐린 밉맵을 감쇠장으로 쓰고, 각도별 게이트로 몇 군데만 뻗는다
   vec2 dir = normalize(p + vec2(1e-5));
-  float gate = n01(fbm(dir * 2.3 + vec2(17.0, 5.0), 3));
+  float gate = n01(fbm(dir*2.3 + vec2(17.0, 5.0), 3));
   float plume = pow(smoothstep(0.44, 1.00, n01(nFil)), 1.2)
-              * exp(-od * pPlumeFall / turb) * smoothstep(pGate, pGate + 0.42, gate);
+              * pow(clamp(m5 * 2.4, 0.0, 1.0), pPlumeFall * 0.22)
+              * smoothstep(pGate, pGate + 0.42, gate) * turb;
 
   float dens = 1.0
     - (1.0 - body)
     * (1.0 - coreInk * pCore)
     * (1.0 - fray  * pFray)
     * (1.0 - wisp  * pWisp * turb)
-    * (1.0 - plume * pPlume * turb);
-
+    * (1.0 - clamp(plume, 0.0, 1.0) * pPlume)
+    * (1.0 - clamp(m3 * 0.55, 0.0, 1.0) * 0.34);
   dens *= 1.0 - smoothstep(0.34, 1.05, p.y) * pTopFade;
-  // 저주파 소실 — 너무 세게 걸면 형태 전체가 유령처럼 사라진다
-  dens *= (1.0 - pDissolve) + pDissolve * n01(fbm(p * 1.45 + vec2(41.0, 13.0) + uT * 0.018, 3));
+  dens *= (1.0 - pDissolve) + pDissolve * n01(fbm(p*1.45 + vec2(41.0, 13.0) + uT*0.018, 3));
   dens *= reveal;
 
-  // ── 배경 안개 ──
-  vec3 bg = mix(vec3(pBgTop, pBgTop + 0.049, pBgTop + 0.055),
-                vec3(pBgMid, pBgMid + 0.043, pBgMid + 0.040), smoothstep(0.04, 0.66, uv.y));
-  bg = mix(bg, vec3(pBgBot, pBgBot + 0.042, pBgBot + 0.044), smoothstep(0.72, 0.99, uv.y));
-  bg += fbm(p * 1.15 + vec2(7.0, 2.0) + uT * 0.02, 4) * pFog;
-  bg = mix(bg, vec3(0.250, 0.284, 0.292), smoothstep(0.950, 0.996, uv.y));
+  // ── 배경 ──
+  vec3 fogBg = mix(vec3(pBgTop, pBgTop+0.049, pBgTop+0.055),
+                   vec3(pBgMid, pBgMid+0.043, pBgMid+0.040), smoothstep(0.04, 0.66, uv.y));
+  fogBg = mix(fogBg, vec3(pBgBot, pBgBot+0.042, pBgBot+0.044), smoothstep(0.72, 0.99, uv.y));
+  fogBg += fbm(p*1.15 + vec2(7.0, 2.0) + uT*0.02, 4) * pFog;
+  fogBg = mix(fogBg, vec3(0.250, 0.284, 0.292), smoothstep(0.950, 0.996, uv.y));
+  // 종이 모드 — 참고 이미지처럼 흰 바탕에서 획 형태만 본다
+  vec3 bg = mix(fogBg, vec3(0.962, 0.958, 0.950), pPaper);
 
   if (uGrid > 0.5) {
-    float a2 = ang + PI * 0.5;
-    float seg = a2 / (PI / 6.0);
-    float line = abs(fract(seg) - 0.5);
-    float g1 = smoothstep(0.014, 0.0, line) * smoothstep(0.88, 0.82, length(p));
-    bg = mix(bg, vec3(0.74, 0.76, 0.74), g1 * step(0.5, fract(length(p) * 46.0)) * 0.5);
+    float seg = (ang + PI*0.5) / (PI/6.0);
+    float g1 = smoothstep(0.014, 0.0, abs(fract(seg) - 0.5)) * smoothstep(0.88, 0.82, length(p));
+    bg = mix(bg, vec3(0.74, 0.76, 0.74), g1 * step(0.5, fract(length(p)*46.0)) * 0.5);
   }
 
-  vec3 ink = vec3(pInk, pInk + 0.017, pInk + 0.021);
-  ink = mix(ink, vec3(pInkCore, pInkCore + 0.010, pInkCore + 0.014), clamp(coreInk, 0.0, 1.0));
+  vec3 inkC = mix(vec3(pInk, pInk+0.017, pInk+0.021), vec3(0.035, 0.033, 0.030), pPaper);
+  vec3 coreC = mix(vec3(pInkCore, pInkCore+0.010, pInkCore+0.014), vec3(0.010, 0.010, 0.010), pPaper);
+  vec3 ink = mix(inkC, coreC, clamp(coreInk, 0.0, 1.0));
 
   vec3 col = mix(bg, ink, clamp(dens, 0.0, 1.0));
-  col *= 1.0 - pVig * smoothstep(0.55, 1.35, length(p * vec2(0.62, 1.0)));
-  col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * pGrain;
+  col *= 1.0 - pVig * (1.0 - pPaper) * smoothstep(0.55, 1.35, length(p * vec2(0.62, 1.0)));
+  col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233)))*43758.5453) - 0.5) * pGrain;
   outColor = vec4(col, 1.0);
 }
 </script>
 
 <script>
-// ───────────────────────── 파라미터 정의 ─────────────────────────
-// 이 목록이 곧 계획 1의 획 어휘·먹물 명세가 된다. 하드코딩하지 않는다.
+// ═════════════════════════ 파라미터 ═════════════════════════
+// geo:true = 골격 형상을 바꾸므로 삼각형을 다시 만들어야 한다.
+// 이 목록이 곧 계획 1의 획 어휘 명세가 된다. 하드코딩하지 않는다.
 const P = [
   ['골격', [
-    ['pR',          '링 반경',          0.35, 0.75, 0.005, 0.580],
-    ['pRingBase',   '링 굵기 기준',     0.004, 0.070, 0.001, 0.032],
-    ['pRingAmp',    '링 굵기 변조',     0.000, 0.070, 0.001, 0.032],
-    ['pRingMin',    '굵기 하한',        0.002, 0.030, 0.001, 0.009],
-    ['pRingMax',    '굵기 상한',        0.015, 0.110, 0.001, 0.056],
-    ['pWobble',     '링 찌그러짐',      0.000, 0.060, 0.001, 0.020],
-    ['pWScale',     '획 굵기 배율',     0.30, 2.20, 0.01, 1.00],
-    ['pSplayScale', '붓털 길이 배율',   0.00, 2.50, 0.01, 1.00],
+    ['pR',        '링 반경',       0.35, 0.75, 0.005, 0.575, 1],
+    ['pRingBase', '링 굵기 기준',  0.004, 0.090, 0.001, 0.030, 1],
+    ['pRingAmp',  '링 굵기 변조',  0.000, 0.090, 0.001, 0.040, 1],
+    ['pWobble',   '링 찌그러짐',   0.000, 0.070, 0.001, 0.024, 1],
+  ]],
+  ['복잡도', [
+    ['cSweep',    '쓸기 덩어리 세기',  0.00, 2.20, 0.02, 0.95, 1],
+    ['cSweepSpan','쓸기 폭(호 길이)',  0.20, 2.60, 0.02, 1.15, 1],
+    ['cBlade',   '뻗는 획 굵기',      0.00, 2.60, 0.02, 1.05, 1],
+    ['cBladeN',  '획 겹침 수',        1, 4, 1, 2, 1],
+    ['cFlick',   '곁가지 수',         0, 10, 1, 5, 1],
+    ['cSplat',   '스플래터 가시 수',  0, 32, 1, 18, 1],
+    ['cSplatLen','스플래터 길이',     0.02, 0.30, 0.005, 0.115, 1],
+    ['cSpeck',   '떨어진 반점 수',    0, 34, 1, 16, 1],
+    ['cDry',     '드라이브러시 선 수', 0, 12, 1, 6, 1],
+    ['cDryGap',  '드라이브러시 간격', 0.002, 0.030, 0.001, 0.009, 1],
+    ['cDryLen',  '드라이브러시 길이', 0.10, 1.60, 0.02, 0.75, 1],
+    ['cOverlay', '링 겹침 호 수',     0, 10, 1, 5, 1],
+    ['cGaps',    '링 끊김 수',        0, 6, 1, 2, 1],
+    ['cGapSize', '끊김 크기',         0.02, 0.60, 0.01, 0.13, 1],
+    ['cJitter',  '불규칙성',          0.00, 2.00, 0.02, 1.05, 1],
   ]],
   ['먹물', [
-    ['pSoft',     '내부 전이대',     0.005, 0.120, 0.001, 0.030],
-    ['pErode',    '가장자리 침식',   0.00, 3.50, 0.01, 1.00],
-    ['pContrast', '농담 대비',       0.25, 2.20, 0.01, 0.70],
-    ['pFloor',    '몸통 바닥',       0.00, 1.00, 0.01, 0.62],
-    ['pCore',     '짙은 심',         0.00, 1.00, 0.01, 0.86],
-    ['pGrainAmp', '결 세기',         0.00, 3.00, 0.01, 1.35],
+    ['pSoft',     '내부 전이대',        0.005, 0.120, 0.001, 0.030],
+    ['pDScale',   '거리장 배율',        0.10, 1.60, 0.02, 0.52],
+    ['pErode',    '가장자리 침식',      0.00, 3.50, 0.01, 1.00],
+    ['pContrast', '농담 대비',          0.25, 2.20, 0.01, 0.70],
+    ['pFloor',    '몸통 바닥',          0.00, 1.00, 0.01, 0.66],
+    ['pCore',     '짙은 심',            0.00, 1.00, 0.01, 0.86],
+    ['pGrainAmp', '결 세기',            0.00, 3.00, 0.01, 1.35],
     ['pGrainA',   '결 주파수(획 방향)', 0.5, 14.0, 0.1, 3.2],
-    ['pGrainX',   '결 주파수(가로)',  4.0, 70.0, 0.5, 26.0],
+    ['pGrainX',   '결 주파수(가로)',    4.0, 70.0, 0.5, 26.0],
   ]],
   ['연기', [
-    ['pFray',      '보풀 양',      0.00, 1.00, 0.01, 0.70],
-    ['pFrayFall',  '보풀 감쇠',    6.0, 90.0, 0.5, 34.0],
-    ['pWisp',      '실오라기 양',  0.00, 1.00, 0.01, 0.62],
-    ['pWispFall',  '실오라기 감쇠', 3.0, 40.0, 0.5, 13.0],
-    ['pPlume',     '연기 기둥 양', 0.00, 1.00, 0.01, 0.50],
-    ['pPlumeFall', '기둥 감쇠',    1.0, 16.0, 0.1, 4.2],
+    ['pFray',      '보풀 양',        0.00, 1.00, 0.01, 0.70],
+    ['pFrayFall',  '보풀 감쇠',      6.0, 90.0, 0.5, 34.0],
+    ['pWisp',      '실오라기 양',    0.00, 1.00, 0.01, 0.62],
+    ['pWispFall',  '실오라기 감쇠',  3.0, 40.0, 0.5, 13.0],
+    ['pPlume',     '연기 기둥 양',   0.00, 1.00, 0.01, 0.50],
+    ['pPlumeFall', '기둥 감쇠',      0.5, 10.0, 0.1, 3.4],
     ['pGate',      '기둥 방향 게이트', 0.10, 0.85, 0.01, 0.46],
-    ['pDissolve',  '안개 소실',    0.00, 0.70, 0.01, 0.20],
-    ['pTopFade',   '상단 흩어짐',  0.00, 0.70, 0.01, 0.18],
+    ['pDissolve',  '안개 소실',      0.00, 0.70, 0.01, 0.20],
+    ['pTopFade',   '상단 흩어짐',    0.00, 0.70, 0.01, 0.18],
   ]],
   ['색 · 분위기', [
     ['pInk',     '잉크 밝기',   0.010, 0.220, 0.002, 0.062],
@@ -311,105 +272,313 @@ const P = [
     ['pFog',     '안개 세기',   0.00, 0.20, 0.005, 0.075],
     ['pGrain',   '필름 그레인', 0.00, 0.06, 0.002, 0.016],
     ['pVig',     '주변 감광',   0.00, 0.45, 0.01, 0.16],
+    ['pPaper',   '종이 모드',   0.00, 1.00, 1.00, 0.00],
   ]],
   ['분사 애니메이션', [
-    ['pProg',       '진행 (0=시작, 1=완성)', 0.00, 1.00, 0.005, 1.00],
-    ['pSprayAng',   '분사 시작 각도',        -3.15, 3.15, 0.01, 1.57],
-    ['pLeadTurb',   '선두 난류',             0.0, 6.0, 0.05, 2.6],
-    ['pFrontSoft',  '선두 폭',               0.04, 0.60, 0.01, 0.20],
+    ['pProg',      '진행 (0=시작, 1=완성)', 0.00, 1.00, 0.005, 1.00],
+    ['pSprayAng',  '분사 시작 각도',        -3.15, 3.15, 0.01, 1.57],
+    ['pLeadTurb',  '선두 난류',             0.0, 6.0, 0.05, 2.6],
+    ['pFrontSoft', '선두 폭',               0.04, 0.60, 0.01, 0.20],
   ]],
 ];
-
-const DEF = {};
-P.forEach(([, rows]) => rows.forEach(([k, , , , , v]) => (DEF[k] = v)));
+const DEF = {}, IS_GEO = {};
+P.forEach(([, rows]) => rows.forEach(([k, , , , , v, geo]) => { DEF[k] = v; IS_GEO[k] = !!geo; }));
 let val = { ...DEF };
 
-// ───────────────────────── 골격 데이터 ─────────────────────────
+// ═════════════════════════ 골격 생성 ═════════════════════════
 // 12슬롯 3축 역할 지도. y가 위쪽이므로 슬롯 0(12시)은 +PI/2.
 const ROLE_SLOT = {
   '행위':0,'행위수식':1,'주체':2,'주체수식':3,'시간':4,'시간수식':5,
   '양상':6,'정도':7,'대상':8,'대상수식':9,'장소':10,'방향':11,
 };
-const slotAngle = (slot, j = 0) => Math.PI / 2 - ((slot + j) / 12) * Math.PI * 2;
+const slotAngle = (s, j = 0) => Math.PI / 2 - ((s + j) / 12) * Math.PI * 2;
 
-// 역할 위치에 붙는 넓은 획 하나 + 붓털 끝
-function branchAt(role, o) {
-  const R = val.pR;
-  const a0 = slotAngle(ROLE_SLOT[role], o.jitter ?? 0.5);
+function fnv1a(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return h >>> 0;
+}
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+// ── 굵기 프로파일 ──
+// 참고 이미지의 획은 균일한 리본이 아니다. 뿌리에서 두껍게 시작해
+// 급격히 쐐기처럼 얇아지거나, 중간이 불룩한 렌즈형이다.
+// 획을 따라 부드럽게 변하는 떨림. 점마다 독립 난수를 쓰면 고주파가 되어
+// 획이 구슬처럼 울퉁불퉁해진다. 붓의 떨림은 저주파다.
+function smoothJit(rnd, amp) {
+  const ph = [rnd()*6.283, rnd()*6.283, rnd()*6.283];
+  const fq = [1.3 + rnd()*1.4, 3.1 + rnd()*2.2, 6.5 + rnd()*3.5];
+  return (t) => 1 + amp * (
+      0.58 * Math.sin(t*fq[0]*6.283 + ph[0])
+    + 0.28 * Math.sin(t*fq[1]*6.283 + ph[1])
+    + 0.14 * Math.sin(t*fq[2]*6.283 + ph[2]));
+}
+
+function profile(n, w0, w1, kind, rnd, jit) {
+  const w = [];
+  const j = smoothJit(rnd, 0.42 * jit);
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0 : i / (n - 1);
+    let v;
+    if (kind === 'blade')      v = w0 * Math.pow(1 - t, 1.35) * (1 + 0.55 * Math.sin(Math.PI * t)) + w1;
+    else if (kind === 'lens')  v = w0 * Math.pow(Math.sin(Math.PI * t), 0.62) + w1;
+    else if (kind === 'spike') v = w0 * Math.pow(1 - t, 2.2) + w1;
+    else                       v = w0 * (1 - t) + w1 * t;
+    w.push(Math.max(0.0005, v * j(t)));
+  }
+  return w;
+}
+
+function arcPts(r, a0, span, bow, n) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, a = a0 + span * t;
+    const rr = r + bow * Math.sin(Math.PI * t);
+    pts.push([Math.cos(a) * rr, Math.sin(a) * rr]);
+  }
+  return pts;
+}
+function bezPts(a, b, c, n) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, u = 1 - t;
+    pts.push([u*u*a[0] + 2*u*t*b[0] + t*t*c[0], u*u*a[1] + 2*u*t*b[1] + t*t*c[1]]);
+  }
+  return pts;
+}
+
+// ── 삼각형화 ──
+function strip(pts, ws, out) {
+  const L = [], R = [], last = pts.length - 1;
+  for (let i = 0; i <= last; i++) {
+    const h = ws[i] / 2;
+    const pv = pts[Math.max(i-1, 0)], nx = pts[Math.min(i+1, last)];
+    let dx = nx[0]-pv[0], dy = nx[1]-pv[1];
+    const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+    L.push([pts[i][0] - dy*h, pts[i][1] + dx*h]);
+    R.push([pts[i][0] + dy*h, pts[i][1] - dx*h]);
+  }
+  for (let i = 0; i < last; i++) {
+    out.push(L[i][0],L[i][1], R[i][0],R[i][1], L[i+1][0],L[i+1][1]);
+    out.push(R[i][0],R[i][1], R[i+1][0],R[i+1][1], L[i+1][0],L[i+1][1]);
+  }
+}
+function disc(c, r, out, n = 9) {
+  for (let i = 0; i < n; i++) {
+    const a1 = i/n*6.2832, a2 = (i+1)/n*6.2832;
+    out.push(c[0], c[1],
+      c[0]+Math.cos(a1)*r, c[1]+Math.sin(a1)*r,
+      c[0]+Math.cos(a2)*r, c[1]+Math.sin(a2)*r);
+  }
+}
+
+// ── 스플래터 — 뭉친 지점에서 방사되는 가시와 떨어진 반점 ──
+// 참고 이미지의 복잡함 대부분이 여기서 온다.
+function splatter(at, baseAng, scale, rnd, out) {
+  const J = val.cJitter;
+  disc(at, (0.007 + rnd()*0.010) * scale, out);
+  const n = Math.round(val.cSplat * scale);
+  for (let i = 0; i < n; i++) {
+    const a = baseAng + (rnd() - 0.5) * 4.4;
+    const L = val.cSplatLen * scale * (0.25 + rnd()*rnd()*1.9);
+    const bend = (rnd() - 0.5) * 0.7 * J;
+    const tip = [at[0] + Math.cos(a)*L, at[1] + Math.sin(a)*L];
+    const mid = [at[0] + Math.cos(a+bend)*L*0.55, at[1] + Math.sin(a+bend)*L*0.55];
+    const pts = bezPts(at, mid, tip, 5);
+    strip(pts, profile(pts.length, (0.0075 + rnd()*0.008)*scale, 0.0004, 'spike', rnd, J), out);
+    if (rnd() < 0.30) disc(tip, (0.0018 + rnd()*0.004)*scale, out, 7);
+  }
+  const sp = Math.round(val.cSpeck * scale);
+  for (let i = 0; i < sp; i++) {
+    const a = baseAng + (rnd() - 0.5) * 5.6;
+    const L = val.cSplatLen * scale * (0.6 + rnd()*2.6);
+    disc([at[0] + Math.cos(a)*L, at[1] + Math.sin(a)*L], (0.0012 + rnd()*rnd()*0.006)*scale, out, 7);
+  }
+}
+
+// ── 드라이브러시 — 붓이 마르며 갈라진 평행 줄무늬 ──
+function dryBrush(r, a0, span, rnd, out) {
+  const n = val.cDry, J = val.cJitter;
+  for (let i = 0; i < n; i++) {
+    const off = (i - (n-1)/2) * val.cDryGap * (1 + (rnd()-0.5)*0.5*J);
+    const s = span * val.cDryLen * (0.55 + rnd()*0.75);
+    const st = a0 + (rnd()-0.5) * span * 0.5;
+    const pts = arcPts(r + off, st, s, (rnd()-0.5)*0.012*J, 12);
+    strip(pts, profile(pts.length, 0.0030 + rnd()*0.0042, 0.0004, 'lens', rnd, J), out);
+  }
+}
+
+// ── 링 — 끊긴 호 여러 개 + 겹쳐 지나간 호 ──
+// 참고 이미지의 링은 완전한 원이 아니다. 붓이 들린 자리에 흰 틈이 있다.
+function ringGeometry(rnd, out) {
+  const R = val.pR, J = val.cJitter;
+  const gaps = val.cGaps;
+  const segs = gaps + 1;
+  const gapEach = (val.cGapSize * Math.PI * 2) / Math.max(segs, 1);
+  const segSpan = (Math.PI*2 - gapEach*gaps) / segs;
+  let a = rnd() * Math.PI * 2;
+  for (let s = 0; s < segs; s++) {
+    const span = segSpan * (0.80 + rnd()*0.40);
+    const n = Math.max(10, Math.round(span * 22));
+    const pts = arcPts(R, a, span, (rnd()-0.5) * val.pWobble * 2.2, n);
+    const w0 = val.pRingBase + rnd() * val.pRingAmp;
+    const w1 = val.pRingBase * 0.35 + rnd() * val.pRingAmp * 0.5;
+    strip(pts, profile(pts.length, w0, w1, rnd() < 0.5 ? 'lens' : 'blade', rnd, J), out);
+    // 호가 끝나는 자리에 먹이 고이고 튄다
+    if (rnd() < 0.55) splatter(pts[pts.length-1], a + span + Math.PI*0.5, 0.55 + rnd()*0.5, rnd, out);
+    dryBrush(R, a, span, rnd, out);
+    a += span + gapEach;
+  }
+  // 겹쳐 지나간 호
+  for (let i = 0; i < val.cOverlay; i++) {
+    const span = 0.35 + rnd() * 1.5;
+    const st = rnd() * Math.PI * 2;
+    const rr = R * (1 + (rnd()-0.5) * 0.085 * (1 + J));
+    const pts = arcPts(rr, st, span, (rnd()-0.5)*0.03*J, Math.max(10, Math.round(span*20)));
+    strip(pts, profile(pts.length, val.pRingBase*(0.30 + rnd()*0.65), 0.0006, 'lens', rnd, J), out);
+  }
+}
+
+// ── 개념 하나의 획 복합체 ──
+// 단어 하나라도 획 하나가 아니다. 주 획 + 곁가지 + 스플래터 + 드라이브러시.
+// 전부 그 개념의 자질과 시드에서 결정적으로 유도된다.
+function conceptComplex(role, o, seedKey, out) {
+  const rnd = rng(fnv1a(seedKey));
+  const R = val.pR, J = val.cJitter;
+  const a0 = slotAngle(ROLE_SLOT[role], o.jit ?? 0.5);
   const n = [Math.cos(a0), Math.sin(a0)], t = [-n[1], n[0]];
-  const base = [n[0] * R, n[1] * R];
+  const base = [n[0]*R, n[1]*R];
   const rc = o.reach, cu = o.curl;
   const at = (u, v) => [base[0] + n[0]*rc*u + t[0]*rc*v, base[1] + n[1]*rc*u + t[1]*rc*v];
-  const a = at(0, -0.14), b = at(0.85, cu * 0.55), c = at(0.95, cu * 1.25);
-  const tipAng = Math.atan2(c[1] - b[1], c[0] - b[0]);
-  return { a, b, c, w0: o.w0, w1: o.w1, sp: [tipAng, o.splay ?? 0.10, 0.90, 0.0050] };
+
+  // ── 쓸기 덩어리 ──
+  // 참고 이미지("earth")의 획은 링에서 밖으로 뻗는 돌기가 아니라,
+  // 링을 따라 쓸고 지나가는 거대한 쐐기다. 이게 바퀴살 느낌과
+  // 서예 느낌을 갈라놓는 지점이다.
+  if (val.cSweep > 0.01) {
+    for (let k = 0; k < val.cBladeN; k++) {
+      const sk = 1 - k * 0.30;
+      const span = val.cSweepSpan * (0.72 + rnd() * 0.55) * sk;
+      const st = a0 - span * (0.35 + rnd() * 0.3);
+      const bow = rc * 0.16 * (rnd() - 0.2) + (k ? (rnd() - 0.5) * 0.03 : 0);
+      const nn = Math.max(14, Math.round(span * 26));
+      const pts = arcPts(R, st, span, bow, nn);
+      // 한쪽이 두껍고 다른 쪽으로 급격히 얇아지는 쐐기
+      const w = profile(pts.length, o.w * 1.55 * val.cSweep * sk, 0.0012,
+                        rnd() < 0.55 ? 'blade' : 'lens', rnd, J);
+      if (rnd() < 0.5) w.reverse();
+      strip(pts, w, out);
+      const e0 = pts[0], e1 = pts[pts.length - 1];
+      splatter(e1, st + span + Math.PI * 0.5, (0.85 + rnd() * 0.6) * sk, rnd, out);
+      if (rnd() < 0.7) splatter(e0, st - Math.PI * 0.5, (0.6 + rnd() * 0.5) * sk, rnd, out);
+      dryBrush(R, st, span, rnd, out);
+    }
+  }
+
+  // 뻗는 획 — 겹쳐 지나간 쐐기 여러 겹
+  let tipPt = at(0.96, cu * 1.25), tipAng = a0;
+  if (val.cBlade <= 0.01) { splatter(tipPt, a0, 0.5, rnd, out); }
+  for (let k = 0; val.cBlade > 0.01 && k < val.cBladeN; k++) {
+    const sk = 1 - k * 0.26;
+    const jj = (rnd()-0.5) * 0.30 * J;
+    const a = at(-0.06, jj*0.4), b = at(0.82*sk, cu*0.55 + jj), c = at(0.96*sk, cu*1.25 + jj*1.6);
+    const pts = bezPts(a, b, c, 16);
+    strip(pts, profile(pts.length, o.w * val.cBlade * sk, 0.0010, 'blade', rnd, J), out);
+    if (k === 0) {
+      tipPt = c;
+      tipAng = Math.atan2(c[1]-b[1], c[0]-b[0]);
+    }
+  }
+  // 곁가지 — 획에서 갈라지는 짧은 털
+  for (let i = 0; val.cBlade > 0.01 && i < val.cFlick; i++) {
+    const u = 0.25 + rnd() * 0.6;
+    const root = at(u, cu * u * 0.8);
+    const a = tipAng + (rnd()-0.5) * 2.2;
+    const L = rc * (0.14 + rnd() * 0.36);
+    const tip = [root[0] + Math.cos(a)*L, root[1] + Math.sin(a)*L];
+    const mid = [root[0] + Math.cos(a + (rnd()-0.5)*0.9*J)*L*0.55,
+                 root[1] + Math.sin(a + (rnd()-0.5)*0.9*J)*L*0.55];
+    const pts = bezPts(root, mid, tip, 8);
+    strip(pts, profile(pts.length, o.w * 0.30 * val.cBlade, 0.0006, 'spike', rnd, J), out);
+    if (rnd() < 0.5) splatter(tip, a, 0.4 + rnd()*0.35, rnd, out);
+  }
+  // 끝과 뿌리의 먹 뭉침
+  splatter(tipPt, tipAng, 0.9 + rnd()*0.5, rnd, out);
+  if (rnd() < 0.7) splatter(base, a0 + Math.PI, 0.55, rnd, out);
+  // 링에 붙는 드라이브러시
+  dryBrush(R, a0 - 0.30, 0.62, rnd, out);
 }
-// 링을 따라 감기는 접선 호
-function hugAt(role, o) {
-  const R = val.pR, s = o.span ?? 0.55, off = o.off ?? 0.0;
-  const a0 = slotAngle(ROLE_SLOT[role], (o.jitter ?? 0.5)) - s / 2;
-  const pt = (k) => {
-    const a = a0 + s * k, r = R + off;
-    return [Math.cos(a) * r, Math.sin(a) * r];
-  };
-  const r2 = R + off * 1.9, am = a0 + s * 0.5;
-  return { a: pt(0), b: [Math.cos(am) * r2, Math.sin(am) * r2], c: pt(1),
-           w0: o.w, w1: o.w, sp: [0, 0, 0, 0] };
-}
-// 이름의 음절 나선 — 순서를 각도가 아니라 반경에 인코딩
-function spiralAt(role, count) {
-  const R = val.pR, out = [];
+
+// ── 이름의 음절 나선 — 순서를 각도가 아니라 반경에 인코딩 ──
+function nameSpiral(role, count, seedKey, out) {
+  const rnd = rng(fnv1a(seedKey));
+  const R = val.pR, J = val.cJitter;
   const a0 = slotAngle(ROLE_SLOT[role], 0.35);
   const step = Math.min(0.27, 0.72 / count);
   for (let i = 0; i < count; i++) {
-    const r = R * (1 - i * step), a = a0 + i * 0.16;
-    const o = [Math.cos(a) * r, Math.sin(a) * r];
+    const r = R * (1 - i*step), a = a0 + i*0.16;
+    const o = [Math.cos(a)*r, Math.sin(a)*r];
     const lean = a + (i % 2 ? 0.45 : -0.30);
-    const L = 0.115 - i * 0.012;
-    const d = [Math.cos(lean), Math.sin(lean)], t = [-d[1], d[0]];
-    out.push({
-      a: o,
-      b: [o[0] + d[0]*L*0.5 + t[0]*L*0.25, o[1] + d[1]*L*0.5 + t[1]*L*0.25],
-      c: [o[0] + d[0]*L + t[0]*L*0.6, o[1] + d[1]*L + t[1]*L*0.6],
-      w0: 0.026 - i * 0.004, w1: 0.004,
-      sp: [lean, 0.045, 1.05, 0.0035],
-    });
+    const L = 0.13 - i*0.013;
+    const d = [Math.cos(lean), Math.sin(lean)], tt = [-d[1], d[0]];
+    const c = [o[0] + d[0]*L + tt[0]*L*0.6, o[1] + d[1]*L + tt[1]*L*0.6];
+    const pts = bezPts(o, [o[0]+d[0]*L*0.5+tt[0]*L*0.25, o[1]+d[1]*L*0.5+tt[1]*L*0.25], c, 12);
+    strip(pts, profile(pts.length, (0.030 - i*0.005) * val.cBlade, 0.0008, 'blade', rnd, J), out);
+    splatter(c, lean, 0.5 + rnd()*0.35, rnd, out);
+    if (val.cFlick > 0) {
+      const a2 = lean + (rnd()-0.5)*2.0, L2 = L*0.5;
+      const tip = [c[0]+Math.cos(a2)*L2, c[1]+Math.sin(a2)*L2];
+      const p2 = bezPts(c, [c[0]+Math.cos(a2)*L2*0.5, c[1]+Math.sin(a2)*L2*0.5], tip, 6);
+      strip(p2, profile(p2.length, 0.008*val.cBlade, 0.0005, 'spike', rnd, J), out);
+    }
   }
-  return out;
 }
 
-const LOVE = { reach: 0.30, curl: 0.80, w0: 0.056, w1: 0.0075, splay: 0.115 };
-const HATE = { reach: 0.29, curl: -0.85, w0: 0.054, w1: 0.0070, splay: 0.105 };
-const ME   = { reach: 0.21, curl: -0.32, w0: 0.044, w1: 0.0060, splay: 0.095 };
-const YOU  = { reach: 0.22, curl: 0.38, w0: 0.046, w1: 0.0062, splay: 0.100 };
+const LOVE = { reach: 0.30, curl: 0.80, w: 0.056, jit: 0.5 };
+const HATE = { reach: 0.29, curl: -0.85, w: 0.054, jit: 0.5 };
+const ME   = { reach: 0.21, curl: -0.32, w: 0.044, jit: 0.5 };
+const YOU  = { reach: 0.22, curl: 0.38, w: 0.046, jit: 0.5 };
+const ASK  = { reach: 0.26, curl: 1.55, w: 0.032, jit: 0.5 };
 
 const PRESETS = {
-  '사랑': () => [branchAt('행위', LOVE), hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 })],
-  '미움': () => [branchAt('행위', HATE), hugAt('행위', { jitter: -0.7, span: 0.52, off: 0.028, w: 0.0150 })],
-  '나는 너를 사랑해': () => [
-    branchAt('행위', LOVE), branchAt('주체', ME), branchAt('대상', YOU),
-    hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 }),
-    hugAt('대상', { jitter: -0.6, span: 0.50, off: 0.026, w: 0.0145 }),
-  ],
-  '너는 나를 사랑해': () => [
-    branchAt('행위', LOVE), branchAt('주체', YOU), branchAt('대상', ME),
-    hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 }),
-    hugAt('대상', { jitter: -0.6, span: 0.50, off: 0.026, w: 0.0145 }),
-  ],
-  '나는 루이즈를 사랑해': () => [
-    branchAt('행위', LOVE), branchAt('주체', ME),
-    ...spiralAt('대상', 3),
-    hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 }),
-  ],
-  '너는 나를 사랑해?': () => [
-    branchAt('행위', LOVE), branchAt('주체', YOU), branchAt('대상', ME),
-    branchAt('양상', { reach: 0.26, curl: 1.55, w0: 0.030, w1: 0.0055, splay: 0.06 }),
-    hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 }),
-  ],
+  '사랑': (o) => { conceptComplex('행위', LOVE, '사랑', o); },
+  '미움': (o) => { conceptComplex('행위', HATE, '미움', o); },
+  '나는 너를 사랑해': (o) => {
+    conceptComplex('행위', LOVE, '사랑', o);
+    conceptComplex('주체', ME, '나', o);
+    conceptComplex('대상', YOU, '너', o);
+  },
+  '너는 나를 사랑해': (o) => {
+    conceptComplex('행위', LOVE, '사랑', o);
+    conceptComplex('주체', YOU, '너', o);
+    conceptComplex('대상', ME, '나', o);
+  },
+  '나는 루이즈를 사랑해': (o) => {
+    conceptComplex('행위', LOVE, '사랑', o);
+    conceptComplex('주체', ME, '나', o);
+    nameSpiral('대상', 3, '루이즈', o);
+  },
+  '너는 나를 사랑해?': (o) => {
+    conceptComplex('행위', LOVE, '사랑', o);
+    conceptComplex('주체', YOU, '너', o);
+    conceptComplex('대상', ME, '나', o);
+    conceptComplex('양상', ASK, '의문', o);
+  },
 };
-let preset = '나는 너를 사랑해';
+let preset = '사랑';
 
-// ───────────────────────── WebGL ─────────────────────────
+function buildGeometry() {
+  const out = [];
+  ringGeometry(rng(fnv1a('ring|' + preset)), out);
+  PRESETS[preset](out);
+  return new Float32Array(out);
+}
+
+// ═════════════════════════ WebGL ═════════════════════════
 const cvs = document.getElementById('c');
 const gl = cvs.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
 if (!gl) { document.body.innerHTML = '<p style="padding:20px">WebGL2를 쓸 수 없습니다.</p>'; throw 0; }
@@ -420,54 +589,92 @@ function sh(t, src) {
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
   return s;
 }
-const prog = gl.createProgram();
-gl.attachShader(prog, sh(gl.VERTEX_SHADER, '#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'));
-gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, document.getElementById('fs').textContent));
-gl.linkProgram(prog);
-if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
-gl.useProgram(prog);
+function link(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+const T = (id) => document.getElementById(id).textContent;
 
-const vb = gl.createBuffer();
-gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+const maskProg = link(T('maskVs'), T('maskFs'));
+const smokeProg = link('#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}', T('fs'));
+
+// 마스크 FBO
+const MW = 1280, MH = 720;
+const maskTex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, maskTex);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, MW, MH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+const fbo = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, maskTex, 0);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+// 골격 버퍼
+const geoBuf = gl.createBuffer();
+let geoCount = 0;
+const maskPos = gl.getAttribLocation(maskProg, 'aPos');
+const uHalf = gl.getUniformLocation(maskProg, 'uHalf');
+const uAspect = gl.getUniformLocation(maskProg, 'uAspect');
+
+// 전체화면 삼각형
+const quadBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
-const al = gl.getAttribLocation(prog, 'a');
-gl.enableVertexAttribArray(al);
-gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
+const smokePos = gl.getAttribLocation(smokeProg, 'a');
 
-const U = (n) => gl.getUniformLocation(prog, n);
-const uRes = U('uRes'), uT = U('uT'), uGrid = U('uGrid'), uN = U('uN');
-const uA = U('uA[0]'), uB = U('uB[0]'), uC = U('uC[0]'), uW = U('uW[0]'), uSp = U('uSp[0]');
-const PL = {}; Object.keys(DEF).forEach((k) => (PL[k] = U(k)));
+const SU = {};
+['uMask','uRes','uT','uGrid','uShowMask'].forEach((n) => (SU[n] = gl.getUniformLocation(smokeProg, n)));
+const PL = {}; Object.keys(DEF).forEach((k) => (PL[k] = gl.getUniformLocation(smokeProg, k)));
 
-const MAXS = 20;
-const fA = new Float32Array(MAXS * 2), fB = new Float32Array(MAXS * 2);
-const fC = new Float32Array(MAXS * 2), fW = new Float32Array(MAXS * 2);
-const fS = new Float32Array(MAXS * 4);
-
-function uploadSkeleton() {
-  const st = PRESETS[preset]().slice(0, MAXS);
-  fA.fill(0); fB.fill(0); fC.fill(0); fW.fill(0); fS.fill(0);
-  st.forEach((s, i) => {
-    fA[i*2] = s.a[0]; fA[i*2+1] = s.a[1];
-    fB[i*2] = s.b[0]; fB[i*2+1] = s.b[1];
-    fC[i*2] = s.c[0]; fC[i*2+1] = s.c[1];
-    fW[i*2] = s.w0;   fW[i*2+1] = s.w1;
-    fS[i*4] = s.sp[0]; fS[i*4+1] = s.sp[1]; fS[i*4+2] = s.sp[2]; fS[i*4+3] = s.sp[3];
-  });
-  gl.uniform1i(uN, st.length);
-  gl.uniform2fv(uA, fA); gl.uniform2fv(uB, fB); gl.uniform2fv(uC, fC);
-  gl.uniform2fv(uW, fW); gl.uniform4fv(uSp, fS);
+function rebuildGeometry() {
+  const data = buildGeometry();
+  geoCount = data.length / 2;
+  gl.bindBuffer(gl.ARRAY_BUFFER, geoBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+  renderMask();
 }
 
-let T = 3.7, grid = 0, animating = true;
-let spray = null;   // {t0, dur} — 분사 재생 중
+function renderMask() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.viewport(0, 0, MW, MH);
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(maskProg);
+  gl.uniform1f(uHalf, 0.81);
+  gl.uniform1f(uAspect, MW / MH);
+  gl.bindBuffer(gl.ARRAY_BUFFER, geoBuf);
+  gl.enableVertexAttribArray(maskPos);
+  gl.vertexAttribPointer(maskPos, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, geoCount);
+  gl.bindTexture(gl.TEXTURE_2D, maskTex);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
 
-function draw(t) {
+let tNow = 3.7, grid = 0, showMask = 0, animating = true, spray = null;
+
+function draw() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, cvs.width, cvs.height);
-  gl.uniform2f(uRes, cvs.width, cvs.height);
-  gl.uniform1f(uT, t);
-  gl.uniform1f(uGrid, grid);
-  for (const k in PL) gl.uniform1f(PL[k], val[k]);
+  gl.useProgram(smokeProg);
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.enableVertexAttribArray(smokePos);
+  gl.vertexAttribPointer(smokePos, 2, gl.FLOAT, false, 0, 0);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, maskTex);
+  gl.uniform1i(SU.uMask, 0);
+  gl.uniform2f(SU.uRes, cvs.width, cvs.height);
+  gl.uniform1f(SU.uT, tNow);
+  gl.uniform1f(SU.uGrid, grid);
+  gl.uniform1f(SU.uShowMask, showMask);
+  for (const k in PL) if (PL[k]) gl.uniform1f(PL[k], val[k]);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
@@ -476,19 +683,19 @@ function resize() {
   const dpr = Math.min(1.75, window.devicePixelRatio || 1);
   cvs.width = Math.round(w * dpr);
   cvs.height = Math.round(w * dpr * 9 / 16);
-  uploadSkeleton(); draw(T);
+  draw();
 }
 cvs.style.aspectRatio = '16 / 9';
 new ResizeObserver(resize).observe(cvs);
 
-// ───────────────────────── UI ─────────────────────────
-const groups = document.getElementById('groups');
-const outEl = document.getElementById('out');
+// ═════════════════════════ UI ═════════════════════════
+const groups = document.getElementById('groups'), outEl = document.getElementById('out');
 const inputs = {};
+const fmt = (v) => (Math.abs(v) >= 10 ? v.toFixed(1) : Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(3));
 
 P.forEach(([name, rows], gi) => {
   const det = document.createElement('details');
-  if (gi < 3) det.open = true;
+  if (gi < 2) det.open = true;
   det.innerHTML = `<summary>${name}</summary>`;
   rows.forEach(([k, label, min, max, step]) => {
     const row = document.createElement('div');
@@ -500,9 +707,9 @@ P.forEach(([name, rows], gi) => {
     inp.addEventListener('input', () => {
       val[k] = parseFloat(inp.value);
       document.getElementById('v_' + k).textContent = fmt(val[k]);
-      // 골격 파라미터가 바뀌면 골격을 다시 만들어야 한다
-      if (k === 'pR') uploadSkeleton();
-      syncOut(); draw(T);
+      syncOut();
+      if (IS_GEO[k]) rebuildGeometry();
+      draw();
     });
     row.appendChild(inp);
     det.appendChild(row);
@@ -511,7 +718,6 @@ P.forEach(([name, rows], gi) => {
   groups.appendChild(det);
 });
 
-const fmt = (v) => (Math.abs(v) >= 10 ? v.toFixed(1) : Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(3));
 function syncUI() {
   for (const k in inputs) {
     inputs[k].value = val[k];
@@ -534,69 +740,70 @@ Object.keys(PRESETS).forEach((name) => {
     preset = name;
     [...pres.children].forEach((x) => (x.className = ''));
     b.className = 'on';
-    uploadSkeleton(); draw(T);
+    rebuildGeometry(); draw();
   };
   pres.appendChild(b);
 });
 
-const bGrid = document.getElementById('bGrid');
-bGrid.onclick = () => { grid = grid ? 0 : 1; bGrid.className = grid ? 'on' : ''; draw(T); };
-const bAnim = document.getElementById('bAnim');
+const bGrid = document.getElementById('bGrid'), bAnim = document.getElementById('bAnim');
+const bPaper = document.getElementById('bPaper'), bMask = document.getElementById('bMask');
+bGrid.onclick = () => { grid = grid ? 0 : 1; bGrid.className = grid ? 'on' : ''; draw(); };
 bAnim.onclick = () => { animating = !animating; bAnim.className = animating ? 'on' : ''; };
-document.getElementById('bSpray').onclick = playSpray;
+bPaper.onclick = () => {
+  val.pPaper = val.pPaper > 0.5 ? 0 : 1;
+  bPaper.className = val.pPaper > 0.5 ? 'on' : '';
+  syncUI(); draw();
+};
+bMask.onclick = () => { showMask = showMask ? 0 : 1; bMask.className = showMask ? 'on' : ''; draw(); };
+document.getElementById('bSpray').onclick = () => (spray = { t0: performance.now(), dur: 3200 });
 document.getElementById('bPng').onclick = savePng;
-document.getElementById('bReset').onclick = () => { val = { ...DEF }; syncUI(); uploadSkeleton(); draw(T); };
+document.getElementById('bReset').onclick = () => { val = { ...DEF }; syncUI(); rebuildGeometry(); draw(); };
 document.getElementById('bCopy').onclick = async () => {
   outEl.select();
-  try { await navigator.clipboard.writeText(outEl.value); flash('복사됨'); }
-  catch { document.execCommand && document.execCommand('copy'); flash('선택됨 — Ctrl+C'); }
-};
-function flash(msg) {
   const b = document.getElementById('bCopy'), old = b.textContent;
-  b.textContent = msg; setTimeout(() => (b.textContent = old), 1400);
-}
-
-function playSpray() {
-  spray = { t0: performance.now(), dur: 3200 };
-}
+  try { await navigator.clipboard.writeText(outEl.value); b.textContent = '복사됨'; }
+  catch { b.textContent = '선택됨 — Ctrl+C'; }
+  setTimeout(() => (b.textContent = old), 1400);
+};
 function savePng() {
-  draw(T);
+  draw();
   const a = document.createElement('a');
   a.download = `heptapod-${preset.replace(/\s+/g, '_')}.png`;
-  a.href = cvs.toDataURL('image/png');
-  a.click();
+  a.href = cvs.toDataURL('image/png'); a.click();
 }
 
 window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === ' ') { bAnim.click(); e.preventDefault(); }
   if (e.key === 'g' || e.key === 'G') bGrid.click();
-  if (e.key === 'r' || e.key === 'R') playSpray();
+  if (e.key === 'p' || e.key === 'P') bPaper.click();
+  if (e.key === 'm' || e.key === 'M') bMask.click();
+  if (e.key === 'r' || e.key === 'R') spray = { t0: performance.now(), dur: 3200 };
   if (e.key === 's' || e.key === 'S') savePng();
 });
 
-// ───────────────────────── 루프 ─────────────────────────
+// ═════════════════════════ 루프 ═════════════════════════
 const fpsEl = document.getElementById('fps');
-let frames = 0, last = performance.now(), tStart = performance.now();
-
+let frames = 0, last = performance.now(), t0 = performance.now();
 (function loop() {
   const now = performance.now();
   if (spray) {
     const k = (now - spray.t0) / spray.dur;
-    if (k >= 1) { spray = null; val.pProg = 1; }
-    else val.pProg = k;
+    val.pProg = k >= 1 ? 1 : k;
+    if (k >= 1) spray = null;
     inputs.pProg.value = val.pProg;
     document.getElementById('v_pProg').textContent = fmt(val.pProg);
   }
-  if (animating || spray) { T = 3.7 + (now - tStart) / 1000; draw(T); }
+  if (animating || spray) { tNow = 3.7 + (now - t0) / 1000; draw(); }
   frames++;
   if (now - last > 700) {
-    fpsEl.textContent = Math.round((frames * 1000) / (now - last)) + ' fps · ' + cvs.width + '×' + cvs.height;
+    fpsEl.textContent = `${Math.round(frames*1000/(now-last))} fps · 삼각형 ${Math.round(geoCount/3)}개 · ${cvs.width}×${cvs.height}`;
     frames = 0; last = now;
   }
   requestAnimationFrame(loop);
 })();
 
 syncUI();
+rebuildGeometry();
 resize();
 </script>
