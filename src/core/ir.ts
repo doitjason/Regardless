@@ -39,11 +39,11 @@ export interface IR {
 
 /**
  * 성분의 안정적인 키. 정렬과 서브시드 계산에 쓴다.
- * 음절은 `onset.nucleus.coda`를 '-'로 이어 순서를 보존한다 — 이름에서 순서는 의미를 갖는다.
+ * 음절은 JSON.stringify로 직렬화해 구분자를 이스케이프한다 — 이름에서 순서는 의미를 갖는다.
  */
 export function constituentKey(c: Constituent): string {
   if (c.kind === 'concept') return `concept|${c.role}|${c.lemma}`;
-  const syls = c.syllables.map((s) => `${s.onset}.${s.nucleus}.${s.coda}`).join('-');
+  const syls = JSON.stringify(c.syllables.map((s) => [s.onset, s.nucleus, s.coda]));
   return `phonetic|${c.role}|${syls}`;
 }
 

@@ -27,7 +27,15 @@ describe('constituentKey', () => {
         { onset: '', nucleus: 'i', coda: '' },
       ],
     };
-    expect(constituentKey(name)).toBe('phonetic|대상|l.u.-.i.');
+    expect(constituentKey(name)).toBe('phonetic|대상|[["l","u",""],["","i",""]]');
+  });
+
+  it('음절 필드에 구분자가 들어가도 키가 겹치지 않는다', () => {
+    const mk = (s: { onset: string; nucleus: string; coda: string }): Constituent =>
+      ({ kind: 'phonetic', role: '대상', syllables: [s] });
+    const a = mk({ onset: 'a', nucleus: 'b.c', coda: 'd' });
+    const b = mk({ onset: 'a.b', nucleus: 'c', coda: 'd' });
+    expect(constituentKey(a)).not.toBe(constituentKey(b));
   });
 });
 
