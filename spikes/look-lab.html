@@ -91,7 +91,7 @@ uniform vec2 uRes;
 uniform float uT, uGrid, uShowMask;
 
 uniform float pSoft, pErode, pContrast, pFloor, pCore, pGrainAmp, pGrainA, pGrainX, pDScale;
-uniform float pInkWarp, pInkWarpF, pInkWarpS;
+uniform float pInkWarp, pInkWarpF, pInkWarpS, pSharp;
 uniform float pFray, pFrayFall, pWisp, pWispFall, pPlume, pPlumeFall, pGate, pDissolve, pTopFade;
 uniform float pInk, pInkCore, pBgTop, pBgMid, pBgBot, pFog, pGrain, pVig, pPaper;
 uniform float pProg, pSprayAng, pLeadTurb, pFrontSoft, pR;
@@ -180,6 +180,12 @@ void main(){
   float body = interior * (pFloor + (1.0 - pFloor) * substance);
   float coreInk = smoothstep(-0.004, -0.030, d) * smoothstep(0.34, 0.86, substance);
 
+  // ── 얇은 세부를 살린다 ──
+  // 거리장을 흐린 밉맵(LOD 1.7)에서 얻으므로, 가시나 세필처럼 1~2픽셀
+  // 굵기인 것은 그 블러에서 지워진다. LOD 0을 직접 섞어 가늘어도
+  // 살아남게 한다. 이것 없이는 가시를 몇 개 그려도 화면에 나타나지 않는다.
+  float sharp = smoothstep(0.30, 0.72, m0) * pSharp;
+
   float fray = pow(smoothstep(0.26, 0.92, n01(nHi)), 1.4) * exp(-od * pFrayFall);
   float wisp = pow(smoothstep(0.38, 0.96, n01(nFil)), 1.45) * exp(-od * pWispFall / turb);
   // 연기 기둥은 가장 흐린 밉맵을 감쇠장으로 쓰고, 각도별 게이트로 몇 군데만 뻗는다
@@ -191,6 +197,7 @@ void main(){
 
   float dens = 1.0
     - (1.0 - body)
+    * (1.0 - sharp)
     * (1.0 - coreInk * pCore)
     * (1.0 - fray  * pFray)
     * (1.0 - wisp  * pWisp * turb)
@@ -244,21 +251,25 @@ const P = [
   ['먹물 덩어리', [
     ['cZones',     '덩어리 수',      1, 5, 1, 2, 1],
     ['cBloomSpan', '덩어리 호 폭',   0.10, 1.60, 0.02, 0.78, 1],
-    ['cBloomThick','덩어리 두께',    0.01, 0.16, 0.002, 0.078, 1],
+    ['cBloomThick','덩어리 두께',    0.01, 0.20, 0.002, 0.098, 1],
     ['cBloomOut',  '덩어리 바깥 치우침', 0.00, 1.00, 0.02, 0.42, 1],
     ['cLayers',    '덩어리 겹침 수', 1, 5, 1, 3, 1],
     ['cBudget',    '복잡도 예산',    0.00, 1.20, 0.05, 0.70, 1],
   ]],
   ['털 · 반점', [
-    ['cFringe',    '털 개수',        0, 60, 1, 34, 1],
-    ['cFringeLen', '털 길이',        0.01, 0.20, 0.005, 0.080, 1],
-    ['cFringeFine','털 굵기',        0.0008, 0.0080, 0.0002, 0.0026, 1],
-    ['cFringeBend','털 휨',          0.00, 1.60, 0.02, 0.55, 1],
+    ['cFringe',    '가시 개수',      0, 90, 1, 52, 1],
+    ['cFringeLen', '가시 길이',      0.01, 0.24, 0.005, 0.075, 1],
+    ['cFringeFine','가시 굵기',      0.0008, 0.0100, 0.0002, 0.0034, 1],
+    ['cFringeBend','가시 휨',        0.00, 1.60, 0.02, 0.50, 1],
+    ['cFringeSpan','가시 퍼짐 각도', 0.20, 1.80, 0.02, 0.95, 1],
+    ['cWhisker',   '긴 가시 개수',   0, 16, 1, 5, 1],
+    ['cWhiskerLen','긴 가시 길이',   0.05, 0.40, 0.01, 0.18, 1],
     ['cSpeck',     '떨어진 반점 수', 0, 30, 1, 8, 1],
     ['cSpeckR',    '반점 크기',      0.0008, 0.0080, 0.0002, 0.0022, 1],
     ['cJitter',    '불규칙성',       0.00, 2.00, 0.02, 1.00, 1],
   ]],
   ['먹물', [
+    ['pSharp',    '얇은 세부 살리기',   0.00, 1.00, 0.02, 0.84],
     ['pSoft',     '내부 전이대',        0.005, 0.120, 0.001, 0.030],
     ['pDScale',   '거리장 배율',        0.10, 1.60, 0.02, 0.52],
     ['pErode',    '가장자리 침식',      0.00, 3.50, 0.01, 1.00],
@@ -376,8 +387,10 @@ function rng(seed) {
 function conceptParams(f) {
   const social = f.agency + f.sociality;
   return {
-    // 덩어리 두께 — 구상어가 두껍다
-    thickK: 0.55 + f.concreteness * 0.90,
+    // 덩어리 두께 — 구상어가 두껍다.
+    // 바닥을 높게 잡는다. 층 축소와 난수가 겹치면 실효 두께가 절반으로
+    // 줄어 추상어의 덩어리가 얇은 초승달처럼 보인다.
+    thickK: 0.78 + f.concreteness * 0.62,
     // 덩어리 호 폭 — 관계성이 큰 개념이 넓게 퍼진다
     spanK: 0.60 + f.sociality * 0.80,
     // 바깥으로 치우치는 정도 — 강도
@@ -476,8 +489,8 @@ function disc(c, r, out, n = 8) {
 // 방사로 뻗으면 원이 읽히지 않고 바퀴살처럼 보인다.
 function fringe(at, outAng, count, len, wide, bend, rnd, out) {
   for (let i = 0; i < count; i++) {
-    const a = outAng + (rnd() - 0.5) * 1.5;
-    const L = len * (0.35 + rnd() * rnd() * 1.5);
+    const a = outAng + (rnd() - 0.5) * 0.5;
+    const L = len * (0.6 + rnd() * 0.8);
     const b = (rnd() - 0.5) * bend;
     const tip = [at[0] + Math.cos(a) * L, at[1] + Math.sin(a) * L];
     const mid = [at[0] + Math.cos(a + b) * L * 0.55, at[1] + Math.sin(a + b) * L * 0.55];
@@ -528,7 +541,8 @@ function ringGeometry(rnd, out, R = val.pR, wScale = 1) {
   for (let i = 0; i < val.cDouble; i++) {
     const span = 0.5 + rnd() * 2.4;
     const st = rnd() * Math.PI * 2;
-    const off = (rnd() < 0.5 ? -1 : 1) * val.cDoubleGap * (0.7 + rnd() * 0.8);
+    // 주로 바깥쪽에 둔다. 링 안쪽을 비우는 방침 때문이다.
+    const off = (rnd() < 0.2 ? -0.5 : 1) * val.cDoubleGap * (0.7 + rnd() * 0.8);
     const pts = arcPts(R + off, st, span, (rnd() - 0.5) * 0.012 * J,
                        Math.max(18, Math.round(span * 34)));
     strip(pts, profile(pts.length, val.pRingBase * wScale * (0.30 + rnd() * 0.45),
@@ -553,18 +567,26 @@ function bloomAt(word, angle, out, ctx) {
   const nIn = Math.max(1, ctx.n ?? 1);
   const bud = Math.pow(nIn, -val.cBudget);
 
+  // 덩어리의 호 범위를 먼저 정한다. 가시가 이 범위 전체에 돋아나야 한다.
+  const span0 = val.cBloomSpan * o.spanK;
+  const st0 = angle - span0 * 0.5;
+  // 링 바깥 면. 덩어리와 가시는 모두 이 선 밖에만 존재한다 —
+  // 링 안쪽에는 아무것도 두지 않는다.
+  const surf = R + val.pRingBase * 0.5;
+
   const layers = val.cLayers;
   let peak = null, peakAng = angle;
 
   for (let k = 0; k < layers; k++) {
     const sk = (1 - k * 0.24) * dk;
-    const span = val.cBloomSpan * o.spanK * (0.70 + rnd() * 0.55) * sk;
-    const st = angle - span * (0.4 + rnd() * 0.2) + (rnd() - 0.5) * 0.12 * J;
-    // 바깥으로 살짝 치우쳐 부풀어오른다. 안쪽으로는 거의 번지지 않는다.
-    const out0 = val.cBloomThick * val.cBloomOut * o.outK * (0.6 + rnd() * 0.7);
-    const nn = Math.max(16, Math.round(span * 44));
-    const pts = arcPts(R + out0 * 0.45, st, span, out0 * (0.5 + rnd() * 0.6), nn);
+    const span = span0 * (0.70 + rnd() * 0.55) * sk;
+    const st = st0 + (rnd() - 0.5) * span0 * 0.30 * J;
     const thick = val.cBloomThick * o.thickK * sk * (0.7 + rnd() * 0.5);
+    // 중심선을 링 바깥으로 thick/2 만큼 밀어 안쪽 경계가 링에 닿게 한다.
+    // 안쪽으로 부풀면 원 안이 더러워진다.
+    const bow = val.cBloomThick * val.cBloomOut * o.outK * (0.3 + rnd() * 0.6);
+    const nn = Math.max(16, Math.round(span * 44));
+    const pts = arcPts(surf + thick * 0.44, st, span, bow, nn);
     const w = profile(pts.length, thick, val.pRingBase * 0.5, 'bloom', rnd, J * 0.7);
     if (rnd() < 0.5) w.reverse();
     strip(pts, w, out);
@@ -575,58 +597,82 @@ function bloomAt(word, angle, out, ctx) {
     }
   }
 
-  // 털 — 덩어리에서 바깥으로. 가늘고 짧다.
+  // ── 가시 ──
+  // 참고 이미지의 덩어리에는 가시가 수십 개 돋아 있다. 덩어리만 있으면
+  // 매끈한 초승달처럼 보인다. 가시가 덩어리의 호 전체에 걸쳐 나야 한다 —
+  // 한 각도에서만 나면 붓 하나가 튄 것처럼 보인다.
+  //
+  // 방향은 항상 바깥쪽 반구 안이다. 안쪽으로 뻗으면 원 안이 더러워진다.
   const fCount = Math.round(val.cFringe * o.fringeK * bud * dk);
   const fLen = val.cFringeLen * o.fringeLenK * dk;
-  const spread = val.cBloomSpan * o.spanK * 0.5;
   for (let i = 0; i < fCount; i++) {
-    const a = angle + (rnd() - 0.5) * spread * 2;
-    const root = [Math.cos(a) * (R + val.cBloomThick * 0.25), Math.sin(a) * (R + val.cBloomThick * 0.25)];
-    fringe(root, a, 1, fLen, val.cFringeFine, val.cFringeBend, rnd, out);
+    // 호를 따라 고르게 퍼뜨리고 약간 흩는다
+    const t = (i + 0.5) / fCount + (rnd() - 0.5) * (1 / fCount);
+    const a = st0 + span0 * Math.min(1, Math.max(0, t));
+    const rootR = surf + val.cBloomThick * (0.25 + rnd() * 0.55);
+    const root = [Math.cos(a) * rootR, Math.sin(a) * rootR];
+    // 반경 방향에서 ±(퍼짐/2) 안으로만. 90°를 넘기지 않으니 항상 바깥이다.
+    const dir = a + (rnd() - 0.5) * Math.min(val.cFringeSpan, 2.6);
+    fringe(root, dir, 1, fLen * (0.55 + rnd() * 0.9),
+           val.cFringeFine, val.cFringeBend, rnd, out);
   }
 
-  // 떨어진 반점
+  // 긴 가시 — 몇 개만 길게 뻗는다. 참고 이미지의 더듬이 같은 획.
+  const wN = Math.round(val.cWhisker * o.fringeK * bud);
+  for (let i = 0; i < wN; i++) {
+    const a = st0 + span0 * rnd();
+    const rootR = surf + val.cBloomThick * 0.4;
+    const root = [Math.cos(a) * rootR, Math.sin(a) * rootR];
+    const dir = a + (rnd() - 0.5) * Math.min(val.cFringeSpan * 1.2, 2.6);
+    fringe(root, dir, 1, val.cWhiskerLen * dk * (0.6 + rnd() * 0.7),
+           val.cFringeFine * 1.25, val.cFringeBend * 0.7, rnd, out);
+  }
+
+  // 떨어진 반점 — 바깥으로만
   if (peak) {
     specks(peak, peakAng, Math.round(val.cSpeck * o.speckK * bud),
            fLen * 1.6, val.cSpeckR * dk, rnd, out);
   }
 
-  // 작은 닫힌 고리 — 생물성
+  // 작은 닫힌 고리 — 생물성. 링 바깥에 둔다.
   if (o.loop) {
-    const la = angle + spread * 0.9;
-    const lr = R + val.cBloomThick * 1.1;
-    const c0 = [Math.cos(la) * lr, Math.sin(la) * lr];
+    const la = st0 + span0 * (0.15 + rnd() * 0.7);
     const rr = 0.020 * dk;
+    const lr = surf + val.cBloomThick * 0.9 + rr;
+    const c0 = [Math.cos(la) * lr, Math.sin(la) * lr];
     const ring = arcPts(rr, 0, Math.PI * 2, 0, 18).map((q) => [q[0] + c0[0], q[1] + c0[1]]);
     strip(ring, profile(ring.length, val.pRingBase * 0.8, val.pRingBase * 0.8, 'flat', rnd, J), out);
   }
 
-  // 겹선 — 덩어리 옆을 따라 한 번 더
+  // 겹선 — 덩어리 옆을 따라 한 번 더. 바깥쪽으로만.
   const dN = Math.round(val.cDouble * o.doubleK * bud);
   for (let i = 0; i < dN; i++) {
-    const span = spread * (1.2 + rnd() * 1.6);
-    const st = angle - span * 0.5;
-    const off = val.cDoubleGap * (rnd() < 0.5 ? -1 : 1) * (0.8 + rnd());
-    const pts = arcPts(R + off, st, span, 0, Math.max(14, Math.round(span * 34)));
+    const span = span0 * (0.7 + rnd() * 0.9);
+    const st = st0 - span * 0.15;
+    const off = val.cDoubleGap * (0.8 + rnd());
+    const pts = arcPts(surf + off, st, span, 0, Math.max(14, Math.round(span * 34)));
     strip(pts, profile(pts.length, val.pRingBase * 0.55, 0.0004, 'lens', rnd, J), out);
   }
 }
 
 // ── 이름의 음절 나선 — 순서를 각도가 아니라 반경에 인코딩 ──
+// 원래는 안쪽으로 감겨 들어갔으나, 링 안쪽을 비우기로 했으므로 바깥으로
+// 감아 나간다. 순서를 반경에 담는다는 원리(스펙 9.2)는 그대로다.
 function nameSpiral(angle, count, seedKey, out, ctx = {}) {
   const rnd = rng(fnv1a(seedKey));
   const depth = ctx.depth ?? 0;
   const R = (ctx.R ?? val.pR) * (1 - depth * 0.16);
   const J = val.cJitter;
-  const step = Math.min(0.20, 0.55 / count);
+  const surf = R + val.pRingBase * 0.5;
+  const step = val.cBloomThick * 0.95;
   for (let i = 0; i < count; i++) {
-    const r = R * (1 - i * step), a = angle + i * 0.13;
-    const span = val.cBloomSpan * 0.5 * (1 - i * 0.12);
-    const pts = arcPts(r, a - span * 0.5, span, val.cBloomThick * 0.3, 20);
-    strip(pts, profile(pts.length, val.cBloomThick * (0.55 - i * 0.09), val.pRingBase * 0.5,
-                       'bloom', rnd, J * 0.7), out);
+    const r = surf + i * step, a = angle + i * 0.13;
+    const span = val.cBloomSpan * 0.5 * (1 - i * 0.10);
+    const thick = val.cBloomThick * (0.55 - i * 0.08);
+    const pts = arcPts(r + thick * 0.44, a - span * 0.5, span, val.cBloomThick * 0.25, 20);
+    strip(pts, profile(pts.length, thick, val.pRingBase * 0.5, 'bloom', rnd, J * 0.7), out);
     const mid = pts[Math.floor(pts.length * 0.5)];
-    fringe(mid, Math.atan2(mid[1], mid[0]), Math.round(val.cFringe * 0.28),
+    fringe(mid, Math.atan2(mid[1], mid[0]), Math.round(val.cFringe * 0.22),
            val.cFringeLen * 0.7, val.cFringeFine, val.cFringeBend, rnd, out);
   }
 }
