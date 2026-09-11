@@ -17,8 +17,8 @@
     <div class="bar b"></div>
   </div>
   <div class="cap">
-    SDF + 도메인 워프 fbm · 실시간 셰이더 · 링에 12시(행위) · 2시(주체) · 8시(대상) 획<br>
-    <span style="opacity:.7">스페이스 — 일렁임 정지 / 재생 &nbsp;·&nbsp; S — 지금 화면을 PNG로 저장</span>
+    획 자체가 먹물 · 넓고 불규칙한 획 · 붓털처럼 갈라진 끝 · 결을 따르는 비등방 노이즈<br>
+    <span style="opacity:.7">스페이스 — 정지 / 재생 &nbsp;·&nbsp; G — 12분할 격자 &nbsp;·&nbsp; S — PNG 저장</span>
   </div>
 </div>
 
@@ -27,6 +27,7 @@ precision highp float;
 out vec4 outColor;
 uniform vec2 uRes;
 uniform float uT;
+uniform float uGrid;
 
 // ── 노이즈 ──
 vec2 hash2(vec2 p){
@@ -65,138 +66,180 @@ vec2 bez(vec2 a, vec2 b, vec2 c, float t){
   float u = 1.0 - t;
   return u*u*a + 2.0*u*t*b + t*t*c;
 }
-// 굵기가 줄어드는 획
+// 굵기가 줄어드는 넓은 획
 float sdBranch(vec2 p, vec2 a, vec2 b, vec2 c, float w0, float w1){
   float d = 1e9;
   vec2 prev = a;
-  for (int i = 1; i <= 12; i++){
-    float t = float(i) / 12.0;
+  for (int i = 1; i <= 9; i++){
+    float t = float(i) / 9.0;
     vec2 cur = bez(a, b, c, t);
     d = min(d, sdSeg(p, prev, cur, mix(w0, w1, t)));
     prev = cur;
   }
   return d;
 }
+// 붓털처럼 갈라진 끝 — 가는 가지가 부챗살로 퍼진다
+float sdSplay(vec2 p, vec2 at, float baseAng, float len, float spread, float w){
+  float d = 1e9;
+  for (int i = 0; i < 5; i++){
+    float f = (float(i) - 2.0) / 2.0;            // -1 .. 1
+    float a = baseAng + f * spread;
+    float L = len * (0.55 + 0.45 * (1.0 - abs(f)));
+    d = min(d, sdSeg(p, at, at + vec2(cos(a), sin(a)) * L, w));
+  }
+  return d;
+}
 
-const float R = 0.60;
+const float R = 0.58;
+
+// 링 굵기 — 사인파가 아니라 노이즈로. 극단적으로 변한다.
+// 첨부 스크린샷의 획은 가장 두꺼운 곳이 반경의 8~9%에 달하고
+// 가는 곳은 그 1/4도 안 된다.
+float ringW(float ang){
+  vec2 u = vec2(cos(ang), sin(ang));
+  float a = fbm(u * 2.4 + vec2(7.0, 3.0), 4);
+  float b = fbm(u * 6.0 + vec2(23.0, 11.0), 3);
+  float c = fbm(u * 14.0 + vec2(51.0, 31.0), 2);
+  return clamp(0.0320 + a * 0.052 + b * 0.024 + c * 0.010, 0.0085, 0.0560);
+}
 
 float sdShape(vec2 p){
-  // 주 링 — 각도에 따라 굵기 변조 (굴절)
   float ang = atan(p.y, p.x);
-  float w = 0.0215
-          + 0.0115 * sin(ang * 3.0 + 0.7)
-          + 0.0056 * sin(ang * 7.0 + 2.1)
-          + 0.0026 * sin(ang * 13.0 - 1.1);
-  float d = abs(length(p) - R) - w;
+  float d = abs(length(p) - R) - ringW(ang);
 
-  // 12시 · 행위 — 가장 크고 굵은 획
-  d = min(d, sdBranch(p, vec2(0.000, 0.600), vec2(0.115, 0.905), vec2(0.330, 0.830), 0.0295, 0.0035));
-  d = min(d, sdBranch(p, vec2(0.060, 0.598), vec2(0.180, 0.735), vec2(0.315, 0.700), 0.0120, 0.0022));
+  // 링 자체가 완벽한 원이 아니다 — 저주파로 살짝 찌그러뜨린다
+  // (반경 변조는 위 length(p) 대신 아래 항으로 보정)
+  d -= fbm(vec2(cos(ang), sin(ang)) * 1.8 + 61.0, 3) * 0.020;
 
-  // 2시 · 주체
-  d = min(d, sdBranch(p, vec2(0.520, 0.300), vec2(0.760, 0.415), vec2(0.800, 0.215), 0.0215, 0.0028));
+  // ── 12시 · 행위 — 가장 넓고 굵은 획 ──
+  d = min(d, sdBranch(p, vec2(-0.055, 0.560), vec2(0.090, 0.905), vec2(0.330, 0.815), 0.0560, 0.0075));
+  d = min(d, sdBranch(p, vec2( 0.055, 0.575), vec2(0.195, 0.740), vec2(0.340, 0.690), 0.0250, 0.0045));
+  d = min(d, sdSplay(p, vec2(0.330, 0.815), 0.55, 0.115, 0.85, 0.0055));
+  d = min(d, sdSplay(p, vec2(0.340, 0.690), 0.10, 0.075, 0.95, 0.0040));
 
-  // 8시 · 대상
-  d = min(d, sdBranch(p, vec2(-0.520, -0.300), vec2(-0.785, -0.395), vec2(-0.720, -0.605), 0.0235, 0.0030));
+  // ── 2시 · 주체 ──
+  d = min(d, sdBranch(p, vec2(0.485, 0.300), vec2(0.755, 0.420), vec2(0.795, 0.205), 0.0445, 0.0060));
+  d = min(d, sdSplay(p, vec2(0.795, 0.205), -1.15, 0.100, 0.90, 0.0048));
 
-  // 접선 호 — 링을 따라 감기는 렌즈형
-  d = min(d, sdBranch(p, vec2(0.300, 0.545), vec2(0.500, 0.430), vec2(0.585, 0.230), 0.0075, 0.0075));
-  d = min(d, sdBranch(p, vec2(-0.590, 0.190), vec2(-0.660, -0.030), vec2(-0.575, -0.235), 0.0068, 0.0068));
+  // ── 8시 · 대상 ──
+  d = min(d, sdBranch(p, vec2(-0.490, -0.300), vec2(-0.790, -0.390), vec2(-0.700, -0.615), 0.0480, 0.0062));
+  d = min(d, sdSplay(p, vec2(-0.700, -0.615), -1.30, 0.105, 0.95, 0.0050));
 
-  // 잉크 뭉침
-  d = min(d, length(p - vec2(0.330, 0.830)) - 0.0155);
-  d = min(d, length(p - vec2(0.800, 0.215)) - 0.0110);
-  d = min(d, length(p - vec2(-0.720, -0.605)) - 0.0125);
+  // ── 접선 호 — 링을 따라 감기는 넓은 덩어리 ──
+  d = min(d, sdBranch(p, vec2(0.270, 0.530), vec2(0.495, 0.415), vec2(0.575, 0.215), 0.0175, 0.0175));
+  d = min(d, sdBranch(p, vec2(-0.575, 0.195), vec2(-0.655, -0.025), vec2(-0.565, -0.230), 0.0155, 0.0155));
 
-  // 작은 고리 (생물성 표지)
-  d = min(d, abs(length(p - vec2(0.430, 0.640)) - 0.033) - 0.0052);
+  // ── 작은 고리 (생물성 표지) ──
+  d = min(d, abs(length(p - vec2(0.425, 0.625)) - 0.034) - 0.0090);
 
   return d;
 }
 
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
-  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;   // y 위쪽이 +
+  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
   p *= 1.62;
 
   float d = sdShape(p);
 
+  // ── 획의 결 방향 ──
+  // 먹물은 획을 따라 끌린다. 결을 만들려면 획의 접선 방향을 알아야 한다.
+  // 형태 근처에서만 SDF 기울기를 구한다 (비용 절감).
+  vec2 tang = vec2(1.0, 0.0);
+  if (d < 0.13) {
+    float e = 0.0016;
+    vec2 g = vec2(sdShape(p + vec2(e, 0.0)) - sdShape(p - vec2(e, 0.0)),
+                  sdShape(p + vec2(0.0, e)) - sdShape(p - vec2(0.0, e)));
+    if (length(g) > 1e-6) { g = normalize(g); tang = vec2(-g.y, g.x); }
+  }
+  vec2 nrm = vec2(-tang.y, tang.x);
+  // 결을 따라 늘어난 좌표계 — 획 방향으로는 완만하게, 가로로는 촘촘하게
+  vec2 pa = vec2(dot(p, tang) * 3.2, dot(p, nrm) * 26.0);
+
   // ── 도메인 워프 ──
-  // 저주파 워프 — 전체 형태를 크게 밀어 덩어리를 비틀어 놓는다
   vec2 w1 = vec2(fbm(p * 2.2 + vec2(11.3, 4.1) + uT * 0.030, 4),
                  fbm(p * 2.2 + vec2(27.7, 19.2) - uT * 0.024, 4));
-  // 중주파 워프 — 실오라기의 흐름 방향
-  vec2 w2 = vec2(fbm(p * 5.0 + w1 * 1.1 + vec2(3.1, 51.7) + uT * 0.06, 4),
-                 fbm(p * 5.0 + w1 * 1.1 + vec2(41.9, 7.3) - uT * 0.05, 4));
+  vec2 w2 = vec2(fbm(p * 5.0 + w1 * 1.1 + vec2(3.1, 51.7) + uT * 0.055, 4),
+                 fbm(p * 5.0 + w1 * 1.1 + vec2(41.9, 7.3) - uT * 0.045, 4));
 
-  float nLow  = fbm(p * 2.4 + w1 * 0.9, 4);                 // 큰 덩어리 밀도
-  float nMid  = fbm(p * 8.5 + w2 * 2.2, 5);                 // 결
-  float nHi   = fbm(p * 21.0 + w2 * 3.4, 4);                // 가장자리 보풀
-  float nFil  = fbm(p * 15.0 + w2 * 5.0 + nLow * 2.2, 5);   // 필라멘트
+  float nLow  = fbm(p * 2.4 + w1 * 0.9, 4);
+  float nMid  = fbm(p * 8.5 + w2 * 2.2, 5);
+  float nHi   = fbm(p * 21.0 + w2 * 3.4, 4);
+  float nFil  = fbm(p * 15.0 + w2 * 5.0 + nLow * 2.2, 5);
+  // 결 — 획을 따라 흐르는 먹물 줄무늬
+  float nGrain = fbm(pa + w2 * 2.0, 5);
 
-  // ── 밀도 층 ──
-  // 형태 바깥 거리. 감쇠는 smoothstep이 아니라 지수로 — 연기는 경계가 없다.
   float od = max(0.0, d);
 
-  // 1) 코어 — 좁은 전이대 + 중고주파 침식으로 가장자리를 찢는다.
-  //    저주파 진폭을 크게 주면 덩어리가 떨어져 종이 찢은 것처럼 보인다.
-  float edge = nLow * 0.030 + nMid * 0.042 + nHi * 0.026;
-  float core = smoothstep(0.008, -0.015, d + edge);
+  // ── 획 자체를 먹물로 만든다 ──
+  // 핵심: 깨끗한 도형을 만들고 그 위에 아지랑이를 덮는 게 아니다.
+  // 획의 내부 밀도가 처음부터 불균일해야 한다 — 짙은 심, 옅은 구멍, 결.
+  float interior = smoothstep(0.010, -0.030, d + nMid * 0.022 + nHi * 0.014);
 
-  // 2) 볼륨 — 형태에 바짝 붙은 지수 감쇠에 저주파 밀도를 실어 깊이를 만든다
-  float vol = exp(-od * 16.0) * (0.30 + 0.70 * n01(nLow));
+  // 먹물의 농담. 대비를 강하게 줘서 획 안에 심과 구멍이 생긴다.
+  float substance = n01(nGrain * 1.35 + nLow * 0.55);
+  substance = pow(substance, 0.70);
 
-  // 3) 실오라기 — 임계값으로 자르지 않고 부드러운 램프로 능선을 살린다.
-  //    감쇠를 조여서 형태 근처에만 머물게 한다
+  // 획 몸통 — 완전히 채우지 않되 바닥을 높게 잡는다.
+  // 바닥이 낮으면 구멍이 너무 커져서 형태를 읽을 수 없다.
+  float body = interior * (0.62 + 0.38 * substance);
+
+  // 짙은 심 — 획 중앙부에서 결이 겹치는 자리
+  float coreInk = smoothstep(-0.004, -0.030, d) * smoothstep(0.34, 0.86, substance);
+
+  // 가장자리 보풀 — 획 경계가 먹물로 풀어진다
+  float fray = pow(smoothstep(0.26, 0.92, n01(nHi)), 1.4) * exp(-od * 34.0);
+
+  // 실오라기 — 결 방향으로 뻗는다
   float wisp = pow(smoothstep(0.38, 0.96, n01(nFil)), 1.45) * exp(-od * 13.0);
 
-  // 4) 긴 연기 기둥 — 각도별 게이트로 몇 군데에서만 멀리 뻗는다.
-  //    전 방향에 균일하게 깔면 먼지처럼 보이고 링의 존재감이 죽는다.
+  // 긴 연기 기둥 — 각도별 게이트로 몇 군데에서만 멀리 뻗는다
   vec2 dir = normalize(p + vec2(1e-5));
   float gate = n01(fbm(dir * 2.3 + vec2(17.0, 5.0), 3));
   float plume = pow(smoothstep(0.44, 1.00, n01(nFil)), 1.2)
               * exp(-od * 4.2)
               * smoothstep(0.46, 0.88, gate);
 
-  // 5) 미립자 — 가장자리 보풀
-  float dust = pow(smoothstep(0.52, 1.00, n01(nHi)), 2.1) * exp(-od * 9.0);
-
-  // 알파 누적(over). 더해서 clamp하면 포화 지점에 경계가 생긴다.
+  // 알파 누적(over)
   float dens = 1.0
-    - (1.0 - core)
-    * (1.0 - vol   * 0.62)
-    * (1.0 - wisp  * 0.90)
-    * (1.0 - plume * 0.62)
-    * (1.0 - dust  * 0.34);
+    - (1.0 - body)
+    * (1.0 - coreInk * 0.86)
+    * (1.0 - fray   * 0.70)
+    * (1.0 - wisp   * 0.62)
+    * (1.0 - plume  * 0.50);
 
-  // 위쪽이 더 흩어지게 (잉크가 물에서 떠오르듯)
-  dens *= 1.0 - smoothstep(0.24, 1.05, p.y) * 0.32;
-
-  // 저주파 소실 — 링의 일부가 안개에 먹혀 사라진다.
-  // 이게 없으면 밀도가 균일해서 그려 넣은 도형처럼 보인다.
-  dens *= 0.58 + 0.42 * n01(fbm(p * 1.45 + vec2(41.0, 13.0) + uT * 0.018, 3));
+  // 위쪽이 더 흩어지게
+  dens *= 1.0 - smoothstep(0.34, 1.05, p.y) * 0.18;
+  // 저주파 소실 — 획의 일부가 안개에 먹힌다.
+  // 너무 세게 걸면 형태 전체가 유령처럼 사라진다.
+  dens *= 0.80 + 0.20 * n01(fbm(p * 1.45 + vec2(41.0, 13.0) + uT * 0.018, 3));
 
   // ── 배경 안개 ──
   float band = uv.y;
   vec3 bg = mix(vec3(0.335, 0.384, 0.390), vec3(0.612, 0.655, 0.652), smoothstep(0.04, 0.66, band));
   bg = mix(bg, vec3(0.470, 0.512, 0.514), smoothstep(0.72, 0.99, band));
-  float fog = fbm(p * 1.15 + vec2(7.0, 2.0) + uT * 0.02, 4);
-  bg += fog * 0.075;
-  // 아래쪽 수면
+  bg += fbm(p * 1.15 + vec2(7.0, 2.0) + uT * 0.02, 4) * 0.075;
   bg = mix(bg, vec3(0.250, 0.284, 0.292), smoothstep(0.950, 0.996, band));
 
-  // 순수 검정이 아니라 탈색된 청록 계열. 영화의 잉크는 회색에 가깝다.
-  vec3 ink = vec3(0.088, 0.108, 0.112);
+  // 12분할 격자 (개발자 뷰)
+  if (uGrid > 0.5) {
+    float ang = atan(p.y, p.x) + 1.5707963;
+    float seg = ang / (3.14159265 / 6.0);
+    float line = abs(fract(seg) - 0.5);
+    float g1 = smoothstep(0.016, 0.0, line) * smoothstep(0.86, 0.80, length(p));
+    float dash = step(0.5, fract(length(p) * 46.0));
+    bg = mix(bg, vec3(0.72, 0.74, 0.72), g1 * dash * 0.55);
+  }
+
+  // 순수 검정이 아니라 탈색된 청록 계열
+  vec3 ink = vec3(0.062, 0.079, 0.083);
+  // 짙은 심은 조금 더 어둡게 — 먹물의 농담
+  ink = mix(ink, vec3(0.026, 0.036, 0.040), clamp(coreInk, 0.0, 1.0));
 
   vec3 col = mix(bg, ink, dens);
 
-  // 안개가 잉크 앞을 지나가는 느낌 — 부분적으로 배경색을 되섞음
-  float haze = fbm(p * 1.7 + vec2(19.0, 31.0) - uT * 0.045, 4) * 0.5 + 0.5;
-  col = mix(col, bg, haze * 0.17 * dens);
-
-  // 아주 약한 주변 감광
+  // 주변 감광
   col *= 1.0 - 0.16 * smoothstep(0.55, 1.35, length(p * vec2(0.62, 1.0)));
-
   // 필름 그레인
   col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.016;
 
@@ -236,13 +279,15 @@ gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
 const uRes = gl.getUniformLocation(prog, 'uRes');
 const uT = gl.getUniformLocation(prog, 'uT');
+const uGrid = gl.getUniformLocation(prog, 'uGrid');
 
-let T = 3.7;
+let T = 3.7, grid = 0;
 
 function draw(t) {
   gl.viewport(0, 0, cvs.width, cvs.height);
   gl.uniform2f(uRes, cvs.width, cvs.height);
   gl.uniform1f(uT, t);
+  gl.uniform1f(uGrid, grid);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
@@ -254,21 +299,20 @@ function resize() {
   draw(T);
 }
 
-// 캔버스 CSS 높이를 16:9로 고정
 cvs.style.aspectRatio = '16 / 9';
 new ResizeObserver(resize).observe(cvs);
 resize();
 
-// 열어서 보면 연기가 아주 느리게 일렁인다
 let animating = true;
 const t0 = performance.now();
 (function loop() {
   if (animating) { T = 3.7 + (performance.now() - t0) / 1000; draw(T); }
   requestAnimationFrame(loop);
 })();
+
 window.addEventListener('keydown', (e) => {
   if (e.key === ' ') { animating = !animating; e.preventDefault(); }
-  // S — 지금 화면을 PNG로 저장
+  if (e.key === 'g' || e.key === 'G') { grid = grid > 0.5 ? 0 : 1; draw(T); }
   if (e.key === 's' || e.key === 'S') {
     draw(T);
     const a = document.createElement('a');
