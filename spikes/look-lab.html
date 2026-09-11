@@ -231,30 +231,32 @@ void main(){
 // geo:true = 골격 형상을 바꾸므로 삼각형을 다시 만들어야 한다.
 // 이 목록이 곧 계획 1의 획 어휘 명세가 된다. 하드코딩하지 않는다.
 const P = [
-  ['골격', [
-    ['pR',        '링 반경',       0.35, 0.75, 0.005, 0.440, 1],
-    ['pRingBase', '링 굵기 기준',  0.004, 0.090, 0.001, 0.018, 1],
-    ['pRingAmp',  '링 굵기 변조',  0.000, 0.090, 0.001, 0.039, 1],
-    ['pWobble',   '링 찌그러짐',   0.000, 0.070, 0.001, 0.030, 1],
+  ['링', [
+    ['pR',        '링 반경',        0.35, 0.75, 0.005, 0.450, 1],
+    ['pRingBase', '링 굵기',        0.003, 0.030, 0.0005, 0.0105, 1],
+    ['pRingAmp',  '링 굵기 변화',   0.000, 0.025, 0.0005, 0.0060, 1],
+    ['pWobble',   '링 찌그러짐',    0.000, 0.060, 0.001, 0.018, 1],
+    ['cGaps',     '링 끊김 수',     0, 3, 1, 1, 1],
+    ['cGapSize',  '끊김 크기',      0.01, 0.30, 0.005, 0.045, 1],
+    ['cDouble',   '겹선 수',        0, 4, 1, 1, 1],
+    ['cDoubleGap','겹선 간격',      0.003, 0.030, 0.001, 0.010, 1],
   ]],
-  ['복잡도', [
-    ['cBudget',  '복잡도 예산',       0.00, 1.20, 0.05, 0.70, 1],
-    ['cFill',    '쓸기 채움',         0.60, 2.60, 0.05, 1.40, 1],
-    ['cSweep',    '쓸기 덩어리 세기',  0.00, 2.20, 0.02, 1.06, 1],
-    ['cSweepSpan','쓸기 폭(몫의 배수)', 0.10, 1.60, 0.02, 0.86, 1],
-    ['cBlade',   '뻗는 획 굵기',      0.00, 2.60, 0.02, 0.70, 1],
-    ['cBladeN',  '획 겹침 수',        1, 4, 1, 3, 1],
-    ['cFlick',   '곁가지 수',         0, 10, 1, 5, 1],
-    ['cSplat',   '스플래터 가시 수',  0, 32, 1, 9, 1],
-    ['cSplatLen','스플래터 길이',     0.02, 0.30, 0.005, 0.035, 1],
-    ['cSpeck',   '떨어진 반점 수',    0, 34, 1, 24, 1],
-    ['cDry',     '드라이브러시 선 수', 0, 12, 1, 4, 1],
-    ['cDryGap',  '드라이브러시 간격', 0.002, 0.030, 0.001, 0.013, 1],
-    ['cDryLen',  '드라이브러시 길이', 0.10, 1.60, 0.02, 1.14, 1],
-    ['cOverlay', '링 겹침 호 수',     0, 10, 1, 3, 1],
-    ['cGaps',    '링 끊김 수',        0, 6, 1, 4, 1],
-    ['cGapSize', '끊김 크기',         0.02, 0.60, 0.01, 0.02, 1],
-    ['cJitter',  '불규칙성',          0.00, 2.00, 0.02, 2.00, 1],
+  ['먹물 덩어리', [
+    ['cZones',     '덩어리 수',      1, 5, 1, 2, 1],
+    ['cBloomSpan', '덩어리 호 폭',   0.10, 1.60, 0.02, 0.78, 1],
+    ['cBloomThick','덩어리 두께',    0.01, 0.16, 0.002, 0.078, 1],
+    ['cBloomOut',  '덩어리 바깥 치우침', 0.00, 1.00, 0.02, 0.42, 1],
+    ['cLayers',    '덩어리 겹침 수', 1, 5, 1, 3, 1],
+    ['cBudget',    '복잡도 예산',    0.00, 1.20, 0.05, 0.70, 1],
+  ]],
+  ['털 · 반점', [
+    ['cFringe',    '털 개수',        0, 60, 1, 34, 1],
+    ['cFringeLen', '털 길이',        0.01, 0.20, 0.005, 0.080, 1],
+    ['cFringeFine','털 굵기',        0.0008, 0.0080, 0.0002, 0.0026, 1],
+    ['cFringeBend','털 휨',          0.00, 1.60, 0.02, 0.55, 1],
+    ['cSpeck',     '떨어진 반점 수', 0, 30, 1, 8, 1],
+    ['cSpeckR',    '반점 크기',      0.0008, 0.0080, 0.0002, 0.0022, 1],
+    ['cJitter',    '불규칙성',       0.00, 2.00, 0.02, 1.00, 1],
   ]],
   ['먹물', [
     ['pSoft',     '내부 전이대',        0.005, 0.120, 0.001, 0.030],
@@ -351,34 +353,8 @@ const MINI_LEX = {
 const NEUTRAL_F = F(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
 const featureOf = (w) => MINI_LEX[w] ?? NEUTRAL_F;
 
-// ── 자질 → 획 파라미터 ──
-// 계획 1의 render/mapping.ts 프로토타입이다. 여기서 확정된 식이 그대로 명세가 된다.
-// 원칙 2를 지키려면 8개 자질이 모두 어딘가에 도달해야 한다.
-function conceptParams(f) {
-  const social = f.agency + f.sociality;
-  return {
-    // 추상어는 얇고 길게, 구상어는 굵고 짧게 (스펙 8.4)
-    reach: (0.16 + f.intensity * 0.26) * (1.25 - f.concreteness * 0.5),
-    w: 0.026 + f.concreteness * 0.042,
-    curl: (f.valence - 0.5) * 2.0,
-    // 쓸기 덩어리 — 관계성이 큰 개념이 넓게 쓴다
-    sweepK: 0.55 + f.sociality * 0.85,
-    sweepSpanK: 0.60 + f.sociality * 0.70,
-    // 스플래터 — 행위성
-    splatK: 0.35 + social * 0.55,
-    // 곁가지 — 관계성
-    flickK: 0.30 + f.sociality * 1.10,
-    // 떨어진 반점 — 한정성이 낮을수록 흩어진다
-    speckK: 0.35 + (1 - f.boundedness) * 1.20,
-    // 드라이브러시 — 시간성. 겹쳐 지나간 결
-    dryK: 0.40 + f.temporality * 1.10,
-    // 부속 고리 — 생물성
-    loop: f.animacy >= 0.5,
-    // 링 굵기 변조 주파수 — 시간성
-    harmonic: 2 + Math.round(f.temporality * 6),
-  };
-}
-
+// ── 결정성 토대 ──
+// src/core/hash.ts 와 같은 구현. 시드가 같으면 형태가 같다 (원칙 1).
 function fnv1a(s) {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
@@ -386,13 +362,44 @@ function fnv1a(s) {
 }
 function rng(seed) {
   let a = seed >>> 0;
-  return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ── 자질 → 조형 파라미터 ──
+// 계획 1의 render/mapping.ts 프로토타입이다. 여기서 확정된 식이 그대로 명세가 된다.
+// 원칙 2를 지키려면 8개 자질이 모두 어딘가에 도달해야 한다.
+function conceptParams(f) {
+  const social = f.agency + f.sociality;
+  return {
+    // 덩어리 두께 — 구상어가 두껍다
+    thickK: 0.55 + f.concreteness * 0.90,
+    // 덩어리 호 폭 — 관계성이 큰 개념이 넓게 퍼진다
+    spanK: 0.60 + f.sociality * 0.80,
+    // 바깥으로 치우치는 정도 — 강도
+    outK: 0.45 + f.intensity * 1.05,
+    // 감기는 방향 — 정서가
+    lean: (f.valence - 0.5) * 2.0,
+    // 털 개수 — 행위성
+    fringeK: 0.35 + social * 0.60,
+    // 털 길이 — 추상어가 길다
+    fringeLenK: 1.25 - f.concreteness * 0.55,
+    // 떨어진 반점 — 한정성이 낮을수록 흩어진다
+    speckK: 0.35 + (1 - f.boundedness) * 1.20,
+    // 겹선 — 시간성. 여러 번 지나간 결
+    doubleK: 0.40 + f.temporality * 1.20,
+    // 작은 닫힌 고리 — 생물성
+    loop: f.animacy >= 0.5,
+    // 링 굵기 변화 주파수 — 시간성
+    harmonic: 2 + Math.round(f.temporality * 6),
+  };
 }
 
 // ── 굵기 프로파일 ──
-// 참고 이미지의 획은 균일한 리본이 아니다. 뿌리에서 두껍게 시작해
-// 급격히 쐐기처럼 얇아지거나, 중간이 불룩한 렌즈형이다.
 // 획을 따라 부드럽게 변하는 떨림. 점마다 독립 난수를 쓰면 고주파가 되어
 // 획이 구슬처럼 울퉁불퉁해진다. 붓의 떨림은 저주파다.
 function smoothJit(rnd, amp) {
@@ -412,9 +419,10 @@ function profile(n, w0, w1, kind, rnd, jit) {
     let v;
     if (kind === 'blade')      v = w0 * Math.pow(1 - t, 1.35) * (1 + 0.55 * Math.sin(Math.PI * t)) + w1;
     else if (kind === 'lens')  v = w0 * Math.pow(Math.sin(Math.PI * t), 0.62) + w1;
+    else if (kind === 'bloom') v = w0 * Math.pow(Math.sin(Math.PI * t), 0.38) + w1;
     else if (kind === 'spike') v = w0 * Math.pow(1 - t, 2.2) + w1;
     else                       v = w0 * (1 - t) + w1 * t;
-    w.push(Math.max(0.0005, v * j(t)));
+    w.push(Math.max(0.0004, v * j(t)));
   }
   return w;
 }
@@ -453,7 +461,7 @@ function strip(pts, ws, out) {
     out.push(R[i][0],R[i][1], R[i+1][0],R[i+1][1], L[i+1][0],L[i+1][1]);
   }
 }
-function disc(c, r, out, n = 9) {
+function disc(c, r, out, n = 8) {
   for (let i = 0; i < n; i++) {
     const a1 = i/n*6.2832, a2 = (i+1)/n*6.2832;
     out.push(c[0], c[1],
@@ -462,248 +470,190 @@ function disc(c, r, out, n = 9) {
   }
 }
 
-// ── 스플래터 — 뭉친 지점에서 방사되는 가시와 떨어진 반점 ──
-// 참고 이미지의 복잡함 대부분이 여기서 온다.
-function splatter(at, baseAng, scale, rnd, out, m) {
-  const J = val.cJitter;
-  const kSplat = m?.splat ?? 1, kSpeck = m?.speck ?? 1;
-  disc(at, (0.007 + rnd()*0.010) * scale, out);
-  const n = Math.round(val.cSplat * scale * kSplat);
-  for (let i = 0; i < n; i++) {
-    const a = baseAng + (rnd() - 0.5) * 4.4;
-    const L = val.cSplatLen * scale * (0.25 + rnd()*rnd()*1.9);
-    const bend = (rnd() - 0.5) * 0.7 * J;
-    const tip = [at[0] + Math.cos(a)*L, at[1] + Math.sin(a)*L];
-    const mid = [at[0] + Math.cos(a+bend)*L*0.55, at[1] + Math.sin(a+bend)*L*0.55];
+// ── 털 ──
+// 실제 로고그램의 털은 아주 가늘고 짧다. 반경의 10~20% 정도이며
+// 방사 방향으로 뻗지만 원형 윤곽을 깨뜨리지 않는다. 굵고 긴 가시를
+// 방사로 뻗으면 원이 읽히지 않고 바퀴살처럼 보인다.
+function fringe(at, outAng, count, len, wide, bend, rnd, out) {
+  for (let i = 0; i < count; i++) {
+    const a = outAng + (rnd() - 0.5) * 1.5;
+    const L = len * (0.35 + rnd() * rnd() * 1.5);
+    const b = (rnd() - 0.5) * bend;
+    const tip = [at[0] + Math.cos(a) * L, at[1] + Math.sin(a) * L];
+    const mid = [at[0] + Math.cos(a + b) * L * 0.55, at[1] + Math.sin(a + b) * L * 0.55];
     const pts = bezPts(at, mid, tip, 5);
-    strip(pts, profile(pts.length, (0.0075 + rnd()*0.008)*scale, 0.0004, 'spike', rnd, J), out);
-    if (rnd() < 0.30) disc(tip, (0.0018 + rnd()*0.004)*scale, out, 7);
-  }
-  const sp = Math.round(val.cSpeck * scale * kSpeck);
-  for (let i = 0; i < sp; i++) {
-    const a = baseAng + (rnd() - 0.5) * 5.6;
-    const L = val.cSplatLen * scale * (0.6 + rnd()*2.6);
-    disc([at[0] + Math.cos(a)*L, at[1] + Math.sin(a)*L], (0.0012 + rnd()*rnd()*0.006)*scale, out, 7);
+    strip(pts, profile(pts.length, wide * (0.7 + rnd() * 0.8), 0.0003, 'spike', rnd, 0.4), out);
   }
 }
 
-// ── 드라이브러시 — 붓이 마르며 갈라진 평행 줄무늬 ──
-function dryBrush(r, a0, span, rnd, out, k = 1) {
-  const n = Math.round(val.cDry * k), J = val.cJitter;
-  for (let i = 0; i < n; i++) {
-    const off = (i - (n-1)/2) * val.cDryGap * (1 + (rnd()-0.5)*0.5*J);
-    const s = span * val.cDryLen * (0.55 + rnd()*0.75);
-    const st = a0 + (rnd()-0.5) * span * 0.5;
-    const pts = arcPts(r + off, st, s, (rnd()-0.5)*0.012*J, 12);
-    strip(pts, profile(pts.length, 0.0030 + rnd()*0.0042, 0.0004, 'lens', rnd, J), out);
+/** 흩어진 반점 — 덩어리 바깥으로 튀어나간 작은 점들 */
+function specks(at, outAng, count, reach, rad, rnd, out) {
+  for (let i = 0; i < count; i++) {
+    const a = outAng + (rnd() - 0.5) * 2.6;
+    const L = reach * (0.5 + rnd() * rnd() * 2.4);
+    disc([at[0] + Math.cos(a) * L, at[1] + Math.sin(a) * L],
+         rad * (0.4 + rnd() * rnd() * 1.8), out, 6);
   }
 }
 
-// ── 링 — 끊긴 호 여러 개 + 겹쳐 지나간 호 ──
-// 참고 이미지의 링은 완전한 원이 아니다. 붓이 들린 자리에 흰 틈이 있다.
+// ── 링 ──
+// 실제 로고그램의 링은 얇고 거의 균일한 세필 한 줄이다. 대부분의 둘레에서
+// 깨끗하게 유지되고, 짙은 부분은 덩어리에서만 온다. 링 자체를 두껍게 하거나
+// 굵기를 극단적으로 변조하면 원형 윤곽이 흐트러진다.
 function ringGeometry(rnd, out, R = val.pR, wScale = 1) {
   const J = val.cJitter;
   const gaps = val.cGaps;
   const segs = gaps + 1;
-  const gapEach = (val.cGapSize * Math.PI * 2) / Math.max(segs, 1);
-  const segSpan = (Math.PI*2 - gapEach*gaps) / segs;
+  const gapEach = gaps > 0 ? (val.cGapSize * Math.PI * 2) / gaps : 0;
+  const segSpan = (Math.PI * 2 - gapEach * gaps) / segs;
   let a = rnd() * Math.PI * 2;
   for (let s = 0; s < segs; s++) {
-    const span = segSpan * (0.80 + rnd()*0.40);
-    const n = Math.max(10, Math.round(span * 22));
-    const pts = arcPts(R, a, span, (rnd()-0.5) * val.pWobble * 2.2, n);
-    const w0 = (val.pRingBase + rnd() * val.pRingAmp) * wScale;
-    const w1 = (val.pRingBase * 0.35 + rnd() * val.pRingAmp * 0.5) * wScale;
-    strip(pts, profile(pts.length, w0, w1, rnd() < 0.5 ? 'lens' : 'blade', rnd, J), out);
-    // 호가 끝나는 자리에 먹이 고이고 튄다
-    if (rnd() < 0.55) splatter(pts[pts.length-1], a + span + Math.PI*0.5, 0.55 + rnd()*0.5, rnd, out);
-    dryBrush(R, a, span, rnd, out);
+    const span = segSpan;
+    const n = Math.max(24, Math.round(span * 46));
+    const pts = arcPts(R, a, span, (rnd() - 0.5) * val.pWobble * 1.6, n);
+    const base = val.pRingBase * wScale;
+    const amp = val.pRingAmp * wScale;
+    // 완만하게만 변한다. 양 끝은 살짝 가늘어져 붓이 떨어진 느낌
+    const w = [];
+    const j = smoothJit(rnd, 0.55 * J);
+    for (let i = 0; i < pts.length; i++) {
+      const t = i / (pts.length - 1);
+      const taper = 0.45 + 0.55 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.12)), 0.30);
+      w.push(Math.max(0.0018, (base + amp * (j(t) - 1) * 1.8) * taper * j(t)));
+    }
+    strip(pts, w, out);
     a += span + gapEach;
   }
-  // 겹쳐 지나간 호
-  for (let i = 0; i < val.cOverlay; i++) {
-    const span = 0.35 + rnd() * 1.5;
+  // 겹선 — 같은 자리를 한 번 더 지나간 흔적. 참고 이미지에서 자주 보인다.
+  for (let i = 0; i < val.cDouble; i++) {
+    const span = 0.5 + rnd() * 2.4;
     const st = rnd() * Math.PI * 2;
-    const rr = R * (1 + (rnd()-0.5) * 0.085 * (1 + J));
-    const pts = arcPts(rr, st, span, (rnd()-0.5)*0.03*J, Math.max(10, Math.round(span*20)));
-    strip(pts, profile(pts.length, val.pRingBase*(0.30 + rnd()*0.65)*wScale, 0.0006, 'lens', rnd, J), out);
+    const off = (rnd() < 0.5 ? -1 : 1) * val.cDoubleGap * (0.7 + rnd() * 0.8);
+    const pts = arcPts(R + off, st, span, (rnd() - 0.5) * 0.012 * J,
+                       Math.max(18, Math.round(span * 34)));
+    strip(pts, profile(pts.length, val.pRingBase * wScale * (0.30 + rnd() * 0.45),
+                       0.0005, 'lens', rnd, J), out);
   }
 }
 
-// ── 개념 하나의 획 복합체 ──
-// 단어 하나라도 획 하나가 아니다. 쓸기 덩어리 + 뻗는 획 + 곁가지 +
-// 스플래터 + 드라이브러시. 전부 그 개념의 자질과 시드에서 결정적으로 유도된다.
-//
-// depth — 슬롯이 모자랄 때 안쪽 반경으로 겹쳐 쌓는 깊이.
-// 12슬롯인데 단어가 더 많으면 순서를 깊이에 인코딩한다 (이름 나선과 같은 원리).
-function conceptComplex(word, role, out, ctx = {}) {
+// ── 먹물 덩어리 ──
+// 링을 따라 부풀어오른 짙은 덩어리. 개념 하나가 이 덩어리에 기여한다.
+// 덩어리 개수는 개념 수와 무관하게 cZones로 고정된다 — 실제 로고그램은
+// 문장이 복잡해도 덩어리가 1~3군데뿐이고, 복잡함은 덩어리 안의 밀도로 온다.
+function bloomAt(word, angle, out, ctx) {
   const depth = ctx.depth ?? 0;
-  const R = (ctx.R ?? val.pR) * (1 - depth * 0.19);
-  const dk = 1 - depth * 0.16;               // 깊을수록 조금 작게
+  const R = (ctx.R ?? val.pR) * (1 - depth * 0.16);
+  const dk = 1 - depth * 0.14;
   const f = featureOf(word);
   const o = conceptParams(f);
-  const rnd = rng(fnv1a(`${word}|${role}|${depth}`));
+  const rnd = rng(fnv1a(`${word}|${angle.toFixed(3)}|${depth}`));
   const J = val.cJitter;
-  const a0 = slotAngle(ROLE_SLOT[role], f.valence);
 
-  // ── 복잡도 예산 ──
-  // 개념마다 장식을 전량씩 붙이면 단어 15개에서 15배가 되어 폭풍이 된다.
-  // 로고그램 전체의 장식 총량을 대체로 일정하게 두고 개념들이 나눠 쓴다.
-  //   cBudget 0   → 가산. 총량이 개념 수에 비례 (폭풍)
-  //   cBudget 0.7 → 총량이 n^0.3 으로 완만하게 증가 (기본)
-  //   cBudget 1   → 총량 고정
-  // 단어 하나일 때는 n=1 이라 예산을 혼자 다 쓰므로 단순해지지 않는다.
+  // 복잡도 예산 — 개념이 많으면 각자 몫이 줄어 총량이 대체로 일정하다
   const nIn = Math.max(1, ctx.n ?? 1);
   const bud = Math.pow(nIn, -val.cBudget);
-  const n = [Math.cos(a0), Math.sin(a0)], t = [-n[1], n[0]];
-  const base = [n[0]*R, n[1]*R];
-  const rc = o.reach * dk, cu = o.curl;
-  const at = (u, v) => [base[0] + n[0]*rc*u + t[0]*rc*v, base[1] + n[1]*rc*u + t[1]*rc*v];
-  const mult = { splat: o.splatK * bud, speck: o.speckK * bud };
-  const dryK = o.dryK * bud;
 
-  // ── 쓸기 덩어리 ──
-  // 참고 이미지("earth")의 획은 링에서 밖으로 뻗는 돌기가 아니라,
-  // 링을 따라 쓸고 지나가는 거대한 쐐기다. 이게 바퀴살 느낌과
-  // 서예 느낌을 갈라놓는 지점이다.
-  if (val.cSweep * o.sweepK > 0.01) {
-    // 쓸기 덩어리가 원둘레를 덮는 총량을 먼저 정하고 개념 수로 나눈다.
-    //   총 덮는 양 ≈ 2π × cFill × cSweepSpan   (1보다 크면 겹쳐 지나간다)
-    // 개념마다 절대 호 길이를 주면 총량이 개념 수에 비례해 뭉개지고,
-    // 몫에 상한을 걸면 개념 1개일 때 원의 일부만 덮여 너무 단순해진다.
-    // 총량을 고정해 나누면 1개든 15개든 같은 두께의 띠가 나온다.
-    const total = Math.PI * 2 * val.cFill * val.cSweepSpan;
-    const perC = (total / nIn) * o.sweepSpanK;
-    // 한 번의 붓질이 반원을 넘지는 않는다. 넘치면 여러 번 지나간다.
-    const passes = Math.max(1, Math.min(4, Math.ceil(perC / Math.PI)));
-    const spanBase = perC / passes;
-    for (let q = 0; q < passes; q++) {
-      for (let k = 0; k < val.cBladeN; k++) {
-        const sk = (1 - k * 0.30) * dk;
-        const span = spanBase * (0.78 + rnd() * 0.42) * sk;
-        const st = a0 + (q - (passes - 1) / 2) * spanBase - span * (0.35 + rnd() * 0.3);
-        const bow = rc * 0.16 * (rnd() - 0.2) + (k ? (rnd() - 0.5) * 0.03 : 0);
-        const nn = Math.max(14, Math.round(span * 26));
-        const pts = arcPts(R, st, span, bow, nn);
-        // 한쪽이 두껍고 다른 쪽으로 급격히 얇아지는 쐐기
-        const w = profile(pts.length, o.w * 1.55 * val.cSweep * o.sweepK * sk, 0.0012,
-                          rnd() < 0.55 ? 'blade' : 'lens', rnd, J);
-        if (rnd() < 0.5) w.reverse();
-        strip(pts, w, out);
-        const e0 = pts[0], e1 = pts[pts.length - 1];
-        splatter(e1, st + span + Math.PI * 0.5, (0.85 + rnd() * 0.6) * sk, rnd, out, mult);
-        if (rnd() < 0.7) splatter(e0, st - Math.PI * 0.5, (0.6 + rnd() * 0.5) * sk, rnd, out, mult);
-        dryBrush(R, st, span, rnd, out, dryK);
-      }
-    }
-  }
+  const layers = val.cLayers;
+  let peak = null, peakAng = angle;
 
-  // 뻗는 획 — 겹쳐 지나간 쐐기 여러 겹
-  let tipPt = at(0.96, cu * 1.25), tipAng = a0;
-  if (val.cBlade <= 0.01) { splatter(tipPt, a0, 0.5, rnd, out, mult); }
-  // 뻗는 획에도 예산을 적용한다. 개수만 줄여도 위치가 15군데면 여전히
-  // 뾰족해 보인다. 개념이 많을 때는 쓸기 띠가 주도하고 돌기는 물러나야 한다.
-  const bladeK = 0.32 + 0.68 * bud;
-  for (let k = 0; val.cBlade > 0.01 && k < val.cBladeN; k++) {
-    const sk = (1 - k * 0.26) * dk;
-    const jj = (rnd()-0.5) * 0.30 * J;
-    const a = at(-0.06, jj*0.4), b = at(0.82*sk, cu*0.55 + jj), c = at(0.96*sk, cu*1.25 + jj*1.6);
-    const pts = bezPts(a, b, c, 16);
-    strip(pts, profile(pts.length, o.w * val.cBlade * sk * bladeK, 0.0010, 'blade', rnd, J), out);
+  for (let k = 0; k < layers; k++) {
+    const sk = (1 - k * 0.24) * dk;
+    const span = val.cBloomSpan * o.spanK * (0.70 + rnd() * 0.55) * sk;
+    const st = angle - span * (0.4 + rnd() * 0.2) + (rnd() - 0.5) * 0.12 * J;
+    // 바깥으로 살짝 치우쳐 부풀어오른다. 안쪽으로는 거의 번지지 않는다.
+    const out0 = val.cBloomThick * val.cBloomOut * o.outK * (0.6 + rnd() * 0.7);
+    const nn = Math.max(16, Math.round(span * 44));
+    const pts = arcPts(R + out0 * 0.45, st, span, out0 * (0.5 + rnd() * 0.6), nn);
+    const thick = val.cBloomThick * o.thickK * sk * (0.7 + rnd() * 0.5);
+    const w = profile(pts.length, thick, val.pRingBase * 0.5, 'bloom', rnd, J * 0.7);
+    if (rnd() < 0.5) w.reverse();
+    strip(pts, w, out);
     if (k === 0) {
-      tipPt = c;
-      tipAng = Math.atan2(c[1]-b[1], c[0]-b[0]);
+      const mid = pts[Math.floor(pts.length * 0.5)];
+      peak = mid;
+      peakAng = Math.atan2(mid[1], mid[0]);
     }
   }
-  // 곁가지 — 획에서 갈라지는 짧은 털
-  const flickN = Math.round(val.cFlick * o.flickK * bud);
-  for (let i = 0; val.cBlade > 0.01 && i < flickN; i++) {
-    const u = 0.25 + rnd() * 0.6;
-    const root = at(u, cu * u * 0.8);
-    const a = tipAng + (rnd()-0.5) * 2.2;
-    const L = rc * (0.14 + rnd() * 0.36);
-    const tip = [root[0] + Math.cos(a)*L, root[1] + Math.sin(a)*L];
-    const mid = [root[0] + Math.cos(a + (rnd()-0.5)*0.9*J)*L*0.55,
-                 root[1] + Math.sin(a + (rnd()-0.5)*0.9*J)*L*0.55];
-    const pts = bezPts(root, mid, tip, 8);
-    strip(pts, profile(pts.length, o.w * 0.30 * val.cBlade, 0.0006, 'spike', rnd, J), out);
-    if (rnd() < 0.5) splatter(tip, a, 0.4 + rnd()*0.35, rnd, out, mult);
+
+  // 털 — 덩어리에서 바깥으로. 가늘고 짧다.
+  const fCount = Math.round(val.cFringe * o.fringeK * bud * dk);
+  const fLen = val.cFringeLen * o.fringeLenK * dk;
+  const spread = val.cBloomSpan * o.spanK * 0.5;
+  for (let i = 0; i < fCount; i++) {
+    const a = angle + (rnd() - 0.5) * spread * 2;
+    const root = [Math.cos(a) * (R + val.cBloomThick * 0.25), Math.sin(a) * (R + val.cBloomThick * 0.25)];
+    fringe(root, a, 1, fLen, val.cFringeFine, val.cFringeBend, rnd, out);
   }
-  // 끝과 뿌리의 먹 뭉침 — 크기도 예산을 따른다
-  splatter(tipPt, tipAng, (0.9 + rnd()*0.5) * dk * bladeK, rnd, out, mult);
-  if (rnd() < 0.7) splatter(base, a0 + Math.PI, 0.55 * dk * bladeK, rnd, out, mult);
-  // 부속 고리 — 생물성
+
+  // 떨어진 반점
+  if (peak) {
+    specks(peak, peakAng, Math.round(val.cSpeck * o.speckK * bud),
+           fLen * 1.6, val.cSpeckR * dk, rnd, out);
+  }
+
+  // 작은 닫힌 고리 — 생물성
   if (o.loop) {
-    const la = a0 + 0.9, lr = R + rc * 0.42;
-    const c0 = [Math.cos(la)*lr, Math.sin(la)*lr], rr = 0.026 * dk;
-    const ring = arcPts(rr, 0, Math.PI*2, 0, 20).map((q) => [q[0]+c0[0], q[1]+c0[1]]);
-    strip(ring, profile(ring.length, 0.006 * dk, 0.006 * dk, 'flat', rnd, J), out);
+    const la = angle + spread * 0.9;
+    const lr = R + val.cBloomThick * 1.1;
+    const c0 = [Math.cos(la) * lr, Math.sin(la) * lr];
+    const rr = 0.020 * dk;
+    const ring = arcPts(rr, 0, Math.PI * 2, 0, 18).map((q) => [q[0] + c0[0], q[1] + c0[1]]);
+    strip(ring, profile(ring.length, val.pRingBase * 0.8, val.pRingBase * 0.8, 'flat', rnd, J), out);
   }
-  // 링에 붙는 드라이브러시
-  dryBrush(R, a0 - 0.30, 0.62, rnd, out, dryK);
+
+  // 겹선 — 덩어리 옆을 따라 한 번 더
+  const dN = Math.round(val.cDouble * o.doubleK * bud);
+  for (let i = 0; i < dN; i++) {
+    const span = spread * (1.2 + rnd() * 1.6);
+    const st = angle - span * 0.5;
+    const off = val.cDoubleGap * (rnd() < 0.5 ? -1 : 1) * (0.8 + rnd());
+    const pts = arcPts(R + off, st, span, 0, Math.max(14, Math.round(span * 34)));
+    strip(pts, profile(pts.length, val.pRingBase * 0.55, 0.0004, 'lens', rnd, J), out);
+  }
 }
 
 // ── 이름의 음절 나선 — 순서를 각도가 아니라 반경에 인코딩 ──
-function nameSpiral(role, count, seedKey, out, ctx = {}) {
+function nameSpiral(angle, count, seedKey, out, ctx = {}) {
   const rnd = rng(fnv1a(seedKey));
   const depth = ctx.depth ?? 0;
-  const R = (ctx.R ?? val.pR) * (1 - depth * 0.19);
+  const R = (ctx.R ?? val.pR) * (1 - depth * 0.16);
   const J = val.cJitter;
-  const a0 = slotAngle(ROLE_SLOT[role], 0.35);
-  const step = Math.min(0.27, 0.72 / count);
+  const step = Math.min(0.20, 0.55 / count);
   for (let i = 0; i < count; i++) {
-    const r = R * (1 - i*step), a = a0 + i*0.16;
-    const o = [Math.cos(a)*r, Math.sin(a)*r];
-    const lean = a + (i % 2 ? 0.45 : -0.30);
-    const L = 0.13 - i*0.013;
-    const d = [Math.cos(lean), Math.sin(lean)], tt = [-d[1], d[0]];
-    const c = [o[0] + d[0]*L + tt[0]*L*0.6, o[1] + d[1]*L + tt[1]*L*0.6];
-    const pts = bezPts(o, [o[0]+d[0]*L*0.5+tt[0]*L*0.25, o[1]+d[1]*L*0.5+tt[1]*L*0.25], c, 12);
-    strip(pts, profile(pts.length, (0.030 - i*0.005) * val.cBlade, 0.0008, 'blade', rnd, J), out);
-    const bud = Math.pow(Math.max(1, ctx.n ?? 1), -val.cBudget);
-    splatter(c, lean, 0.5 + rnd()*0.35, rnd, out, { splat: bud, speck: bud });
-    if (val.cFlick > 0) {
-      const a2 = lean + (rnd()-0.5)*2.0, L2 = L*0.5;
-      const tip = [c[0]+Math.cos(a2)*L2, c[1]+Math.sin(a2)*L2];
-      const p2 = bezPts(c, [c[0]+Math.cos(a2)*L2*0.5, c[1]+Math.sin(a2)*L2*0.5], tip, 6);
-      strip(p2, profile(p2.length, 0.008*val.cBlade, 0.0005, 'spike', rnd, J), out);
-    }
+    const r = R * (1 - i * step), a = angle + i * 0.13;
+    const span = val.cBloomSpan * 0.5 * (1 - i * 0.12);
+    const pts = arcPts(r, a - span * 0.5, span, val.cBloomThick * 0.3, 20);
+    strip(pts, profile(pts.length, val.cBloomThick * (0.55 - i * 0.09), val.pRingBase * 0.5,
+                       'bloom', rnd, J * 0.7), out);
+    const mid = pts[Math.floor(pts.length * 0.5)];
+    fringe(mid, Math.atan2(mid[1], mid[0]), Math.round(val.cFringe * 0.28),
+           val.cFringeLen * 0.7, val.cFringeFine, val.cFringeBend, rnd, out);
   }
 }
 
 // ── 로고그램 조립 ──
 // 링 하나 = 문장 하나. 문장이 여러 개면 동심 링으로 쌓는다.
-// 이름에서는 링 증식 때문에 동심 링을 기각했지만(스펙 9.2), 문장은
-// 개수가 제한적이라 다르다.
 //
-// 슬롯 배정 — 짝수 슬롯(주 역할)을 먼저 채우고 홀수 슬롯(부속)으로 넘어간다.
-// 12개를 넘으면 depth를 올려 안쪽 반경에 겹쳐 쌓는다.
+// 덩어리 배치 — 개념을 cZones개의 덩어리에 나눠 담는다. 개념마다 자기
+// 덩어리를 만들면 15개일 때 15군데가 되어 원형 윤곽이 깨진다. 실제
+// 로고그램은 덩어리가 1~3군데뿐이고 복잡함은 그 안의 밀도로 온다.
+// 덩어리 각도는 역할 지도에서 나온다 — 그 덩어리에 담긴 개념들의 슬롯 평균.
 const SLOT_ORDER = ['행위','주체','대상','양상','시간','장소',
                     '행위수식','주체수식','대상수식','정도','시간수식','방향'];
 
-/** 단어 목록을 문법 없이 슬롯에 흩는다. 단어만 나열했을 때 쓴다. */
 function spreadWords(words) {
-  return words.map((w, i) => ({
-    word: w,
-    role: SLOT_ORDER[i % 12],
-    depth: Math.floor(i / 12),
-  }));
+  return words.map((w, i) => ({ word: w, role: SLOT_ORDER[i % 12] }));
 }
-
-/** 문장 하나 — 역할이 정해진 개념들 */
-const S = (...pairs) => pairs.map(([word, role]) => ({ word, role, depth: 0 }));
+const S = (...pairs) => pairs.map(([word, role]) => ({ word, role }));
 
 const WORDS_15 = ['사랑','시간','나','너','아이','약속','선택','빛',
                   '물','하늘','기다림','영원','기쁨','슬픔','용기'];
 
 const PRESETS = {
-  // 원칙 2 시각 검증 — valence만 반대인 두 단어
   '사랑': { rings: [{ concepts: S(['사랑','행위']) }] },
   '미움': { rings: [{ concepts: S(['미움','행위']) }] },
-
   '단어 5개': { rings: [{ concepts: spreadWords(WORDS_15.slice(0, 5)) }] },
   '단어 15개': { rings: [{ concepts: spreadWords(WORDS_15) }] },
-
   '문장 1개': { rings: [{ concepts: S(['사랑','행위'], ['나','주체'], ['너','대상']) }] },
   '역할 반전': { rings: [{ concepts: S(['사랑','행위'], ['너','주체'], ['나','대상']) }] },
   '문장 3개': {
@@ -720,43 +670,70 @@ const PRESETS = {
     }],
   },
 };
-let preset = '단어 15개';
+let preset = '문장 1개';
 let freeInput = '';
 
-/** 자유 입력 — 등재어는 개념 획, 미등재어는 음소 나선으로 떨어진다 */
 function specFromText(text) {
   const words = text.split(/[\s,·]+/).filter(Boolean).slice(0, 24);
   if (words.length === 0) return null;
   const concepts = [], names = [];
   let i = 0;
   for (const w of words) {
-    const role = SLOT_ORDER[i % 12], depth = Math.floor(i / 12);
-    if (MINI_LEX[w]) concepts.push({ word: w, role, depth });
-    else names.push({ role, depth, count: Math.max(1, Math.min(5, [...w].length)), key: w });
+    const role = SLOT_ORDER[i % 12];
+    if (MINI_LEX[w]) concepts.push({ word: w, role });
+    else names.push({ role, count: Math.max(1, Math.min(5, [...w].length)), key: w });
     i++;
   }
   return { rings: [{ concepts, names }] };
+}
+
+/** 개념들을 덩어리에 배분하고, 각 덩어리의 각도를 구성원 슬롯에서 낸다 */
+function assignZones(items, zones, seed) {
+  const rnd = rng(fnv1a('zone|' + seed));
+  const base = rnd() * Math.PI * 2;
+  const buckets = Array.from({ length: zones }, () => []);
+  items.forEach((it, i) => buckets[i % zones].push(it));
+  return buckets.map((members, zi) => {
+    // 덩어리 위치 — 구성원 슬롯 각도의 평균 (원형 평균)
+    let sx = 0, sy = 0;
+    for (const m of members) {
+      const a = slotAngle(ROLE_SLOT[m.role] ?? 0, 0.5);
+      sx += Math.cos(a); sy += Math.sin(a);
+    }
+    const angle = members.length
+      ? Math.atan2(sy, sx)
+      : base + (zi / zones) * Math.PI * 2;
+    return { angle, members };
+  }).filter((z) => z.members.length > 0);
 }
 
 function buildGeometry() {
   const out = [];
   const spec = (freeInput.trim() && specFromText(freeInput)) || PRESETS[preset];
   const tag = freeInput.trim() || preset;
-  const n = spec.rings.length;
+  const nRings = spec.rings.length;
   spec.rings.forEach((ring, ri) => {
-    const R = val.pR * (1 - ri * 0.27);
-    const wScale = 1 - ri * 0.22;
+    const R = val.pR * (1 - ri * 0.26);
+    const wScale = 1 - ri * 0.18;
     ringGeometry(rng(fnv1a(`ring|${tag}|${ri}`)), out, R, wScale);
-    // 이 링에 들어가는 성분 수. 복잡도 예산을 나누는 분모다.
-    const nIn = (ring.concepts?.length ?? 0) + (ring.names?.length ?? 0);
-    for (const c of ring.concepts ?? []) {
-      conceptComplex(c.word, c.role, out, { R, depth: c.depth, n: nIn });
-    }
-    for (const nm of ring.names ?? []) {
-      nameSpiral(nm.role, nm.count, `name|${nm.key}`, out, { R, depth: nm.depth, n: nIn });
+
+    const items = [...(ring.concepts ?? []).map((c) => ({ ...c, kind: 'c' })),
+                   ...(ring.names ?? []).map((n) => ({ ...n, kind: 'n' }))];
+    const zones = assignZones(items, Math.min(val.cZones, Math.max(1, items.length)), `${tag}|${ri}`);
+    const nIn = Math.max(1, items.length);
+    for (const z of zones) {
+      z.members.forEach((m, mi) => {
+        // 같은 덩어리 안에서는 각도를 살짝 흩고 깊이를 준다
+        const a = z.angle + (mi - (z.members.length - 1) / 2) * val.cBloomSpan * 0.35;
+        if (m.kind === 'n') {
+          nameSpiral(a, m.count, `name|${m.key}`, out, { R, depth: mi, n: nIn });
+        } else {
+          bloomAt(m.word, a, out, { R, depth: mi, n: nIn });
+        }
+      });
     }
   });
-  return { data: new Float32Array(out), rings: n };
+  return { data: new Float32Array(out), rings: nRings };
 }
 
 // ═════════════════════════ WebGL ═════════════════════════
