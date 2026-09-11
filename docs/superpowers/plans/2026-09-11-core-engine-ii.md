@@ -1534,7 +1534,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Produces:
   - `ROLE_SLOT: Record<Role, number>`
   - `slotAngle(slot: number, jitter: number): number`
-  - `MAX_WORDS = 10`, `MAX_SENTENCES = 5`
+  - `MAX_WORDS = 10`
   - `interface Placement { item: Constituent; angle: number; depth: number }`
   - `layout(ir: IR, look: LookParams): { placements: Placement[]; total: number }`
 
