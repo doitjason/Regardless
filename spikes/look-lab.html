@@ -1,0 +1,602 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>헵타포드 B — 룩 랩</title>
+<style>
+  :root{--bg:#0d1011;--pan:#15191b;--line:#252b2d;--tx:#9fabad;--tx2:#6b7679;--acc:#7fb8a8}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);
+    font:12px/1.5 -apple-system,system-ui,"Segoe UI",sans-serif}
+  #app{display:flex;height:100%}
+  #left{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:8px;padding:10px;overflow:auto}
+  #stage{position:relative;width:100%;background:#000;line-height:0}
+  canvas{display:block;width:100%;height:auto}
+  .bar{position:absolute;left:0;right:0;height:1.2%;background:#14181a;z-index:2}
+  .bar.t{top:0}.bar.b{bottom:0}
+  #hud{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;
+    font-size:11px;color:var(--tx2)}
+  #panel{width:318px;flex:none;background:var(--pan);border-left:1px solid var(--line);
+    overflow-y:auto;padding:10px 12px 40px}
+  h1{font-size:12px;margin:2px 0 10px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx)}
+  details{border-top:1px solid var(--line);padding:6px 0}
+  details[open]{padding-bottom:8px}
+  summary{cursor:pointer;font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--acc);padding:4px 0;user-select:none}
+  .row{display:grid;grid-template-columns:1fr 46px;gap:6px;align-items:center;margin:5px 0}
+  .row label{font-size:11px;color:var(--tx)}
+  .row .v{font-size:10px;color:var(--tx2);text-align:right;font-variant-numeric:tabular-nums}
+  input[type=range]{grid-column:1/3;width:100%;height:16px;margin:0;accent-color:var(--acc)}
+  .btns{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+  button{background:#20262a;color:var(--tx);border:1px solid var(--line);border-radius:4px;
+    padding:5px 9px;font:inherit;font-size:11px;cursor:pointer}
+  button:hover{background:#283034;color:#cfd8d9}
+  button.on{background:var(--acc);color:#0d1011;border-color:var(--acc)}
+  textarea{width:100%;height:120px;background:#0d1011;color:var(--tx);border:1px solid var(--line);
+    border-radius:4px;font:10px/1.4 ui-monospace,monospace;padding:6px;resize:vertical}
+  .note{font-size:10.5px;color:var(--tx2);margin:6px 0 0}
+  /* 좁은 창에서는 세로로 쌓는다 */
+  @media (max-width:820px){
+    #app{flex-direction:column;height:auto}
+    #panel{width:100%;border-left:0;border-top:1px solid var(--line)}
+    #left{padding:8px}
+  }
+</style>
+
+<div id="app">
+  <div id="left">
+    <div id="stage"><div class="bar t"></div><canvas id="c"></canvas><div class="bar b"></div></div>
+    <div id="hud">
+      <span id="fps">—</span>
+      <span>· 스페이스 일렁임 · G 격자 · R 분사 재생 · S PNG</span>
+    </div>
+  </div>
+  <div id="panel">
+    <h1>룩 랩</h1>
+    <div class="btns" id="presets"></div>
+    <div class="btns">
+      <button id="bGrid">격자</button>
+      <button id="bAnim" class="on">일렁임</button>
+      <button id="bSpray">분사 재생</button>
+      <button id="bPng">PNG</button>
+    </div>
+    <div id="groups"></div>
+    <details open>
+      <summary>설정 내보내기</summary>
+      <div class="btns">
+        <button id="bCopy">JSON 복사</button>
+        <button id="bReset">기본값</button>
+      </div>
+      <textarea id="out" readonly></textarea>
+      <p class="note">마음에 드는 조합이 나오면 이 JSON을 저에게 주세요. 그게 확정 스펙이 됩니다.</p>
+    </details>
+  </div>
+</div>
+
+<script type="x-shader/x-fragment" id="fs">#version 300 es
+precision highp float;
+out vec4 outColor;
+
+#define MAXS 20
+uniform vec2  uRes;
+uniform float uT;
+uniform float uGrid;
+
+uniform int   uN;
+uniform vec2  uA[MAXS];
+uniform vec2  uB[MAXS];
+uniform vec2  uC[MAXS];
+uniform vec2  uW[MAXS];     // w0, w1
+uniform vec4  uSp[MAXS];    // splay: baseAng, len, spread, width  (len<=0 → 없음)
+
+// 골격
+uniform float pR, pRingBase, pRingAmp, pRingMin, pRingMax, pWobble, pWScale, pSplayScale;
+// 먹물
+uniform float pSoft, pErode, pContrast, pFloor, pCore, pGrainA, pGrainX, pGrainAmp;
+// 연기
+uniform float pFray, pFrayFall, pWisp, pWispFall, pPlume, pPlumeFall, pGate, pDissolve, pTopFade;
+// 색
+uniform float pInk, pInkCore, pBgTop, pBgMid, pBgBot, pFog, pGrain, pVig;
+// 분사
+uniform float pProg, pSprayAng, pLeadTurb, pFrontSoft;
+
+const float PI = 3.14159265;
+
+vec2 hash2(vec2 p){
+  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+  return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+}
+float gnoise(vec2 p){
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(dot(hash2(i + vec2(0,0)), f - vec2(0,0)),
+                 dot(hash2(i + vec2(1,0)), f - vec2(1,0)), u.x),
+             mix(dot(hash2(i + vec2(0,1)), f - vec2(0,1)),
+                 dot(hash2(i + vec2(1,1)), f - vec2(1,1)), u.x), u.y);
+}
+float fbm(vec2 p, int oct){
+  float a = 0.5, s = 0.0;
+  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+  for (int i = 0; i < 8; i++){
+    if (i >= oct) break;
+    s += a * gnoise(p); p = m * p; a *= 0.5;
+  }
+  return s;
+}
+// fbm은 실제로 대체로 ±0.25 범위다. 0..1로 펴서 임계값을 쓸 수 있게 한다.
+float n01(float v){ return clamp(v * 1.9 + 0.5, 0.0, 1.0); }
+
+float sdSeg(vec2 p, vec2 a, vec2 b, float w){
+  vec2 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-9), 0.0, 1.0);
+  return length(pa - ba * h) - w;
+}
+vec2 bez(vec2 a, vec2 b, vec2 c, float t){
+  float u = 1.0 - t; return u*u*a + 2.0*u*t*b + t*t*c;
+}
+
+// 링 굵기 — 사인파가 아니라 노이즈. 극단적으로 변한다.
+float ringW(float ang){
+  vec2 u = vec2(cos(ang), sin(ang));
+  float a = fbm(u * 2.4 + vec2(7.0, 3.0), 4);
+  float b = fbm(u * 6.0 + vec2(23.0, 11.0), 3);
+  float c = fbm(u * 14.0 + vec2(51.0, 31.0), 2);
+  return clamp(pRingBase + (a * 1.6 + b * 0.75 + c * 0.30) * pRingAmp, pRingMin, pRingMax);
+}
+
+float sdShape(vec2 p){
+  float ang = atan(p.y, p.x);
+  float d = abs(length(p) - pR) - ringW(ang);
+  d -= fbm(vec2(cos(ang), sin(ang)) * 1.8 + 61.0, 3) * pWobble;
+
+  for (int i = 0; i < MAXS; i++){
+    if (i >= uN) break;
+    vec2 a = uA[i], b = uB[i], c = uC[i];
+    float w0 = uW[i].x * pWScale, w1 = uW[i].y * pWScale;
+    vec2 prev = a;
+    for (int k = 1; k <= 8; k++){
+      float t = float(k) / 8.0;
+      vec2 cur = bez(a, b, c, t);
+      d = min(d, sdSeg(p, prev, cur, mix(w0, w1, t)));
+      prev = cur;
+    }
+    // 붓털처럼 갈라진 끝
+    if (uSp[i].y > 0.0){
+      float L = uSp[i].y * pSplayScale;
+      for (int k = 0; k < 5; k++){
+        float f = (float(k) - 2.0) / 2.0;
+        float aa = uSp[i].x + f * uSp[i].z;
+        float LL = L * (0.55 + 0.45 * (1.0 - abs(f)));
+        d = min(d, sdSeg(p, c, c + vec2(cos(aa), sin(aa)) * LL, uSp[i].w * pWScale));
+      }
+    }
+  }
+  return d;
+}
+
+void main(){
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y * 1.62;
+
+  float d = sdShape(p);
+  float ang = atan(p.y, p.x);
+
+  // ── 분사: 한 점에서 양방향으로 동시에 번진다 ──
+  // 시계방향으로 쓸면 우리가 제거한 "읽는 방향"이 되살아난다.
+  float dA = abs(mod(ang - pSprayAng + PI, 2.0 * PI) - PI) / PI;   // 0..1, 양방향 대칭
+  float dR = clamp(abs(length(p) - pR) / 0.42, 0.0, 1.0);
+  float arrive = dA * 0.74 + dR * 0.26;
+  float front = pProg * 1.18;
+  float reveal = smoothstep(front, front - pFrontSoft, arrive);
+  float lead = exp(-pow((arrive - front + pFrontSoft * 0.5) / max(pFrontSoft * 0.55, 0.02), 2.0));
+  lead *= step(0.001, pProg) * step(pProg, 0.999);
+
+  // ── 획의 결 방향 ──
+  // 먹물은 획을 따라 끌린다. 결을 만들려면 접선 방향이 필요하다.
+  vec2 tang = vec2(1.0, 0.0);
+  if (d < 0.14) {
+    float e = 0.0017;
+    vec2 g = vec2(sdShape(p + vec2(e, 0.0)) - d, sdShape(p + vec2(0.0, e)) - d);
+    if (length(g) > 1e-7) { g = normalize(g); tang = vec2(-g.y, g.x); }
+  }
+  vec2 nr = vec2(-tang.y, tang.x);
+  vec2 pa = vec2(dot(p, tang) * pGrainA, dot(p, nr) * pGrainX);
+
+  vec2 w1 = vec2(fbm(p * 2.2 + vec2(11.3, 4.1) + uT * 0.030, 4),
+                 fbm(p * 2.2 + vec2(27.7, 19.2) - uT * 0.024, 4));
+  vec2 w2 = vec2(fbm(p * 5.0 + w1 * 1.1 + vec2(3.1, 51.7) + uT * 0.055, 4),
+                 fbm(p * 5.0 + w1 * 1.1 + vec2(41.9, 7.3) - uT * 0.045, 4));
+
+  float nLow   = fbm(p * 2.4 + w1 * 0.9, 4);
+  float nMid   = fbm(p * 8.5 + w2 * 2.2, 5);
+  float nHi    = fbm(p * 21.0 + w2 * 3.4, 4);
+  float nFil   = fbm(p * 15.0 + w2 * 5.0 + nLow * 2.2, 5);
+  float nGrain = fbm(pa + w2 * 2.0, 5);
+
+  float od = max(0.0, d);
+  float turb = 1.0 + lead * pLeadTurb;
+
+  // ── 획 자체가 먹물 ──
+  // 깨끗한 도형을 만들고 아지랑이를 덮는 게 아니다.
+  // 획의 내부 밀도가 처음부터 불균일해야 한다.
+  float interior = smoothstep(0.010, -pSoft, d + (nMid * 0.022 + nHi * 0.014) * pErode * turb);
+  float substance = pow(n01(nGrain * pGrainAmp + nLow * 0.55), pContrast);
+  float body = interior * (pFloor + (1.0 - pFloor) * substance);
+  float coreInk = smoothstep(-0.004, -0.030, d) * smoothstep(0.34, 0.86, substance);
+
+  float fray  = pow(smoothstep(0.26, 0.92, n01(nHi)), 1.4) * exp(-od * pFrayFall);
+  float wisp  = pow(smoothstep(0.38, 0.96, n01(nFil)), 1.45) * exp(-od * pWispFall / turb);
+  vec2 dir = normalize(p + vec2(1e-5));
+  float gate = n01(fbm(dir * 2.3 + vec2(17.0, 5.0), 3));
+  float plume = pow(smoothstep(0.44, 1.00, n01(nFil)), 1.2)
+              * exp(-od * pPlumeFall / turb) * smoothstep(pGate, pGate + 0.42, gate);
+
+  float dens = 1.0
+    - (1.0 - body)
+    * (1.0 - coreInk * pCore)
+    * (1.0 - fray  * pFray)
+    * (1.0 - wisp  * pWisp * turb)
+    * (1.0 - plume * pPlume * turb);
+
+  dens *= 1.0 - smoothstep(0.34, 1.05, p.y) * pTopFade;
+  // 저주파 소실 — 너무 세게 걸면 형태 전체가 유령처럼 사라진다
+  dens *= (1.0 - pDissolve) + pDissolve * n01(fbm(p * 1.45 + vec2(41.0, 13.0) + uT * 0.018, 3));
+  dens *= reveal;
+
+  // ── 배경 안개 ──
+  vec3 bg = mix(vec3(pBgTop, pBgTop + 0.049, pBgTop + 0.055),
+                vec3(pBgMid, pBgMid + 0.043, pBgMid + 0.040), smoothstep(0.04, 0.66, uv.y));
+  bg = mix(bg, vec3(pBgBot, pBgBot + 0.042, pBgBot + 0.044), smoothstep(0.72, 0.99, uv.y));
+  bg += fbm(p * 1.15 + vec2(7.0, 2.0) + uT * 0.02, 4) * pFog;
+  bg = mix(bg, vec3(0.250, 0.284, 0.292), smoothstep(0.950, 0.996, uv.y));
+
+  if (uGrid > 0.5) {
+    float a2 = ang + PI * 0.5;
+    float seg = a2 / (PI / 6.0);
+    float line = abs(fract(seg) - 0.5);
+    float g1 = smoothstep(0.014, 0.0, line) * smoothstep(0.88, 0.82, length(p));
+    bg = mix(bg, vec3(0.74, 0.76, 0.74), g1 * step(0.5, fract(length(p) * 46.0)) * 0.5);
+  }
+
+  vec3 ink = vec3(pInk, pInk + 0.017, pInk + 0.021);
+  ink = mix(ink, vec3(pInkCore, pInkCore + 0.010, pInkCore + 0.014), clamp(coreInk, 0.0, 1.0));
+
+  vec3 col = mix(bg, ink, clamp(dens, 0.0, 1.0));
+  col *= 1.0 - pVig * smoothstep(0.55, 1.35, length(p * vec2(0.62, 1.0)));
+  col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * pGrain;
+  outColor = vec4(col, 1.0);
+}
+</script>
+
+<script>
+// ───────────────────────── 파라미터 정의 ─────────────────────────
+// 이 목록이 곧 계획 1의 획 어휘·먹물 명세가 된다. 하드코딩하지 않는다.
+const P = [
+  ['골격', [
+    ['pR',          '링 반경',          0.35, 0.75, 0.005, 0.580],
+    ['pRingBase',   '링 굵기 기준',     0.004, 0.070, 0.001, 0.032],
+    ['pRingAmp',    '링 굵기 변조',     0.000, 0.070, 0.001, 0.032],
+    ['pRingMin',    '굵기 하한',        0.002, 0.030, 0.001, 0.009],
+    ['pRingMax',    '굵기 상한',        0.015, 0.110, 0.001, 0.056],
+    ['pWobble',     '링 찌그러짐',      0.000, 0.060, 0.001, 0.020],
+    ['pWScale',     '획 굵기 배율',     0.30, 2.20, 0.01, 1.00],
+    ['pSplayScale', '붓털 길이 배율',   0.00, 2.50, 0.01, 1.00],
+  ]],
+  ['먹물', [
+    ['pSoft',     '내부 전이대',     0.005, 0.120, 0.001, 0.030],
+    ['pErode',    '가장자리 침식',   0.00, 3.50, 0.01, 1.00],
+    ['pContrast', '농담 대비',       0.25, 2.20, 0.01, 0.70],
+    ['pFloor',    '몸통 바닥',       0.00, 1.00, 0.01, 0.62],
+    ['pCore',     '짙은 심',         0.00, 1.00, 0.01, 0.86],
+    ['pGrainAmp', '결 세기',         0.00, 3.00, 0.01, 1.35],
+    ['pGrainA',   '결 주파수(획 방향)', 0.5, 14.0, 0.1, 3.2],
+    ['pGrainX',   '결 주파수(가로)',  4.0, 70.0, 0.5, 26.0],
+  ]],
+  ['연기', [
+    ['pFray',      '보풀 양',      0.00, 1.00, 0.01, 0.70],
+    ['pFrayFall',  '보풀 감쇠',    6.0, 90.0, 0.5, 34.0],
+    ['pWisp',      '실오라기 양',  0.00, 1.00, 0.01, 0.62],
+    ['pWispFall',  '실오라기 감쇠', 3.0, 40.0, 0.5, 13.0],
+    ['pPlume',     '연기 기둥 양', 0.00, 1.00, 0.01, 0.50],
+    ['pPlumeFall', '기둥 감쇠',    1.0, 16.0, 0.1, 4.2],
+    ['pGate',      '기둥 방향 게이트', 0.10, 0.85, 0.01, 0.46],
+    ['pDissolve',  '안개 소실',    0.00, 0.70, 0.01, 0.20],
+    ['pTopFade',   '상단 흩어짐',  0.00, 0.70, 0.01, 0.18],
+  ]],
+  ['색 · 분위기', [
+    ['pInk',     '잉크 밝기',   0.010, 0.220, 0.002, 0.062],
+    ['pInkCore', '심 밝기',     0.005, 0.150, 0.002, 0.026],
+    ['pBgTop',   '배경 상단',   0.15, 0.60, 0.005, 0.335],
+    ['pBgMid',   '배경 중단',   0.30, 0.85, 0.005, 0.612],
+    ['pBgBot',   '배경 하단',   0.20, 0.75, 0.005, 0.470],
+    ['pFog',     '안개 세기',   0.00, 0.20, 0.005, 0.075],
+    ['pGrain',   '필름 그레인', 0.00, 0.06, 0.002, 0.016],
+    ['pVig',     '주변 감광',   0.00, 0.45, 0.01, 0.16],
+  ]],
+  ['분사 애니메이션', [
+    ['pProg',       '진행 (0=시작, 1=완성)', 0.00, 1.00, 0.005, 1.00],
+    ['pSprayAng',   '분사 시작 각도',        -3.15, 3.15, 0.01, 1.57],
+    ['pLeadTurb',   '선두 난류',             0.0, 6.0, 0.05, 2.6],
+    ['pFrontSoft',  '선두 폭',               0.04, 0.60, 0.01, 0.20],
+  ]],
+];
+
+const DEF = {};
+P.forEach(([, rows]) => rows.forEach(([k, , , , , v]) => (DEF[k] = v)));
+let val = { ...DEF };
+
+// ───────────────────────── 골격 데이터 ─────────────────────────
+// 12슬롯 3축 역할 지도. y가 위쪽이므로 슬롯 0(12시)은 +PI/2.
+const ROLE_SLOT = {
+  '행위':0,'행위수식':1,'주체':2,'주체수식':3,'시간':4,'시간수식':5,
+  '양상':6,'정도':7,'대상':8,'대상수식':9,'장소':10,'방향':11,
+};
+const slotAngle = (slot, j = 0) => Math.PI / 2 - ((slot + j) / 12) * Math.PI * 2;
+
+// 역할 위치에 붙는 넓은 획 하나 + 붓털 끝
+function branchAt(role, o) {
+  const R = val.pR;
+  const a0 = slotAngle(ROLE_SLOT[role], o.jitter ?? 0.5);
+  const n = [Math.cos(a0), Math.sin(a0)], t = [-n[1], n[0]];
+  const base = [n[0] * R, n[1] * R];
+  const rc = o.reach, cu = o.curl;
+  const at = (u, v) => [base[0] + n[0]*rc*u + t[0]*rc*v, base[1] + n[1]*rc*u + t[1]*rc*v];
+  const a = at(0, -0.14), b = at(0.85, cu * 0.55), c = at(0.95, cu * 1.25);
+  const tipAng = Math.atan2(c[1] - b[1], c[0] - b[0]);
+  return { a, b, c, w0: o.w0, w1: o.w1, sp: [tipAng, o.splay ?? 0.10, 0.90, 0.0050] };
+}
+// 링을 따라 감기는 접선 호
+function hugAt(role, o) {
+  const R = val.pR, s = o.span ?? 0.55, off = o.off ?? 0.0;
+  const a0 = slotAngle(ROLE_SLOT[role], (o.jitter ?? 0.5)) - s / 2;
+  const pt = (k) => {
+    const a = a0 + s * k, r = R + off;
+    return [Math.cos(a) * r, Math.sin(a) * r];
+  };
+  const r2 = R + off * 1.9, am = a0 + s * 0.5;
+  return { a: pt(0), b: [Math.cos(am) * r2, Math.sin(am) * r2], c: pt(1),
+           w0: o.w, w1: o.w, sp: [0, 0, 0, 0] };
+}
+// 이름의 음절 나선 — 순서를 각도가 아니라 반경에 인코딩
+function spiralAt(role, count) {
+  const R = val.pR, out = [];
+  const a0 = slotAngle(ROLE_SLOT[role], 0.35);
+  const step = Math.min(0.27, 0.72 / count);
+  for (let i = 0; i < count; i++) {
+    const r = R * (1 - i * step), a = a0 + i * 0.16;
+    const o = [Math.cos(a) * r, Math.sin(a) * r];
+    const lean = a + (i % 2 ? 0.45 : -0.30);
+    const L = 0.115 - i * 0.012;
+    const d = [Math.cos(lean), Math.sin(lean)], t = [-d[1], d[0]];
+    out.push({
+      a: o,
+      b: [o[0] + d[0]*L*0.5 + t[0]*L*0.25, o[1] + d[1]*L*0.5 + t[1]*L*0.25],
+      c: [o[0] + d[0]*L + t[0]*L*0.6, o[1] + d[1]*L + t[1]*L*0.6],
+      w0: 0.026 - i * 0.004, w1: 0.004,
+      sp: [lean, 0.045, 1.05, 0.0035],
+    });
+  }
+  return out;
+}
+
+const LOVE = { reach: 0.30, curl: 0.80, w0: 0.056, w1: 0.0075, splay: 0.115 };
+const HATE = { reach: 0.29, curl: -0.85, w0: 0.054, w1: 0.0070, splay: 0.105 };
+const ME   = { reach: 0.21, curl: -0.32, w0: 0.044, w1: 0.0060, splay: 0.095 };
+const YOU  = { reach: 0.22, curl: 0.38, w0: 0.046, w1: 0.0062, splay: 0.100 };
+
+const PRESETS = {
+  '사랑': () => [branchAt('행위', LOVE), hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 })],
+  '미움': () => [branchAt('행위', HATE), hugAt('행위', { jitter: -0.7, span: 0.52, off: 0.028, w: 0.0150 })],
+  '나는 너를 사랑해': () => [
+    branchAt('행위', LOVE), branchAt('주체', ME), branchAt('대상', YOU),
+    hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 }),
+    hugAt('대상', { jitter: -0.6, span: 0.50, off: 0.026, w: 0.0145 }),
+  ],
+  '너는 나를 사랑해': () => [
+    branchAt('행위', LOVE), branchAt('주체', YOU), branchAt('대상', ME),
+    hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 }),
+    hugAt('대상', { jitter: -0.6, span: 0.50, off: 0.026, w: 0.0145 }),
+  ],
+  '나는 루이즈를 사랑해': () => [
+    branchAt('행위', LOVE), branchAt('주체', ME),
+    ...spiralAt('대상', 3),
+    hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 }),
+  ],
+  '너는 나를 사랑해?': () => [
+    branchAt('행위', LOVE), branchAt('주체', YOU), branchAt('대상', ME),
+    branchAt('양상', { reach: 0.26, curl: 1.55, w0: 0.030, w1: 0.0055, splay: 0.06 }),
+    hugAt('행위', { jitter: 1.7, span: 0.58, off: 0.030, w: 0.0165 }),
+  ],
+};
+let preset = '나는 너를 사랑해';
+
+// ───────────────────────── WebGL ─────────────────────────
+const cvs = document.getElementById('c');
+const gl = cvs.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
+if (!gl) { document.body.innerHTML = '<p style="padding:20px">WebGL2를 쓸 수 없습니다.</p>'; throw 0; }
+
+function sh(t, src) {
+  const s = gl.createShader(t);
+  gl.shaderSource(s, src.trim()); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, '#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'));
+gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, document.getElementById('fs').textContent));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+const vb = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+const al = gl.getAttribLocation(prog, 'a');
+gl.enableVertexAttribArray(al);
+gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
+
+const U = (n) => gl.getUniformLocation(prog, n);
+const uRes = U('uRes'), uT = U('uT'), uGrid = U('uGrid'), uN = U('uN');
+const uA = U('uA[0]'), uB = U('uB[0]'), uC = U('uC[0]'), uW = U('uW[0]'), uSp = U('uSp[0]');
+const PL = {}; Object.keys(DEF).forEach((k) => (PL[k] = U(k)));
+
+const MAXS = 20;
+const fA = new Float32Array(MAXS * 2), fB = new Float32Array(MAXS * 2);
+const fC = new Float32Array(MAXS * 2), fW = new Float32Array(MAXS * 2);
+const fS = new Float32Array(MAXS * 4);
+
+function uploadSkeleton() {
+  const st = PRESETS[preset]().slice(0, MAXS);
+  fA.fill(0); fB.fill(0); fC.fill(0); fW.fill(0); fS.fill(0);
+  st.forEach((s, i) => {
+    fA[i*2] = s.a[0]; fA[i*2+1] = s.a[1];
+    fB[i*2] = s.b[0]; fB[i*2+1] = s.b[1];
+    fC[i*2] = s.c[0]; fC[i*2+1] = s.c[1];
+    fW[i*2] = s.w0;   fW[i*2+1] = s.w1;
+    fS[i*4] = s.sp[0]; fS[i*4+1] = s.sp[1]; fS[i*4+2] = s.sp[2]; fS[i*4+3] = s.sp[3];
+  });
+  gl.uniform1i(uN, st.length);
+  gl.uniform2fv(uA, fA); gl.uniform2fv(uB, fB); gl.uniform2fv(uC, fC);
+  gl.uniform2fv(uW, fW); gl.uniform4fv(uSp, fS);
+}
+
+let T = 3.7, grid = 0, animating = true;
+let spray = null;   // {t0, dur} — 분사 재생 중
+
+function draw(t) {
+  gl.viewport(0, 0, cvs.width, cvs.height);
+  gl.uniform2f(uRes, cvs.width, cvs.height);
+  gl.uniform1f(uT, t);
+  gl.uniform1f(uGrid, grid);
+  for (const k in PL) gl.uniform1f(PL[k], val[k]);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+function resize() {
+  const w = Math.max(320, Math.round(cvs.clientWidth));
+  const dpr = Math.min(1.75, window.devicePixelRatio || 1);
+  cvs.width = Math.round(w * dpr);
+  cvs.height = Math.round(w * dpr * 9 / 16);
+  uploadSkeleton(); draw(T);
+}
+cvs.style.aspectRatio = '16 / 9';
+new ResizeObserver(resize).observe(cvs);
+
+// ───────────────────────── UI ─────────────────────────
+const groups = document.getElementById('groups');
+const outEl = document.getElementById('out');
+const inputs = {};
+
+P.forEach(([name, rows], gi) => {
+  const det = document.createElement('details');
+  if (gi < 3) det.open = true;
+  det.innerHTML = `<summary>${name}</summary>`;
+  rows.forEach(([k, label, min, max, step]) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<label for="i_${k}">${label}</label><span class="v" id="v_${k}"></span>`;
+    const inp = document.createElement('input');
+    inp.type = 'range'; inp.id = 'i_' + k;
+    inp.min = min; inp.max = max; inp.step = step; inp.value = val[k];
+    inp.addEventListener('input', () => {
+      val[k] = parseFloat(inp.value);
+      document.getElementById('v_' + k).textContent = fmt(val[k]);
+      // 골격 파라미터가 바뀌면 골격을 다시 만들어야 한다
+      if (k === 'pR') uploadSkeleton();
+      syncOut(); draw(T);
+    });
+    row.appendChild(inp);
+    det.appendChild(row);
+    inputs[k] = inp;
+  });
+  groups.appendChild(det);
+});
+
+const fmt = (v) => (Math.abs(v) >= 10 ? v.toFixed(1) : Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(3));
+function syncUI() {
+  for (const k in inputs) {
+    inputs[k].value = val[k];
+    document.getElementById('v_' + k).textContent = fmt(val[k]);
+  }
+  syncOut();
+}
+function syncOut() {
+  const o = {};
+  Object.keys(DEF).forEach((k) => { if (k !== 'pProg') o[k] = +val[k].toFixed(4); });
+  outEl.value = JSON.stringify(o, null, 1);
+}
+
+const pres = document.getElementById('presets');
+Object.keys(PRESETS).forEach((name) => {
+  const b = document.createElement('button');
+  b.textContent = name;
+  if (name === preset) b.className = 'on';
+  b.onclick = () => {
+    preset = name;
+    [...pres.children].forEach((x) => (x.className = ''));
+    b.className = 'on';
+    uploadSkeleton(); draw(T);
+  };
+  pres.appendChild(b);
+});
+
+const bGrid = document.getElementById('bGrid');
+bGrid.onclick = () => { grid = grid ? 0 : 1; bGrid.className = grid ? 'on' : ''; draw(T); };
+const bAnim = document.getElementById('bAnim');
+bAnim.onclick = () => { animating = !animating; bAnim.className = animating ? 'on' : ''; };
+document.getElementById('bSpray').onclick = playSpray;
+document.getElementById('bPng').onclick = savePng;
+document.getElementById('bReset').onclick = () => { val = { ...DEF }; syncUI(); uploadSkeleton(); draw(T); };
+document.getElementById('bCopy').onclick = async () => {
+  outEl.select();
+  try { await navigator.clipboard.writeText(outEl.value); flash('복사됨'); }
+  catch { document.execCommand && document.execCommand('copy'); flash('선택됨 — Ctrl+C'); }
+};
+function flash(msg) {
+  const b = document.getElementById('bCopy'), old = b.textContent;
+  b.textContent = msg; setTimeout(() => (b.textContent = old), 1400);
+}
+
+function playSpray() {
+  spray = { t0: performance.now(), dur: 3200 };
+}
+function savePng() {
+  draw(T);
+  const a = document.createElement('a');
+  a.download = `heptapod-${preset.replace(/\s+/g, '_')}.png`;
+  a.href = cvs.toDataURL('image/png');
+  a.click();
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === ' ') { bAnim.click(); e.preventDefault(); }
+  if (e.key === 'g' || e.key === 'G') bGrid.click();
+  if (e.key === 'r' || e.key === 'R') playSpray();
+  if (e.key === 's' || e.key === 'S') savePng();
+});
+
+// ───────────────────────── 루프 ─────────────────────────
+const fpsEl = document.getElementById('fps');
+let frames = 0, last = performance.now(), tStart = performance.now();
+
+(function loop() {
+  const now = performance.now();
+  if (spray) {
+    const k = (now - spray.t0) / spray.dur;
+    if (k >= 1) { spray = null; val.pProg = 1; }
+    else val.pProg = k;
+    inputs.pProg.value = val.pProg;
+    document.getElementById('v_pProg').textContent = fmt(val.pProg);
+  }
+  if (animating || spray) { T = 3.7 + (now - tStart) / 1000; draw(T); }
+  frames++;
+  if (now - last > 700) {
+    fpsEl.textContent = Math.round((frames * 1000) / (now - last)) + ' fps · ' + cvs.width + '×' + cvs.height;
+    frames = 0; last = now;
+  }
+  requestAnimationFrame(loop);
+})();
+
+syncUI();
+resize();
+</script>
