@@ -1,0 +1,281 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>헵타포드 B — 스모크 룩 스파이크</title>
+<style>
+  html,body{margin:0;background:#0c0f10;color:#8b9799;font:13px/1.6 system-ui,sans-serif}
+  .wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px}
+  .frame{position:relative;background:#000;line-height:0;width:100%;max-width:1520px}
+  canvas{display:block;width:100%;height:auto}
+  .bar{position:absolute;left:0;right:0;height:1.1%;background:#14181a;z-index:2}
+  .bar.t{top:0} .bar.b{bottom:0}
+  .cap{opacity:.55;font-size:12px;text-align:center}
+</style>
+<div class="wrap">
+  <div class="frame">
+    <div class="bar t"></div>
+    <canvas id="c"></canvas>
+    <div class="bar b"></div>
+  </div>
+  <div class="cap">
+    SDF + 도메인 워프 fbm · 실시간 셰이더 · 링에 12시(행위) · 2시(주체) · 8시(대상) 획<br>
+    <span style="opacity:.7">스페이스 — 일렁임 정지 / 재생 &nbsp;·&nbsp; S — 지금 화면을 PNG로 저장</span>
+  </div>
+</div>
+
+<script type="x-shader/x-fragment" id="fs">#version 300 es
+precision highp float;
+out vec4 outColor;
+uniform vec2 uRes;
+uniform float uT;
+
+// ── 노이즈 ──
+vec2 hash2(vec2 p){
+  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+  return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+}
+float gnoise(vec2 p){
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(dot(hash2(i + vec2(0,0)), f - vec2(0,0)),
+                 dot(hash2(i + vec2(1,0)), f - vec2(1,0)), u.x),
+             mix(dot(hash2(i + vec2(0,1)), f - vec2(0,1)),
+                 dot(hash2(i + vec2(1,1)), f - vec2(1,1)), u.x), u.y);
+}
+float fbm(vec2 p, int oct){
+  float a = 0.5, s = 0.0;
+  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+  for (int i = 0; i < 8; i++){
+    if (i >= oct) break;
+    s += a * gnoise(p);
+    p = m * p;
+    a *= 0.5;
+  }
+  return s;
+}
+// fbm은 실제로 대체로 ±0.25 범위다. 0..1로 펴서 임계값을 쓸 수 있게 한다.
+float n01(float v){ return clamp(v * 1.9 + 0.5, 0.0, 1.0); }
+
+// ── 골격 SDF ──
+float sdSeg(vec2 p, vec2 a, vec2 b, float w){
+  vec2 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - w;
+}
+vec2 bez(vec2 a, vec2 b, vec2 c, float t){
+  float u = 1.0 - t;
+  return u*u*a + 2.0*u*t*b + t*t*c;
+}
+// 굵기가 줄어드는 획
+float sdBranch(vec2 p, vec2 a, vec2 b, vec2 c, float w0, float w1){
+  float d = 1e9;
+  vec2 prev = a;
+  for (int i = 1; i <= 12; i++){
+    float t = float(i) / 12.0;
+    vec2 cur = bez(a, b, c, t);
+    d = min(d, sdSeg(p, prev, cur, mix(w0, w1, t)));
+    prev = cur;
+  }
+  return d;
+}
+
+const float R = 0.60;
+
+float sdShape(vec2 p){
+  // 주 링 — 각도에 따라 굵기 변조 (굴절)
+  float ang = atan(p.y, p.x);
+  float w = 0.0215
+          + 0.0115 * sin(ang * 3.0 + 0.7)
+          + 0.0056 * sin(ang * 7.0 + 2.1)
+          + 0.0026 * sin(ang * 13.0 - 1.1);
+  float d = abs(length(p) - R) - w;
+
+  // 12시 · 행위 — 가장 크고 굵은 획
+  d = min(d, sdBranch(p, vec2(0.000, 0.600), vec2(0.115, 0.905), vec2(0.330, 0.830), 0.0295, 0.0035));
+  d = min(d, sdBranch(p, vec2(0.060, 0.598), vec2(0.180, 0.735), vec2(0.315, 0.700), 0.0120, 0.0022));
+
+  // 2시 · 주체
+  d = min(d, sdBranch(p, vec2(0.520, 0.300), vec2(0.760, 0.415), vec2(0.800, 0.215), 0.0215, 0.0028));
+
+  // 8시 · 대상
+  d = min(d, sdBranch(p, vec2(-0.520, -0.300), vec2(-0.785, -0.395), vec2(-0.720, -0.605), 0.0235, 0.0030));
+
+  // 접선 호 — 링을 따라 감기는 렌즈형
+  d = min(d, sdBranch(p, vec2(0.300, 0.545), vec2(0.500, 0.430), vec2(0.585, 0.230), 0.0075, 0.0075));
+  d = min(d, sdBranch(p, vec2(-0.590, 0.190), vec2(-0.660, -0.030), vec2(-0.575, -0.235), 0.0068, 0.0068));
+
+  // 잉크 뭉침
+  d = min(d, length(p - vec2(0.330, 0.830)) - 0.0155);
+  d = min(d, length(p - vec2(0.800, 0.215)) - 0.0110);
+  d = min(d, length(p - vec2(-0.720, -0.605)) - 0.0125);
+
+  // 작은 고리 (생물성 표지)
+  d = min(d, abs(length(p - vec2(0.430, 0.640)) - 0.033) - 0.0052);
+
+  return d;
+}
+
+void main(){
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;   // y 위쪽이 +
+  p *= 1.62;
+
+  float d = sdShape(p);
+
+  // ── 도메인 워프 ──
+  // 저주파 워프 — 전체 형태를 크게 밀어 덩어리를 비틀어 놓는다
+  vec2 w1 = vec2(fbm(p * 2.2 + vec2(11.3, 4.1) + uT * 0.030, 4),
+                 fbm(p * 2.2 + vec2(27.7, 19.2) - uT * 0.024, 4));
+  // 중주파 워프 — 실오라기의 흐름 방향
+  vec2 w2 = vec2(fbm(p * 5.0 + w1 * 1.1 + vec2(3.1, 51.7) + uT * 0.06, 4),
+                 fbm(p * 5.0 + w1 * 1.1 + vec2(41.9, 7.3) - uT * 0.05, 4));
+
+  float nLow  = fbm(p * 2.4 + w1 * 0.9, 4);                 // 큰 덩어리 밀도
+  float nMid  = fbm(p * 8.5 + w2 * 2.2, 5);                 // 결
+  float nHi   = fbm(p * 21.0 + w2 * 3.4, 4);                // 가장자리 보풀
+  float nFil  = fbm(p * 15.0 + w2 * 5.0 + nLow * 2.2, 5);   // 필라멘트
+
+  // ── 밀도 층 ──
+  // 형태 바깥 거리. 감쇠는 smoothstep이 아니라 지수로 — 연기는 경계가 없다.
+  float od = max(0.0, d);
+
+  // 1) 코어 — 좁은 전이대 + 중고주파 침식으로 가장자리를 찢는다.
+  //    저주파 진폭을 크게 주면 덩어리가 떨어져 종이 찢은 것처럼 보인다.
+  float edge = nLow * 0.030 + nMid * 0.042 + nHi * 0.026;
+  float core = smoothstep(0.008, -0.015, d + edge);
+
+  // 2) 볼륨 — 형태에 바짝 붙은 지수 감쇠에 저주파 밀도를 실어 깊이를 만든다
+  float vol = exp(-od * 16.0) * (0.30 + 0.70 * n01(nLow));
+
+  // 3) 실오라기 — 임계값으로 자르지 않고 부드러운 램프로 능선을 살린다.
+  //    감쇠를 조여서 형태 근처에만 머물게 한다
+  float wisp = pow(smoothstep(0.38, 0.96, n01(nFil)), 1.45) * exp(-od * 13.0);
+
+  // 4) 긴 연기 기둥 — 각도별 게이트로 몇 군데에서만 멀리 뻗는다.
+  //    전 방향에 균일하게 깔면 먼지처럼 보이고 링의 존재감이 죽는다.
+  vec2 dir = normalize(p + vec2(1e-5));
+  float gate = n01(fbm(dir * 2.3 + vec2(17.0, 5.0), 3));
+  float plume = pow(smoothstep(0.44, 1.00, n01(nFil)), 1.2)
+              * exp(-od * 4.2)
+              * smoothstep(0.46, 0.88, gate);
+
+  // 5) 미립자 — 가장자리 보풀
+  float dust = pow(smoothstep(0.52, 1.00, n01(nHi)), 2.1) * exp(-od * 9.0);
+
+  // 알파 누적(over). 더해서 clamp하면 포화 지점에 경계가 생긴다.
+  float dens = 1.0
+    - (1.0 - core)
+    * (1.0 - vol   * 0.62)
+    * (1.0 - wisp  * 0.90)
+    * (1.0 - plume * 0.62)
+    * (1.0 - dust  * 0.34);
+
+  // 위쪽이 더 흩어지게 (잉크가 물에서 떠오르듯)
+  dens *= 1.0 - smoothstep(0.24, 1.05, p.y) * 0.32;
+
+  // 저주파 소실 — 링의 일부가 안개에 먹혀 사라진다.
+  // 이게 없으면 밀도가 균일해서 그려 넣은 도형처럼 보인다.
+  dens *= 0.58 + 0.42 * n01(fbm(p * 1.45 + vec2(41.0, 13.0) + uT * 0.018, 3));
+
+  // ── 배경 안개 ──
+  float band = uv.y;
+  vec3 bg = mix(vec3(0.335, 0.384, 0.390), vec3(0.612, 0.655, 0.652), smoothstep(0.04, 0.66, band));
+  bg = mix(bg, vec3(0.470, 0.512, 0.514), smoothstep(0.72, 0.99, band));
+  float fog = fbm(p * 1.15 + vec2(7.0, 2.0) + uT * 0.02, 4);
+  bg += fog * 0.075;
+  // 아래쪽 수면
+  bg = mix(bg, vec3(0.250, 0.284, 0.292), smoothstep(0.950, 0.996, band));
+
+  // 순수 검정이 아니라 탈색된 청록 계열. 영화의 잉크는 회색에 가깝다.
+  vec3 ink = vec3(0.088, 0.108, 0.112);
+
+  vec3 col = mix(bg, ink, dens);
+
+  // 안개가 잉크 앞을 지나가는 느낌 — 부분적으로 배경색을 되섞음
+  float haze = fbm(p * 1.7 + vec2(19.0, 31.0) - uT * 0.045, 4) * 0.5 + 0.5;
+  col = mix(col, bg, haze * 0.17 * dens);
+
+  // 아주 약한 주변 감광
+  col *= 1.0 - 0.16 * smoothstep(0.55, 1.35, length(p * vec2(0.62, 1.0)));
+
+  // 필름 그레인
+  col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.016;
+
+  outColor = vec4(col, 1.0);
+}
+</script>
+
+<script>
+const cvs = document.getElementById('c');
+const gl = cvs.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
+if (!gl) { document.body.innerHTML = '<p style="padding:20px">WebGL2를 쓸 수 없습니다.</p>'; throw 0; }
+
+const VS = `#version 300 es
+in vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }`;
+
+function sh(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src.trim());
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, document.getElementById('fs').textContent));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(prog, 'a');
+gl.enableVertexAttribArray(loc);
+gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+const uRes = gl.getUniformLocation(prog, 'uRes');
+const uT = gl.getUniformLocation(prog, 'uT');
+
+let T = 3.7;
+
+function draw(t) {
+  gl.viewport(0, 0, cvs.width, cvs.height);
+  gl.uniform2f(uRes, cvs.width, cvs.height);
+  gl.uniform1f(uT, t);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+function resize() {
+  const w = Math.max(320, Math.round(cvs.clientWidth));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cvs.width = Math.round(w * dpr);
+  cvs.height = Math.round(w * dpr * 9 / 16);
+  draw(T);
+}
+
+// 캔버스 CSS 높이를 16:9로 고정
+cvs.style.aspectRatio = '16 / 9';
+new ResizeObserver(resize).observe(cvs);
+resize();
+
+// 열어서 보면 연기가 아주 느리게 일렁인다
+let animating = true;
+const t0 = performance.now();
+(function loop() {
+  if (animating) { T = 3.7 + (performance.now() - t0) / 1000; draw(T); }
+  requestAnimationFrame(loop);
+})();
+window.addEventListener('keydown', (e) => {
+  if (e.key === ' ') { animating = !animating; e.preventDefault(); }
+  // S — 지금 화면을 PNG로 저장
+  if (e.key === 's' || e.key === 'S') {
+    draw(T);
+    const a = document.createElement('a');
+    a.download = `heptapod-smoke-${T.toFixed(2)}.png`;
+    a.href = cvs.toDataURL('image/png');
+    a.click();
+  }
+});
+window.__drawAt = (t) => { animating = false; T = t; draw(t); };
+</script>
