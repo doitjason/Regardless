@@ -1611,14 +1611,18 @@ describe('layout', () => {
     expect(JSON.stringify(b)).not.toBe(JSON.stringify(a));
   });
 
-  it('덩어리 수가 배치의 서로 다른 각도 수를 제한한다', () => {
-    const many = ir(Array.from({ length: 8 }, (_, i) => C('사랑', '행위')).map((c, i) =>
-      ({ ...c, lemma: `w${i}` })) as Constituent[]);
-    const zones = Math.min(look.cZones, 8);
-    const angles = new Set(layout(many, look).placements.map((p) => p.angle.toFixed(6)));
-    expect(angles.size).toBeLessThanOrEqual(zones * 8);
+  it('덩어리 수가 겹쳐 쌓는 깊이를 정한다', () => {
+    // 성분이 덩어리 수보다 많으면 남는 것들이 깊이로 쌓여야 한다.
+    // 개념마다 자기 덩어리를 만들면 깊이가 전부 0이 되고 원형 윤곽이 깨진다.
+    const n = 8;
+    const many = ir(Array.from({ length: n }, (_, i) =>
+      ({ kind: 'concept', lemma: `w${i}`, role: '행위' } as Constituent)));
+    // 사전에 없는 표제어여도 layout 은 자질을 보지 않으므로 동작한다
+    const zones = Math.max(1, Math.min(Math.round(look.cZones), n));
     const depths = layout(many, look).placements.map((p) => p.depth);
-    expect(Math.max(...depths)).toBeGreaterThan(0);
+    expect(Math.max(...depths)).toBe(Math.ceil(n / zones) - 1);
+    // 덩어리마다 깊이가 0부터 시작한다
+    expect(depths.filter((d) => d === 0)).toHaveLength(zones);
   });
 
   it('단어 상한을 넘으면 잘라낸다', () => {
@@ -2194,12 +2198,17 @@ describe('조형 불변식', () => {
       [LOVE, { kind: 'phonetic', role: '대상', syllables: syllabify('루이즈') }],
     ];
     for (const cs of cases) {
-      const { svg } = render(ir(cs), lex, look);
-      const nums = svg.match(/-?\d+\.\d+/g) ?? [];
+      const { strokes } = render(ir(cs), lex, look);
+      expect(strokes.length).toBeGreaterThan(0);
       let worst = Infinity;
-      for (let i = 0; i + 1 < nums.length; i += 2) {
-        const x = Number(nums[i]), y = Number(nums[i + 1]);
-        worst = Math.min(worst, Math.hypot(x - cx, y - cy));
+      for (const s of strokes) {
+        // 패스의 d 에서만 좌표를 읽는다. SVG 전체를 훑으면 <metadata> 의
+        // IR JSON 에 든 숫자(engineVersion "1.0.0" 등)를 좌표로 오인한다.
+        const nums = s.d.match(/-?\d+\.\d+/g) ?? [];
+        expect(nums.length).toBeGreaterThan(0);
+        for (let i = 0; i + 1 < nums.length; i += 2) {
+          worst = Math.min(worst, Math.hypot(Number(nums[i]) - cx, Number(nums[i + 1]) - cy));
+        }
       }
       expect(worst, `성분 ${cs.length}개`).toBeGreaterThan(floorPx(size) * 0.92);
     }
