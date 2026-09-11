@@ -3267,7 +3267,12 @@ git commit -m "feat: CLI — IR 파일에서 화면용·각인용 SVG 생성"
 
 | 계획 | 내용 | 계획 1에 대한 의존 |
 |---|---|---|
-| 2. 파서 | 한국어·영어 → IR (스펙 7.3, 7.4) | `core/ir.ts`의 IR 타입, `core/phonology.ts`의 `syllabify` |
-| 3. 웹앱 | UI, 잉크 애니메이션, 분해 보기, 공유 URL, 사전 브라우저 (스펙 11) | `RenderResult.strokes`가 분해 보기 데이터 |
-| 4. 사전 자가 성장 | 빌드타임 생성, Worker, 잠정 등재 (스펙 10) | `core/lexicon.ts`의 `LexiconEntry` 스키마 |
-| 5. 씨앗 글리프 | 영화 38개 분석 → 씨앗 100개 + 자질 공간 보간 (스펙 8.3) | `LexiconEntry.seedGlyph`, `render/mapping.ts` |
+| **2. 스모크 렌더러** | 골격 → 영화 룩 (SDF + 도메인 워프 fbm) + 분사 애니메이션 (스펙 9.5) | `RenderResult.strokes`의 path `d`가 SDF 입력 |
+| 3. 파서 | 한국어·영어 → IR (스펙 7.3, 7.4) | `core/ir.ts`의 IR 타입, `core/phonology.ts`의 `syllabify` |
+| 4. 웹앱 | UI, 분해 보기, 공유 URL, PNG 내보내기, 사전 브라우저 (스펙 11, 12.1) | `RenderResult.strokes`가 분해 보기 데이터 |
+| 5. 사전 자가 성장 | 빌드타임 생성, Worker, 잠정 등재 (스펙 10) | `core/lexicon.ts`의 `LexiconEntry` 스키마 |
+| 6. 씨앗 글리프 | 영화 38개 분석 → 씨앗 100개 + 자질 공간 보간 (스펙 8.3) | `LexiconEntry.seedGlyph`, `render/mapping.ts` |
+
+**스모크 렌더러를 2번으로 당긴 이유.** 이 프로젝트의 가장 큰 리스크는 "결과물이 영화처럼 안 보이는 것"이다. 계획 1이 끝나면 골격이 나오므로, 곧바로 룩을 입혀 그 리스크를 확인할 수 있다. 파서를 먼저 만들면 확인이 한참 밀린다. 또한 스모크 층은 골격의 조악함을 덮어주므로, 씨앗 글리프(계획 6)가 완성되기 전에도 품질을 볼 수 있다.
+
+**계획 1은 이 변경의 영향을 받지 않는다.** 계획 1이 산출하는 벡터 골격이 그대로 스모크 렌더러의 입력이다. 버리는 작업이 없다.
