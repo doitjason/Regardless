@@ -32,3 +32,44 @@ describe('loadLook', () => {
     expect(loadLook().pR).not.toBe(999);
   });
 });
+
+describe('loadLook — 잘못된 입력', () => {
+  const valid = (): Record<string, unknown> => {
+    const o: Record<string, unknown> = { _: '설명' };
+    for (const k of LOOK_KEYS) o[k] = 1;
+    return o;
+  };
+
+  it('파라미터가 빠지면 던지고 이름을 말한다', () => {
+    const bad = valid();
+    delete bad['pR'];
+    expect(() => loadLook(bad)).toThrow(/pR/);
+  });
+
+  it('파라미터가 숫자가 아니면 던진다', () => {
+    expect(() => loadLook({ ...valid(), pR: '0.52' })).toThrow(/pR/);
+  });
+
+  it('NaN 과 Infinity 를 거부한다', () => {
+    expect(() => loadLook({ ...valid(), pR: NaN })).toThrow(/pR/);
+    expect(() => loadLook({ ...valid(), pR: Infinity })).toThrow(/pR/);
+  });
+
+  it('선언되지 않은 숫자 파라미터가 있으면 던지고 이름을 말한다', () => {
+    expect(() => loadLook({ ...valid(), pNewSlider: 0.3 })).toThrow(/pNewSlider/);
+  });
+
+  it("'_' 로 시작해도 숫자면 선언되지 않은 것으로 잡는다", () => {
+    // 이름이 아니라 값의 타입으로 문서용 키를 가려내야 한다.
+    expect(() => loadLook({ ...valid(), _pTest: 0.3 })).toThrow(/_pTest/);
+  });
+
+  it('문자열 문서용 키는 몇 개든 허용한다', () => {
+    expect(() => loadLook({ ...valid(), _메모: '아무 설명', _출처: '룩 랩' })).not.toThrow();
+  });
+
+  it('정상 입력은 선언된 파라미터를 모두 낸다', () => {
+    const out = loadLook(valid());
+    for (const k of LOOK_KEYS) expect(out[k], k).toBe(1);
+  });
+});

@@ -36,8 +36,8 @@ export type LookParams = Record<LookKey, number>;
  * 확정 조형을 읽는다. 호출할 때마다 새 객체를 돌려주므로
  * 호출자가 값을 바꿔도 다음 호출에 영향을 주지 않는다.
  */
-export function loadLook(): LookParams {
-  const src = raw as unknown as Record<string, unknown>;
+export function loadLook(source: Record<string, unknown> = raw as unknown as Record<string, unknown>): LookParams {
+  const src = source;
   const out = {} as LookParams;
   const missing: string[] = [];
   for (const k of LOOK_KEYS) {
@@ -48,7 +48,10 @@ export function loadLook(): LookParams {
   if (missing.length > 0) {
     throw new Error(`look-v3.json 에 없거나 숫자가 아닌 파라미터: ${missing.join(', ')}`);
   }
-  const extra = Object.keys(src).filter((k) => !k.startsWith('_') && !(LOOK_KEYS as readonly string[]).includes(k));
+  // 문서용 키는 **값의 타입**으로 가려낸다. 이름으로 가려내면 숫자 파라미터가
+  // 실수로 '_' 로 시작할 때 조용히 무시된다 — 이 모듈이 막으려는 바로 그 상황이다.
+  const extra = Object.keys(src).filter(
+    (k) => typeof src[k] === 'number' && !(LOOK_KEYS as readonly string[]).includes(k));
   if (extra.length > 0) {
     throw new Error(`look-v3.json 에 선언되지 않은 파라미터가 있다: ${extra.join(', ')}`);
   }
