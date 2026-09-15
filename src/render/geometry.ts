@@ -122,3 +122,18 @@ export function minWidthOf(widthAt: WidthFn, samples = 1024): number {
   for (let i = 0; i <= samples; i++) m = Math.min(m, widthAt(i / samples));
   return m;
 }
+
+/**
+ * 굵기가 배열로 주어진 획의 닫힌 윤곽선.
+ *
+ * `taperOutline` 은 굵기를 함수로 받지만, 획 어휘는 점마다의 굵기를 배열로
+ * 낳는다. 함수로 감싸 보간하면 표본 위치가 어긋나므로 배열을 직접 쓴다.
+ */
+export function outlineOf(pts: Pt[], widths: number[]): string {
+  if (pts.length < 2) throw new Error(`outlineOf: needs >= 2 points, got ${pts.length}`);
+  if (widths.length !== pts.length) {
+    throw new Error(`outlineOf: widths(${widths.length}) != pts(${pts.length})`);
+  }
+  const last = pts.length - 1;
+  return taperOutline(pts, (t) => widths[Math.round(t * last)] ?? 0);
+}
