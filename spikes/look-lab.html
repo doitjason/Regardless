@@ -394,21 +394,22 @@ function conceptParams(f) {
     thickK: 0.78 + f.concreteness * 0.62,
     // 덩어리 호 폭 — 관계성이 큰 개념이 넓게 퍼진다
     spanK: 0.60 + f.sociality * 0.80,
-    // 바깥으로 치우치는 정도 — 강도
-    outK: 0.45 + f.intensity * 1.05,
-    // 감기는 방향 — 정서가
+    // 긴 가시가 뻗는 거리 — 강도. (옛 outK 는 cBloomOut=0 에 곱해져 죽어 있었다)
+    reachK: 0.70 + f.intensity * 0.50,
+    // 가시가 쏠리고 휘는 방향 — 정서가. -1..1
     lean: (f.valence - 0.5) * 2.0,
     // 털 개수 — 행위성
     fringeK: 0.35 + social * 0.60,
     // 털 길이 — 추상어가 길다
     fringeLenK: 1.25 - f.concreteness * 0.55,
-    // 떨어진 반점 — 한정성이 낮을수록 흩어진다
-    speckK: 0.35 + (1 - f.boundedness) * 1.20,
+    // 가시 끝 뭉툭함 — 한정성. 한정=뭉친 끝, 비한정=가는 끝.
+    // (옛 speckK 는 반점을 쓰지 않는 확정 룩에서 죽어 있었다)
+    tipK: 0.70 + f.boundedness * 0.60,
     // 겹선 — 시간성. 여러 번 지나간 결
     doubleK: 0.40 + f.temporality * 1.20,
     // 작은 닫힌 고리 — 생물성
     loop: f.animacy >= 0.5,
-    // 링 굵기 변화 주파수 — 시간성
+    // 덩어리 굵기 물결의 주파수 — 시간성
     harmonic: 2 + Math.round(f.temporality * 6),
   };
 }
@@ -491,16 +492,17 @@ function disc(c, r, out, n = 8) {
 // 실제 로고그램의 털은 아주 가늘고 짧다. 반경의 10~20% 정도이며
 // 방사 방향으로 뻗지만 원형 윤곽을 깨뜨리지 않는다. 굵고 긴 가시를
 // 방사로 뻗으면 원이 읽히지 않고 바퀴살처럼 보인다.
-function fringe(at, outAng, count, len, wide, bend, rnd, out) {
+function fringe(at, outAng, count, len, wide, bend, rnd, out, lean = 0, tipK = 1) {
   for (let i = 0; i < count; i++) {
     const a = outAng + (rnd() - 0.5) * 0.5;
     const L = len * (0.6 + rnd() * 0.8);
-    const b = (rnd() - 0.5) * bend;
+    // 정서가가 휘는 방향을 한쪽으로 민다
+    const b = (rnd() - 0.5) * bend + lean * bend * 0.35;
     const tip = [at[0] + Math.cos(a) * L, at[1] + Math.sin(a) * L];
     const mid = [at[0] + Math.cos(a + b) * L * 0.55, at[1] + Math.sin(a + b) * L * 0.55];
     const pts = bezPts(at, mid, tip, 7);
     const root = wide * (0.7 + rnd() * 0.8);
-    strip(pts, profile(pts.length, root, root * val.cFringeTip, 'hair', rnd, 0.4), out);
+    strip(pts, profile(pts.length, root, root * Math.min(0.95, val.cFringeTip * tipK), 'hair', rnd, 0.4), out);
   }
 }
 
@@ -596,11 +598,16 @@ function bloomAt(word, angle, out, ctx) {
     const thick = val.cBloomThick * o.thickK * sk * (0.7 + rnd() * 0.5);
     // 중심선을 링 바깥으로 thick/2 만큼 밀어 안쪽 경계가 링에 닿게 한다.
     // 안쪽으로 부풀면 원 안이 더러워진다.
-    const bow = val.cBloomThick * val.cBloomOut * o.outK * (0.3 + rnd() * 0.6);
+    const bow = val.cBloomThick * val.cBloomOut * (0.3 + rnd() * 0.6);
     const nn = Math.max(16, Math.round(span * 44));
     const pts = arcPts(surf + thick * 0.44, st, span, bow, nn);
     const w = profile(pts.length, thick, val.pRingBase * 0.5, 'bloom', rnd, J * 0.7);
     if (rnd() < 0.5) w.reverse();
+    // 시간성 — 덩어리 굵기 물결. 층마다 harmonic 번 오르내린다.
+    for (let q = 0; q < w.length; q++) {
+      const tq = w.length === 1 ? 0 : q / (w.length - 1);
+      w[q] = Math.max(1e-6, w[q] * (1 + 0.16 * Math.sin(o.harmonic * Math.PI * tq)));
+    }
     strip(pts, w, out);
     if (k === 0) {
       const mid = pts[Math.floor(pts.length * 0.5)];
@@ -624,9 +631,11 @@ function bloomAt(word, angle, out, ctx) {
     const rootR = surf + val.cBloomThick * (0.25 + rnd() * 0.55);
     const root = [Math.cos(a) * rootR, Math.sin(a) * rootR];
     // 반경 방향에서 ±(퍼짐/2) 안으로만. 90°를 넘기지 않으니 항상 바깥이다.
-    const dir = a + (rnd() - 0.5) * Math.min(val.cFringeSpan, 2.6);
+    // 정서가가 쏠리는 방향을 한쪽으로 민다. 바깥 반평면 안에 묶는다.
+    const S = Math.min(val.cFringeSpan, 2.6);
+    const dir = a + Math.max(-1.5, Math.min(1.5, (rnd() - 0.5) * S + o.lean * S * 0.22));
     fringe(root, dir, 1, fLen * (0.55 + rnd() * 0.9),
-           val.cFringeFine, val.cFringeBend, rnd, out);
+           val.cFringeFine, val.cFringeBend, rnd, out, o.lean, o.tipK);
   }
 
   // 긴 가시 — 몇 개만 길게 뻗는다. 참고 이미지의 더듬이 같은 획.
@@ -635,14 +644,16 @@ function bloomAt(word, angle, out, ctx) {
     const a = st0 + span0 * rnd();
     const rootR = surf + val.cBloomThick * 0.4;
     const root = [Math.cos(a) * rootR, Math.sin(a) * rootR];
-    const dir = a + (rnd() - 0.5) * Math.min(val.cFringeSpan * 1.2, 2.6);
-    fringe(root, dir, 1, val.cWhiskerLen * dk * (0.6 + rnd() * 0.7),
-           val.cFringeFine * 1.25, val.cFringeBend * 0.7, rnd, out);
+    const S = Math.min(val.cFringeSpan * 1.2, 2.6);
+    const dir = a + Math.max(-1.5, Math.min(1.5, (rnd() - 0.5) * S + o.lean * S * 0.22));
+    // 강도가 도달 거리를 정한다
+    fringe(root, dir, 1, val.cWhiskerLen * dk * o.reachK * (0.6 + rnd() * 0.7),
+           val.cFringeFine * 1.25, val.cFringeBend * 0.7, rnd, out, o.lean, o.tipK);
   }
 
   // 떨어진 반점 — 바깥으로만
   if (peak) {
-    specks(peak, peakAng, Math.round(val.cSpeck * o.speckK * bud),
+    specks(peak, peakAng, Math.round(val.cSpeck * bud),
            fLen * 1.6, val.cSpeckR * dk, rnd, out);
   }
 
@@ -804,7 +815,9 @@ function assignZones(items, zones, seed, center, squeeze) {
       sx += Math.cos(a); sy += Math.sin(a);
     }
     const raw = (sx * sx + sy * sy) > 1e-12 ? Math.atan2(sy, sx) : base + (zi / zones) * Math.PI * 2;
-    return { angle: center + wrapPi(raw) * squeeze, members };
+    // 12시(π/2) 기준으로 역할 지도를 압축해 구획 중심으로 옮긴다.
+    // 예전에는 0(3시) 기준으로 압축해 문장이 하나여도 전체가 -90° 돌아갔다.
+    return { angle: center + wrapPi(raw - Math.PI / 2) * squeeze, members };
   }).filter((z) => z.members.length > 0);
 }
 
@@ -826,7 +839,9 @@ function buildGeometry() {
 
   parts.forEach((part, pi) => {
     // 문장 i 의 구획 중심. 구획 안으로 역할 지도를 압축한다.
-    const center = (pi / nParts) * Math.PI * 2 - Math.PI / 2;
+    // 문장 i 의 구획 중심은 12시에서 시계방향으로 i/n 바퀴. 문장이 하나면
+    // 12시이고, 역할 지도가 회전 없이 그대로 쓰인다 (행위 = 12시).
+    const center = Math.PI / 2 - (pi / nParts) * Math.PI * 2;
     const squeeze = 1 / nParts;
 
     const items = [...(part.concepts ?? []).map((c) => ({ ...c, kind: 'c' })),
