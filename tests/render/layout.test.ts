@@ -93,4 +93,53 @@ describe('layout', () => {
   it('성분이 없으면 던진다', () => {
     expect(() => layout(ir([]), look)).toThrow();
   });
+
+  const slotOf = (p: { item: Constituent }) => ROLE_SLOT[p.item.role];
+  const angDist = (a: number, b: number) => {
+    const d = Math.abs(a - b) % (Math.PI * 2);
+    return Math.min(d, Math.PI * 2 - d);
+  };
+
+  it('덩어리는 역할 지도에서 이웃한 성분끼리 묶인다 — 10개 역할', () => {
+    const roles = ['행위','행위수식','주체','주체수식','시간','시간수식','양상','정도','대상','대상수식'] as const;
+    // 표제어를 역할 순서와 어긋나게 붙여 canonical 문자열 순서가 링 순서와 다르게 한다
+    const lemmas = ['하','파','타','카','차','자','아','사','바','마'];
+    const cs = roles.map((r, i) => C(lemmas[i]!, r));
+    for (const p of layout(ir(cs), look).placements) {
+      expect(angDist(p.angle, slotAngle(slotOf(p), 0.5)), `${p.item.role}`).toBeLessThan(Math.PI / 3);
+    }
+  });
+
+  it('12시를 가로지르는 이웃도 한 덩어리가 되고 6시로 뒤집히지 않는다', () => {
+    // 11시·1시 쪽만 쓰면 두 슬롯이 60°밖에 안 떨어져 있어 원형 평균이 항상
+    // 그 60° 안에 남는다 — 라운드로빈이든 아니든 못 어긋난다. 6시(양상)에도
+    // 성분을 둬야 canonical 문자열 순서(대상수식류 접두 비교와 무관하게
+    // 방향 < 양상 < 행위수식)의 라운드로빈이 12시 이웃을 6시 성분과 섞어
+    // 버리는 결함이 드러난다.
+    const cs = [
+      ...Array.from({ length: 4 }, (_, i) => C(`ㄱ${i}`, '방향')),     // 슬롯 11
+      ...Array.from({ length: 2 }, (_, i) => C(`ㄷ${i}`, '양상')),     // 슬롯 6 (6시)
+      ...Array.from({ length: 4 }, (_, i) => C(`ㄴ${i}`, '행위수식')), // 슬롯 1
+    ];
+    for (const p of layout(ir(cs), look).placements) {
+      expect(angDist(p.angle, slotAngle(slotOf(p), 0.5)), `${p.item.role}`).toBeLessThan(Math.PI / 3);
+    }
+  });
+
+  it('구성원이 하나인 덩어리는 자기 슬롯 각도에 놓인다', () => {
+    for (const p of layout(three, look).placements) {
+      expect(angDist(p.angle, slotAngle(slotOf(p), 0.5))).toBeLessThan(1e-9);
+    }
+  });
+
+  it('구성원이 정확히 상쇄되는 덩어리도 유한하고 결정적인 각도를 낸다', () => {
+    const cs = [
+      ...Array.from({ length: 9 }, (_, i) => C(`ㄱ${i}`, '행위')), // 슬롯 0
+      C('ㄴ', '양상'),                                              // 슬롯 6
+    ];
+    const a = layout(ir(cs), look).placements;
+    const b = layout(ir([...cs].reverse()), look).placements;
+    for (const p of a) expect(Number.isFinite(p.angle)).toBe(true);
+    expect(b).toEqual(a);
+  });
 });

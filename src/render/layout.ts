@@ -56,7 +56,18 @@ const wrapPi = (a: number): number => {
  * 로고그램은 덩어리가 1~3군데뿐이고 복잡함은 그 안의 밀도로 온다. 그래서
  * 덩어리 수는 `cZones` 로 고정되고 개념들이 나눠 담긴다.
  *
+ * 덩어리는 역할 지도에서 이웃한 성분끼리 묶는다: 성분을 슬롯 순으로 정렬한
+ * 뒤, 가장 큰 빈 구간(연속한 슬롯 사이의 원형 간격) 다음에서 시작해 연속
+ * 구간으로 자른다. 이렇게 하면 11시·1시처럼 12시를 가로지르는 이웃도
+ * 한 덩어리가 된다. 자르는 크기는 예전 라운드로빈과 같은 분포(균등하게
+ * 나누고 남는 만큼 앞쪽 덩어리에 하나씩)를 그대로 써서, 겹쳐 쌓는 깊이의
+ * 상한(`ceil(n/zones) - 1`)은 바뀌지 않는다.
+ *
  * 덩어리 각도는 구성원 슬롯 각도의 원형 평균이다 — 역할 지도가 위치를 정한다.
+ * 다만 한 역할이 덩어리 하나의 몫보다 많은 단어를 가지면, 정렬-회전-절단만
+ * 으로는 그 역할을 다른 덩어리와 안 섞을 수 없어 덩어리가 여전히 먼 역할을
+ * 함께 담을 수 있다 — 정확히 상쇄되는 경우(원형 평균이 원점 근처로 뭉개지는
+ * 경우)는 시드된 폴백 각도로 받는다.
  *
  * 성분은 canonical 순서로 순회하므로 파서가 어떤 순서로 뱉어도 결과가 같다.
  */
@@ -65,8 +76,31 @@ export function layout(ir: IR, look: LookParams): { placements: Placement[]; tot
   if (items.length === 0) throw new Error('layout: IR에 성분이 없다');
 
   const zones = Math.max(1, Math.min(Math.round(look.cZones), items.length));
-  const buckets: Constituent[][] = Array.from({ length: zones }, () => []);
-  items.forEach((it, i) => buckets[i % zones]!.push(it));
+
+  // 슬롯 순으로 안정 정렬 (동점은 canonical 순서 유지 — Array.prototype.sort 는 안정적).
+  const bySlot = [...items].sort((a, b) => ROLE_SLOT[a.role] - ROLE_SLOT[b.role]);
+  const n = bySlot.length;
+  const slots = bySlot.map((it) => ROLE_SLOT[it.role]);
+
+  // 가장 큰 원형 빈 구간 다음에서 시작하도록 회전 지점을 찾는다.
+  // 동점이면 가장 작은 인덱스를 쓴다 (엄격한 `>` 로 스캔).
+  let rotateAt = 0, maxGap = -1;
+  for (let i = 0; i < n; i++) {
+    const prev = slots[(i - 1 + n) % n]!;
+    const gap = (slots[i]! - prev + 12) % 12;
+    if (gap > maxGap) { maxGap = gap; rotateAt = i; }
+  }
+  const rotated = [...bySlot.slice(rotateAt), ...bySlot.slice(0, rotateAt)];
+
+  // 연속 구간으로 자른다. 크기는 라운드로빈과 같은 분포를 낸다.
+  const base = Math.floor(n / zones), extra = n % zones;
+  const buckets: Constituent[][] = [];
+  let cursor = 0;
+  for (let z = 0; z < zones; z++) {
+    const size = base + (z < extra ? 1 : 0);
+    buckets.push(rotated.slice(cursor, cursor + size));
+    cursor += size;
+  }
 
   const rnd = mulberry32(fnv1a(`zone|${seedOf(ir)}`));
   const fallback = rnd() * Math.PI * 2;
