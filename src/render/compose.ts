@@ -1,4 +1,4 @@
-import { seedOf, subSeed, constituentKey, type Constituent, type IR, type Role } from '../core/ir';
+import { seedOf, subSeed, constituentKey, sortedConstituents, type Constituent, type IR, type Role } from '../core/ir';
 import { mulberry32 } from '../core/hash';
 import { lookup, type Lexicon } from '../core/lexicon';
 import { ENGINE_VERSION } from '../version';
@@ -8,11 +8,11 @@ import { outlineOf, type Pt } from './geometry';
 import { ringStrokes, bloomStrokes } from './vocab';
 import { nameStrokes } from './name';
 import { layout } from './layout';
-import type { Stroke } from './stroke';
+import { clampOutside, type Stroke } from './stroke';
 
 /**
- * 획 어휘가 쓰는 p 공간에서 로고그램이 차지하는 반지름 여유.
- * 반경 0.45 의 링이 화면 반쪽의 0.5 를 차지하도록 잡은 값이다.
+ * 획 어휘가 쓰는 p 공간에서 화면 반쪽 끝에 닿는 반경. 링(pR)뿐 아니라
+ * 가장 바깥의 가시·수염까지 이 안에 들어와야 잘리지 않는다.
  */
 export const P_SPAN = 0.9;
 
@@ -70,12 +70,14 @@ export function render(
   ir: IR, lex: Lexicon, look: LookParams, opts: RenderOptions = {},
 ): RenderResult {
   const size = opts.size ?? 300;
-  const floor = opts.minStrokeWidth ?? 0;
+  const minW = opts.minStrokeWidth ?? 0;
   const seed = seedOf(ir);
   const { placements, total } = layout(ir, look);
 
   const scale = scaleFor(size);
   const cx = size / 2, cy = size / 2;
+  // 링 밖 여유 (p 공간). 링이 아닌 획의 안쪽 가장자리는 이 반경 밖에 있어야 한다.
+  const floor = look.pR - look.pRingBase;
 
   const all: Stroke[] = [];
 
@@ -104,15 +106,27 @@ export function render(
   const strokes: StrokeMeta[] = [];
   for (const s of all) {
     if (s.pts.length < 2) continue;
-    const widths = floor > 0 ? s.widths.map((w) => Math.max(w, floor)) : s.widths;
+    const widths = minW > 0 ? s.widths.map((w) => Math.max(w, minW)) : s.widths;
+    // 생성기는 원래 폭 기준으로 각 점을 이미 링 밖(`floor + 원폭/2`)으로 밀어
+    // 두었다(`clampOutside`, vocab.ts/name.ts). 여기서 폭만 넓히면 넓어진
+    // 폭의 안쪽 가장자리(중심 - 새폭/2)가 링 안으로 들어올 수 있으므로, 넓어진
+    // 폭으로 다시 링 밖으로 민다. 링 자신은 경계를 정의하는 도형이므로 위치는
+    // 그대로 두고 굵기만 키운다 — 목걸이 모드에서 링이 두꺼워지는 것은
+    // 설계 문서가 예상한 결과다.
+    const ptsP = minW > 0 && s.role !== 'ring'
+      ? s.pts.map((p, i) => clampOutside([p], floor + widths[i]! / 2)[0]!)
+      : s.pts;
     // p 공간에서 화면 좌표로. y 는 위쪽이 + 이므로 뒤집는다.
-    const pts: Pt[] = s.pts.map((p) => [cx + p[0] * scale, cy - p[1] * scale]);
+    const pts: Pt[] = ptsP.map((p) => [cx + p[0] * scale, cy - p[1] * scale]);
     const d = outlineOf(pts, widths.map((w) => w * scale));
     body.push(`<path d="${d}" fill="${INK}" fill-rule="nonzero"/>`);
     strokes.push({ d, role: s.role, label: s.label, minWidth: Math.min(...widths) * scale });
   }
 
-  const meta = escapeXml(JSON.stringify({ ir, seed, engineVersion: ENGINE_VERSION }));
+  // 메타데이터도 SVG 의 일부이므로 어순이 새면 원칙 1(같은 뜻 → 같은 SVG)이
+  // 깨진다. 정렬된 성분을 담아 입력 어순 정보를 지운다.
+  const canonicalIr: IR = { constituents: sortedConstituents(ir), mood: ir.mood, engineVersion: ir.engineVersion };
+  const meta = escapeXml(JSON.stringify({ ir: canonicalIr, seed, engineVersion: ENGINE_VERSION }));
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" ` +
     `width="${size}" height="${size}" data-engine-version="${ENGINE_VERSION}">` +

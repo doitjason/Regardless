@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '../../src/render/compose';
+import { render, scaleFor } from '../../src/render/compose';
 import { outlineOf } from '../../src/render/geometry';
 import { loadLook } from '../../src/render/look';
 import { loadSeedLexicon } from '../../src/core/lexicon';
@@ -97,5 +97,28 @@ describe('render', () => {
   it('모든 패스가 닫혀 있다', () => {
     const { svg } = render(three, lex, look);
     for (const d of svg.match(/ d="[^"]+"/g) ?? []) expect(d.endsWith('Z"')).toBe(true);
+  });
+
+  it('성분 순서가 달라도 SVG 문자열 전체가 같다 — 메타데이터 포함 (원칙 1)', () => {
+    const a = render(three, lex, look).svg;
+    expect(render(ir([C('너','대상'), C('사랑','행위'), C('나','주체')]), lex, look).svg).toBe(a);
+    expect(render(ir([C('나','주체'), C('너','대상'), C('사랑','행위')]), lex, look).svg).toBe(a);
+  });
+
+  it('최소 선폭을 올려도 링이 아닌 획의 안쪽 가장자리가 링 안으로 들어오지 않는다', () => {
+    const size = 300, scale = scaleFor(size);
+    const floorPx = (look.pR - look.pRingBase) * scale;
+    for (const minStrokeWidth of [0, 0.05, 0.1, 0.2, 0.3]) {
+      const { strokes } = render(three, lex, look, { size, minStrokeWidth });
+      for (const s of strokes) {
+        if (s.role === 'ring') continue;
+        // 윤곽선 좌표만 읽는다 — 윤곽선 점은 이미 굵기가 반영된 가장자리다
+        const nums = s.d.match(/-?\d+(\.\d+)?/g)!.map(Number);
+        for (let i = 0; i + 1 < nums.length; i += 2) {
+          const r = Math.hypot(nums[i]! - size / 2, nums[i + 1]! - size / 2);
+          expect(r, `${s.label} min=${minStrokeWidth}`).toBeGreaterThanOrEqual(floorPx - 0.5);
+        }
+      }
+    }
   });
 });
