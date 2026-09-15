@@ -1177,8 +1177,11 @@ export function bloomStrokes(
   const span0 = look.cBloomSpan * sp.spanK;
   const st0 = angle - span0 * 0.5;
 
+  // 중심선만 floor 로 밀면 굵기의 절반만큼 여전히 안쪽으로 번진다
+  // (strokeMinRadius 는 굵기를 뺀다). 점마다 자기 반폭만큼 더 민다.
   const push = (pts: readonly Pt[], widths: number[], lbl: string) => {
-    out.push({ pts: clampOutside([...pts], floor), widths, label: lbl, role });
+    const safe = pts.map((p, i) => clampOutside([p], floor + (widths[i] ?? 0) / 2)[0]!);
+    out.push({ pts: safe, widths, label: lbl, role });
   };
 
   // ── 덩어리 층 ──
@@ -1441,8 +1444,11 @@ export function nameStrokes(
   const surf = look.pR + look.pRingBase * 0.5 + depth * look.cBloomThick * 0.80;
   const step = look.cBloomThick * 0.95;
 
+  // 중심선만 floor 로 밀면 굵기의 절반만큼 여전히 안쪽으로 번진다
+  // (strokeMinRadius 는 굵기를 뺀다). 점마다 자기 반폭만큼 더 민다.
   const push = (pts: readonly Pt[], widths: number[]) => {
-    out.push({ pts: clampOutside([...pts], floor), widths, label, role });
+    const safe = pts.map((p, i) => clampOutside([p], floor + (widths[i] ?? 0) / 2)[0]!);
+    out.push({ pts: safe, widths, label, role });
   };
 
   syllables.forEach((syl, i) => {
