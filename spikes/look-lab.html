@@ -773,12 +773,29 @@ const wrapPi = (a) => {
 /**
  * 개념들을 덩어리에 배분하고 각 덩어리의 각도를 구성원 슬롯에서 낸다.
  * `center` 와 `squeeze` 로 역할 지도를 구획 안으로 압축한다.
+ *
+ * 덩어리는 역할 지도에서 이웃한 성분끼리 묶는다 (엔진 src/render/layout.ts 와
+ * 같은 규칙). 슬롯 순으로 정렬하고 가장 큰 빈 구간 다음에서 시작해 연속
+ * 구간으로 자른다. 크기는 균등하게 나눠 겹쳐 쌓는 깊이의 상한을 지킨다.
  */
 function assignZones(items, zones, seed, center, squeeze) {
   const rnd = rng(fnv1a('zone|' + seed));
   const base = rnd() * Math.PI * 2;
-  const buckets = Array.from({ length: zones }, () => []);
-  items.forEach((it, i) => buckets[i % zones].push(it));
+  const slotOf = (it) => ROLE_SLOT[it.role] ?? 0;
+  const bySlot = [...items].sort((a, b) => slotOf(a) - slotOf(b));
+  const n = bySlot.length;
+  let rotateAt = 0, maxGap = -1;
+  for (let i = 0; i < n; i++) {
+    const gap = (slotOf(bySlot[i]) - slotOf(bySlot[(i - 1 + n) % n]) + 12) % 12;
+    if (gap > maxGap) { maxGap = gap; rotateAt = i; }
+  }
+  const rotated = [...bySlot.slice(rotateAt), ...bySlot.slice(0, rotateAt)];
+  const buckets = [];
+  for (let z = 0, cur = 0; z < zones; z++) {
+    const size = Math.floor(n / zones) + (z < n % zones ? 1 : 0);
+    buckets.push(rotated.slice(cur, cur + size));
+    cur += size;
+  }
   return buckets.map((members, zi) => {
     // 덩어리 위치 — 구성원 슬롯 각도의 원형 평균
     let sx = 0, sy = 0;
@@ -786,7 +803,7 @@ function assignZones(items, zones, seed, center, squeeze) {
       const a = slotAngle(ROLE_SLOT[m.role] ?? 0, 0.5);
       sx += Math.cos(a); sy += Math.sin(a);
     }
-    const raw = members.length ? Math.atan2(sy, sx) : base + (zi / zones) * Math.PI * 2;
+    const raw = (sx * sx + sy * sy) > 1e-12 ? Math.atan2(sy, sx) : base + (zi / zones) * Math.PI * 2;
     return { angle: center + wrapPi(raw) * squeeze, members };
   }).filter((z) => z.members.length > 0);
 }
