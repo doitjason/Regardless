@@ -72,6 +72,16 @@ export interface BloomCtx {
  *
  * 깊이는 **바깥으로** 쌓는다. 안쪽으로 쌓으면 개념이 많을 때 반경이 0을
  * 지나 음수가 되어 원 안이 표시로 가득 찬다. 실제로 그렇게 됐다.
+ *
+ * 자질이 기하에 닿는 자리 (설계 문서 8.4):
+ * - `valence`(`sp.lean`) → `hair`의 방향과 휨 — 가시가 한쪽으로 쏠리고 휜다.
+ * - `intensity`(`sp.reachK`) → 긴 가시(더듬이)의 도달 거리.
+ * - `boundedness`(`sp.tipK`) → `hair`의 끝 굵기 — 한정어는 뭉툭하게 뭉치고
+ *   비한정어는 가늘게 페이드한다.
+ * - `temporality`(`sp.harmonic`) → 덩어리 층의 굵기 물결 주파수.
+ * - `agency`·`sociality`(`sp.fringeK`) → 가시 개수. `concreteness`
+ *   (`sp.thickK`, `sp.fringeLenK`) → 덩어리 두께·가시 길이. `animacy`
+ *   (`sp.loop`) → 부속 고리.
  */
 export function bloomStrokes(
   look: LookParams, sp: ShapeParams, ctx: BloomCtx, rnd: () => number,
@@ -106,11 +116,16 @@ export function bloomStrokes(
     const span = span0 * (0.70 + rnd() * 0.55) * sk;
     const st = st0 + (rnd() - 0.5) * span0 * 0.30 * J;
     const thick = look.cBloomThick * sp.thickK * sk * (0.7 + rnd() * 0.5);
-    const bow = look.cBloomThick * look.cBloomOut * sp.outK * (0.3 + rnd() * 0.6);
+    const bow = look.cBloomThick * look.cBloomOut * (0.3 + rnd() * 0.6);
     const n = Math.max(16, Math.round(span * 44));
     const pts = arcPts(surf + thick * 0.44, st, span, bow, n);
     const widths = widthProfile(pts.length, thick, look.pRingBase * 0.5, 'bloom', rnd, J * 0.7);
     if (rnd() < 0.5) widths.reverse();
+    // 시간성 — 덩어리 굵기 물결의 주파수. 층마다 sp.harmonic 번 오르내린다.
+    for (let i = 0; i < widths.length; i++) {
+      const tmod = widths.length === 1 ? 0 : i / (widths.length - 1);
+      widths[i] = Math.max(1e-6, widths[i]! * (1 + 0.16 * Math.sin(sp.harmonic * Math.PI * tmod)));
+    }
     push(pts, widths, label);
   }
 
@@ -119,14 +134,20 @@ export function bloomStrokes(
   // 튄 것처럼 보인다. 방향은 반경 방향에서 ±(퍼짐/2) 안이므로 항상 바깥이다.
   const hair = (a: number, rootR: number, len: number, wide: number, spread: number) => {
     const at: Pt = [Math.cos(a) * rootR, Math.sin(a) * rootR];
-    const dir = a + (rnd() - 0.5) * Math.min(spread, 2.6);
+    // 정서가 — 가시가 쏠리는 방향(dir)과 휘는 방향(b)을 sp.lean 쪽으로 민다.
+    // 클램프로 바깥 반평면 안에 묶는다 — 안 그러면 링 클램프가 가시를 눌러
+    // 납작하게 만든다.
+    const S = Math.min(spread, 2.6);
+    const dir = a + Math.max(-1.5, Math.min(1.5, (rnd() - 0.5) * S + sp.lean * S * 0.22));
     const L = len * (0.6 + rnd() * 0.8);
-    const b = (rnd() - 0.5) * look.cFringeBend;
+    const b = (rnd() - 0.5) * look.cFringeBend + sp.lean * look.cFringeBend * 0.35;
     const tip: Pt = [at[0] + Math.cos(dir) * L, at[1] + Math.sin(dir) * L];
     const mid: Pt = [at[0] + Math.cos(dir + b) * L * 0.55, at[1] + Math.sin(dir + b) * L * 0.55];
     const pts = bezPts(at, mid, tip, 7);
     const root = wide * (0.7 + rnd() * 0.8);
-    push(pts, widthProfile(pts.length, root, root * look.cFringeTip, 'hair', rnd, 0.4), label);
+    // 한정성 — 가시 끝 굵기. 한정어는 뭉툭하게 뭉치고 비한정어는 가늘게 페이드한다.
+    const tipW = root * Math.min(0.95, look.cFringeTip * sp.tipK);
+    push(pts, widthProfile(pts.length, root, tipW, 'hair', rnd, 0.4), label);
   };
 
   const fCount = Math.max(0, Math.round(look.cFringe * sp.fringeK * bud * dk));
@@ -138,12 +159,12 @@ export function bloomStrokes(
          fLen, look.cFringeFine, look.cFringeSpan);
   }
 
-  // 긴 가시 — 몇 개만 길게 뻗는 더듬이
+  // 긴 가시 — 몇 개만 길게 뻗는 더듬이. 강도가 도달 거리를 정한다.
   const wCount = Math.max(0, Math.round(look.cWhisker * sp.fringeK * bud));
   for (let i = 0; i < wCount; i++) {
     hair(st0 + span0 * rnd(),
          surf + look.cBloomThick * 0.4,
-         look.cWhiskerLen * dk, look.cFringeFine * 1.25, look.cFringeSpan * 1.2);
+         look.cWhiskerLen * dk * sp.reachK, look.cFringeFine * 1.25, look.cFringeSpan * 1.2);
   }
 
   // ── 작은 닫힌 고리 — 생물성 ──

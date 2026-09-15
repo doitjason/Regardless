@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { bloomStrokes } from '../../src/render/vocab';
 import { loadLook } from '../../src/render/look';
 import { conceptParams } from '../../src/render/mapping';
-import { loadSeedLexicon, lookup } from '../../src/core/lexicon';
+import { loadSeedLexicon, lookup, FEATURE_KEYS, NEUTRAL_FEATURES } from '../../src/core/lexicon';
 import { strokeMinRadius } from '../../src/render/stroke';
 import { mulberry32 } from '../../src/core/hash';
 
@@ -81,5 +81,47 @@ describe('bloomStrokes', () => {
     const a = bloomStrokes(look, sp, ctx({ angle: 0.4 }), r());
     const b = bloomStrokes(look, sp, ctx({ angle: 2.1 }), r());
     expect(JSON.stringify(a)).not.toBe(JSON.stringify(b));
+  });
+
+  it('어느 자질을 바꿔도 획이 달라진다 — 자질이 기하까지 닿는다 (원칙 2)', () => {
+    // mapping 테스트는 배수만 본다. 배수가 기하에 닿지 않으면 그 자질은 죽는다.
+    for (const key of FEATURE_KEYS) {
+      const lo = bloomStrokes(look, conceptParams({ ...NEUTRAL_FEATURES, [key]: 0.02 }), ctx(), mulberry32(7));
+      const hi = bloomStrokes(look, conceptParams({ ...NEUTRAL_FEATURES, [key]: 0.98 }), ctx(), mulberry32(7));
+      expect(JSON.stringify(hi), key).not.toBe(JSON.stringify(lo));
+    }
+  });
+
+  it('사랑과 미움은 같은 시드에서도 다른 그림이다 — 정서가가 감김으로 드러난다', () => {
+    const lex = loadSeedLexicon();
+    const love = bloomStrokes(look, conceptParams(lookup(lex, '사랑')!.features), ctx(), mulberry32(7));
+    const hate = bloomStrokes(look, conceptParams(lookup(lex, '미움')!.features), ctx(), mulberry32(7));
+    expect(JSON.stringify(love)).not.toBe(JSON.stringify(hate));
+  });
+
+  it('긍정은 가시가 한쪽으로, 부정은 반대쪽으로 쏠린다', () => {
+    // 가시(뿌리→끝)의 접선 방향 성분 평균: 반경 방향에 대한 회전 부호
+    const sweep = (valence: number) => {
+      const ss = bloomStrokes(look, conceptParams({ ...NEUTRAL_FEATURES, valence }), ctx(), mulberry32(7))
+        .filter((s) => s.pts.length <= 8);          // 가시 (bezPts 7 → 8점)
+      let acc = 0;
+      for (const s of ss) {
+        const a = s.pts[0]!, t = s.pts[s.pts.length - 1]!;
+        acc += a[0] * (t[1] - a[1]) - a[1] * (t[0] - a[0]);   // 외적 z: +면 반시계
+      }
+      return acc / ss.length;
+    };
+    expect(Math.sign(sweep(0.98))).not.toBe(Math.sign(sweep(0.02)));
+  });
+
+  it('극단 자질과 실제 최대 깊이에서도 캔버스 반경 0.9 안에 머문다', () => {
+    // 균등 배치에서 최대 깊이는 ceil(10/5)-1 = 1 이다. 여유를 두고 3까지 본다.
+    for (const key of FEATURE_KEYS) for (const v of [0, 1]) for (let depth = 0; depth <= 3; depth++) {
+      for (const s of bloomStrokes(look, conceptParams({ ...NEUTRAL_FEATURES, [key]: v }), ctx({ depth }), mulberry32(3))) {
+        s.pts.forEach((p, i) => {
+          expect(Math.hypot(p[0], p[1]) + (s.widths[i] ?? 0) / 2, `${key}=${v} d=${depth}`).toBeLessThanOrEqual(0.9);
+        });
+      }
+    }
   });
 });

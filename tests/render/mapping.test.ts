@@ -59,7 +59,7 @@ describe('conceptParams — 8개 자질이 모두 조형에 도달한다', () =>
     for (const k of FEATURE_KEYS) {
       for (const v of [0, 1]) {
         const p = conceptParams(withF({ [k]: v } as Partial<SemanticFeatures>));
-        for (const key of ['thickK', 'spanK', 'outK', 'fringeK', 'fringeLenK', 'speckK', 'doubleK'] as const) {
+        for (const key of ['thickK', 'spanK', 'reachK', 'fringeK', 'fringeLenK', 'tipK', 'doubleK'] as const) {
           expect(p[key], `${k}=${v} → ${key}`).toBeGreaterThan(0);
         }
       }
@@ -79,7 +79,7 @@ describe('conceptParams — 씨앗 사전에서의 동작', () => {
   it('고양이와 개는 조형 파라미터가 가깝다', () => {
     const cat = conceptParams(lookup(lex, '고양이')!.features);
     const dog = conceptParams(lookup(lex, '개')!.features);
-    for (const k of ['thickK', 'spanK', 'outK', 'fringeK', 'fringeLenK'] as const) {
+    for (const k of ['thickK', 'spanK', 'reachK', 'fringeK', 'fringeLenK'] as const) {
       expect(Math.abs(cat[k] - dog[k]), k).toBeLessThan(0.15);
     }
     expect(cat.loop).toBe(dog.loop);
