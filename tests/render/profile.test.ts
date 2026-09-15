@@ -90,6 +90,23 @@ describe('widthProfile', () => {
     expect(a).toEqual(b);
   });
 
+  it('시드가 다르면 결과가 다르다 — 난수를 실제로 쓴다', () => {
+    // '결정적이다' 는 같은 시드 두 개를 비교하므로 rnd 를 무시해도 통과한다.
+    const a = widthProfile(25, 0.04, 0.002, 'bloom', mulberry32(1), 1.2);
+    const b = widthProfile(25, 0.04, 0.002, 'bloom', mulberry32(2), 1.2);
+    expect(a).not.toEqual(b);
+  });
+
+  it('hair 끝 굵기가 아주 작아도 호출자가 준 값을 지킨다', () => {
+    const root = 0.002, tip = 0.0001;
+    const w = widthProfile(31, root, tip, 'hair', mulberry32(42), 0);
+    expect(w[30]!).toBeCloseTo(tip, 9);
+  });
+
+  it('알 수 없는 kind 는 조용히 flat 으로 그리지 않고 던진다', () => {
+    expect(() => widthProfile(5, 0.02, 0.01, 'ring' as never, mulberry32(42), 0)).toThrow(/ring/);
+  });
+
   it('길이 1도 처리한다', () => {
     expect(widthProfile(1, 0.03, 0.01, 'lens', r(), 0)).toHaveLength(1);
   });

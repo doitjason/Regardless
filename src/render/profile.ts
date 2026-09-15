@@ -41,8 +41,18 @@ export function widthProfile(
     else if (kind === 'bloom') v = w0 * Math.pow(Math.sin(Math.PI * t), 0.38) + w1;
     else if (kind === 'spike') v = w0 * Math.pow(1 - t, 2.2) + w1;
     else if (kind === 'hair')  v = w0 * Math.pow(1 - t, 1.35) + w1;
-    else                       v = w0 * (1 - t) + w1 * t;
-    out.push(Math.max(0.0004, v * j(t)));
+    else if (kind === 'flat')  v = w0 * (1 - t) + w1 * t;
+    else {
+      // ProfileKind 에 새 종류를 추가하고 여기 분기를 빠뜨리면 컴파일이 실패한다.
+      // 빠뜨린 종류가 조용히 flat 으로 그려지는 것을 막는다.
+      const unreachable: never = kind;
+      throw new Error(`widthProfile: 알 수 없는 kind "${String(unreachable)}"`);
+    }
+    // 하한은 폭이 0 이하가 되는 것만 막는다. 눈에 보이는 최소 굵기를 강제하는
+    // 곳이 아니다 — 물리적 최소 선폭은 목걸이 내보내기가 따로 건다.
+    // 하한을 크게 잡으면 호출자가 hair 에 준 끝 굵기(w1)를 덮어 뭉툭한 끝의
+    // 비율이 깨진다.
+    out.push(Math.max(1e-6, v * j(t)));
   }
   return out;
 }
