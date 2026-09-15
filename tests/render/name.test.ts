@@ -44,6 +44,20 @@ describe('nameStrokes', () => {
     expect(a).not.toBe(b);
   });
 
+  it('받침이 다르면 모두 다른 그림이다 — 27개 받침 전부 (설계 문서 9.3.1)', () => {
+    // 가(U+AC00)에 받침 인덱스 1..27 을 더하면 모든 받침을 한 번씩 쓴다.
+    const outs = new Map<string, string>();
+    for (let k = 1; k <= 27; k++) {
+      const ch = String.fromCharCode(0xac00 + k);
+      const s = JSON.stringify(nameStrokes(look, syllabify(ch), ctx(), r()));
+      const dup = outs.get(s);
+      expect(dup, `${ch} 와 ${dup} 가 같은 그림이다`).toBeUndefined();
+      outs.set(s, ch);
+    }
+    // 받침 없는 '가' 와도 달라야 한다
+    expect(outs.has(JSON.stringify(nameStrokes(look, syllabify('가'), ctx(), r())))).toBe(false);
+  });
+
   it('조음 방법이 다르면 다른 결과를 낸다 — 루와 누', () => {
     const a = JSON.stringify(nameStrokes(look, syllabify('루'), ctx(), r()));
     const b = JSON.stringify(nameStrokes(look, syllabify('누'), ctx(), r()));

@@ -55,7 +55,6 @@ export function nameStrokes(
     const c = consonantFeatures(syl.onset);
     const v = vowelFeatures(syl.nucleus);
     const hasCoda = syl.coda !== '';
-    const c2 = c.secondManner !== null;
 
     // 조음 위치 → 굵기, 긴장도 → 장력
     const thick = look.cBloomThick * (0.55 - i * 0.06)
@@ -71,26 +70,29 @@ export function nameStrokes(
     const pts = arcPts(r + thick * 0.44, a0, span, bow, 22);
     push(pts, widthProfile(pts.length, thick, look.pRingBase * 0.5, 'bloom', rnd, J * 0.7));
 
-    // 종성이 있으면 획 끝에 표지를 붙인다
+    // 종성이 있으면 획 끝에 표지를 붙인다.
+    // 조음 위치 → 각도·길이·굵기, 조음 방법 → 곁가지가 휘는 정도, 긴장도 → 뿌리 굵기.
     if (hasCoda) {
       const cc = consonantFeatures(syl.coda);
       const e = pts[pts.length - 1]!;
       const ea = Math.atan2(e[1], e[0]) + (cc.place - 2) * 0.18;
       const L = look.cFringeLen * (0.5 + cc.place * 0.12);
+      const bend0 = 0.15 + (MANNER_SHAPE[cc.manner] ?? 0.3) * 0.6;
       const tip: Pt = [e[0] + Math.cos(ea) * L, e[1] + Math.sin(ea) * L];
-      const mid: Pt = [e[0] + Math.cos(ea + 0.4) * L * 0.55, e[1] + Math.sin(ea + 0.4) * L * 0.55];
+      const mid: Pt = [e[0] + Math.cos(ea + bend0) * L * 0.55, e[1] + Math.sin(ea + bend0) * L * 0.55];
       const cp = bezPts(e, mid, tip, 7);
-      const w0 = look.cFringeFine * (1.0 + cc.place * 0.15);
+      const w0 = look.cFringeFine * (1.0 + cc.place * 0.15) * (1 + cc.tense * 0.22);
       push(cp, widthProfile(cp.length, w0, w0 * look.cFringeTip, 'hair', rnd, 0.4));
 
       // 겹종성이면 두 번째 자음의 표지를 하나 더. 갈과 갉이 구별되어야 한다.
-      if (c2 || cc.secondManner !== null) {
+      if (cc.secondManner !== null) {
         const sa = ea - 0.55;
         const L2 = L * 0.7;
+        const bend2 = -(0.1 + (MANNER_SHAPE[cc.secondManner] ?? 0.3) * 0.5);
         const tip2: Pt = [e[0] + Math.cos(sa) * L2, e[1] + Math.sin(sa) * L2];
-        const mid2: Pt = [e[0] + Math.cos(sa - 0.3) * L2 * 0.55, e[1] + Math.sin(sa - 0.3) * L2 * 0.55];
+        const mid2: Pt = [e[0] + Math.cos(sa + bend2) * L2 * 0.55, e[1] + Math.sin(sa + bend2) * L2 * 0.55];
         const cp2 = bezPts(e, mid2, tip2, 6);
-        const w2 = look.cFringeFine * (0.7 + (cc.secondPlace ?? 2) * 0.12);
+        const w2 = look.cFringeFine * (0.7 + (cc.secondPlace ?? 2) * 0.12) * (1 + (cc.secondTense ?? 0) * 0.22);
         push(cp2, widthProfile(cp2.length, w2, w2 * look.cFringeTip, 'hair', rnd, 0.4));
       }
     }
