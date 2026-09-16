@@ -104,7 +104,12 @@ describe('조형 불변식', () => {
       const { strokes } = render(ir(cs), lex, look);
       expect(strokes.length).toBeGreaterThan(0);
       let worst = Infinity;
+      // 링 자신은 제외한다 — 링의 채워진 외곽선은 원래 안쪽 가장자리(약 75.8px,
+      // floorPx 81.67px 보다 안쪽)까지 그려진다. 그건 링 그 자체이지 "링 안쪽을
+      // 파고드는 표시"가 아니다. 이 불변식이 실제로 잡으려는 것은 비링 획이다
+      // (planII-final-review.md P5/P6 의 "비링 최소 r" 열).
       for (const s of strokes) {
+        if (s.role === 'ring') continue;
         // 패스의 d 에서만 좌표를 읽는다. SVG 전체를 훑으면 <metadata> 의
         // IR JSON 에 든 숫자(engineVersion "1.0.0" 등)를 좌표로 오인한다.
         const nums = s.d.match(/-?\d+\.\d+/g) ?? [];
@@ -113,7 +118,12 @@ describe('조형 불변식', () => {
           worst = Math.min(worst, Math.hypot(Number(nums[i]) - cx, Number(nums[i + 1]) - cy));
         }
       }
-      expect(worst, `성분 ${cs.length}개`).toBeGreaterThan(floorPx(size) * 0.92);
+      // 실측 여유는 floorPx 에서 약 0.9px 뿐이다(위 문서의 "비링 최소 r" 82.56px
+      // vs floorPx 81.67px). 종전의 floorPx*0.92(75.1px)는 8배 느슨해 링 안쪽을
+      // 파고드는 회귀도 통과시켰다. floorPx-1 로 조여 곡선 윤곽선 오프셋만큼만
+      // 여유를 둔다(m6). 이 값이 실패하면 여유를 되돌리지 말고 실제 최소값을 보고한다.
+      expect(worst, `성분 ${cs.length}개 — 비링 획이 링 안쪽 가장자리(floorPx-1)를 지켜야 한다`)
+        .toBeGreaterThan(floorPx(size) - 1);
     }
   });
 
@@ -123,11 +133,18 @@ describe('조형 불변식', () => {
     expect(ringCount).toBe(look.cGaps + 1 + look.cDouble);
   });
 
-  it('복잡도 예산 — 성분이 늘어도 획 수가 비례해서 늘지 않는다', () => {
+  it('복잡도 예산 — 성분이 늘어도 획 수가 예산 지수만큼만 늘어난다', () => {
     const n = (cs: Constituent[]) => render(ir(cs), lex, look).strokes.length;
     const one = n([LOVE]);
     const six = n([LOVE, ME_S, YOU_O, C('영원','시간수식'), C('어제','시간'), C('여기','장소')]);
-    expect(six).toBeLessThan(one * 6);
+    // `six < one * 6` 은 예산이 완전히 꺼져 있어도(선형 증가) 통과하는 거의
+    // 공허한 검사였다(m7). 예산이 꺼지면 성분 수만큼 6배로 늘어나고, 예산이
+    // 살아 있으면(`bud = n^-cBudget`) 6^(1-cBudget) 근처로만 늘어난다 — 그
+    // 실제 지수로 상한을 다시 세운다. 30% 여유는 예산이 덩어리 수(cZones)
+    // 단위로만 나뉘는 등 정수 반올림 오차를 흡수한다.
+    expect(six).toBeLessThan(one * Math.pow(6, 1 - look.cBudget) * 1.3);
+    // 예산이 아무것도 못 그리게 망가지는 회귀(획 수 0 등)도 함께 잡는다.
+    expect(six).toBeGreaterThan(one);
   });
 });
 

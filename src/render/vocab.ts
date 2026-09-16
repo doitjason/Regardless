@@ -132,14 +132,30 @@ export function bloomStrokes(
   // ── 가시 ──
   // 덩어리의 호 전체에 걸쳐 고르게 돋는다. 한 각도에서만 나면 붓 하나가
   // 튄 것처럼 보인다. 방향은 반경 방향에서 ±(퍼짐/2) 안이므로 항상 바깥이다.
-  const hair = (a: number, rootR: number, len: number, wide: number, spread: number) => {
+  //
+  // 이 함수는 spikes/look-lab.html 의 fringe() 를 그대로 옮긴 것이다 — 룩 랩이
+  // 사람이 눈으로 맞추고 확정한 기준 구현이고, 이 함수는 그 결과를 재현할
+  // 뿐이다. 랩의 fringe() 가 하는 일을 한 함수로 합쳤다: (1) 호출부에서
+  // 정하는 방향 퍼짐(S 항, sp.lean 으로 한쪽을 민다), (2) fringe() 안에서
+  // 그 방향에 한 번 더 얹는 잔지터((rnd()-0.5)*0.5), (3) 호출부 길이 배율 ×
+  // fringe() 안쪽 길이 배율(두 번 흩는다), (4) 휨, (5) 폭 프로파일. 랩과
+  // 난수를 뽑는 순서를 맞춰 두었다 — 랩이 바뀌면 이 함수도 같이 바뀌어야 한다.
+  const hair = (
+    a: number, rootR: number, len: number, wide: number, spread: number,
+    lenBase: number, lenRange: number,
+  ) => {
     const at: Pt = [Math.cos(a) * rootR, Math.sin(a) * rootR];
     // 정서가 — 가시가 쏠리는 방향(dir)과 휘는 방향(b)을 sp.lean 쪽으로 민다.
     // 클램프로 바깥 반평면 안에 묶는다 — 안 그러면 링 클램프가 가시를 눌러
-    // 납작하게 만든다.
+    // 납작하게 만든다. 룩 랩은 이 클램프를 호출부 항에만 걸지만, 엔진은
+    // fringe() 가 한 번 더 얹는 잔지터까지 합친 "합성 방향 오프셋"에 건다.
     const S = Math.min(spread, 2.6);
-    const dir = a + Math.max(-1.5, Math.min(1.5, (rnd() - 0.5) * S + sp.lean * S * 0.22));
-    const L = len * (0.6 + rnd() * 0.8);
+    const callOffset = (rnd() - 0.5) * S + sp.lean * S * 0.22;
+    const extraJitter = (rnd() - 0.5) * 0.5;
+    const dir = a + Math.max(-1.5, Math.min(1.5, callOffset + extraJitter));
+    // 길이 — 랩처럼 두 번 흩는다: 호출부 배율(lenBase..lenBase+lenRange) 다음
+    // fringe() 안쪽 배율(0.6..1.4). 평균은 한 번 흩는 것과 같지만 분산이 랩과 같아진다.
+    const L = len * (lenBase + rnd() * lenRange) * (0.6 + rnd() * 0.8);
     const b = (rnd() - 0.5) * look.cFringeBend + sp.lean * look.cFringeBend * 0.35;
     const tip: Pt = [at[0] + Math.cos(dir) * L, at[1] + Math.sin(dir) * L];
     const mid: Pt = [at[0] + Math.cos(dir + b) * L * 0.55, at[1] + Math.sin(dir + b) * L * 0.55];
@@ -156,7 +172,7 @@ export function bloomStrokes(
     const t = Math.min(1, Math.max(0, (i + 0.5) / fCount + (rnd() - 0.5) / fCount));
     hair(st0 + span0 * t,
          surf + look.cBloomThick * (0.25 + rnd() * 0.55),
-         fLen, look.cFringeFine, look.cFringeSpan);
+         fLen, look.cFringeFine, look.cFringeSpan, 0.55, 0.9);
   }
 
   // 긴 가시 — 몇 개만 길게 뻗는 더듬이. 강도가 도달 거리를 정한다.
@@ -164,7 +180,7 @@ export function bloomStrokes(
   for (let i = 0; i < wCount; i++) {
     hair(st0 + span0 * rnd(),
          surf + look.cBloomThick * 0.4,
-         look.cWhiskerLen * dk * sp.reachK, look.cFringeFine * 1.25, look.cFringeSpan * 1.2);
+         look.cWhiskerLen * dk * sp.reachK, look.cFringeFine * 1.25, look.cFringeSpan * 1.2, 0.6, 0.7);
   }
 
   // ── 작은 닫힌 고리 — 생물성 ──
