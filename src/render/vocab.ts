@@ -1,9 +1,10 @@
 import type { LookParams } from './look';
 import type { ShapeParams } from './mapping';
-import type { Role } from '../core/ir';
+import type { Role, Mood } from '../core/ir';
 import type { Pt } from './geometry';
 import { widthProfile, smoothJit } from './profile';
 import { arcPts, bezPts, ringFloor, bloomSurface, pushOutside, type Stroke } from './stroke';
+import { ROLE_SLOT, slotAngle } from './layout';
 
 /**
  * 링 — 로고그램의 뼈대인 원 하나.
@@ -201,5 +202,75 @@ export function bloomStrokes(
     push(pts, widthProfile(pts.length, look.pRingBase * 0.55, 0.0004, 'lens', rnd, J), label);
   }
 
+  return out;
+}
+
+/**
+ * 문장 종류 표지 (설계 문서 6.2, 2.3 원작 규칙).
+ *
+ * `mood` 는 문장 수준 속성이고 6시 양상 슬롯이 그것이 그려지는 자리다.
+ * 평서문은 표지가 없다 — 표지가 없다는 것 자체가 평서문의 표시다.
+ *
+ * 세 표지는 형태로 구별된다:
+ * - 의문: 링을 따라간 뒤 끝이 바깥으로 말리는 **갈고리**. 원작 규칙이다.
+ * - 부정: 링 바깥 면에 수직으로 얹힌 **짧고 굵은 막대**. 흐름을 끊는 모양이다.
+ * - 의지: 바깥으로 벌어지는 **두 갈래**. 아직 일어나지 않은 방향을 가리킨다.
+ */
+export function moodStrokes(look: LookParams, mood: Mood, rnd: () => number): Stroke[] {
+  if (mood === 'declarative') return [];
+
+  const out: Stroke[] = [];
+  const floor = ringFloor(look);
+  const surf = bloomSurface(look, 0);
+  const base = slotAngle(ROLE_SLOT['양상'], 0);
+  const L = look.cMoodLen;
+  const W = look.cMoodThick;
+  const J = look.cJitter;
+
+  const push = (pts: readonly Pt[], widths: number[]) => {
+    out.push({ pts: pushOutside(pts, widths, floor), widths, label: mood, role: '양상' });
+  };
+
+  if (mood === 'interrogative') {
+    // 링을 따라 짧은 호를 그리고, 그 끝에서 바깥으로 말아 올린다
+    const span = L * 1.6;
+    const arc = arcPts(surf + W * 0.5, base - span * 0.5, span, W * 0.4, 20);
+    push(arc, widthProfile(arc.length, W, W * 0.45, 'bloom', rnd, J * 0.5));
+
+    const e = arc[arc.length - 1]!;
+    const ea = Math.atan2(e[1], e[0]);
+    const tip: Pt = [e[0] + Math.cos(ea + 0.9) * L, e[1] + Math.sin(ea + 0.9) * L];
+    const mid: Pt = [e[0] + Math.cos(ea + 0.2) * L * 0.7, e[1] + Math.sin(ea + 0.2) * L * 0.7];
+    const hook = bezPts(e, mid, tip, 10);
+    push(hook, widthProfile(hook.length, W * 0.8, W * 0.8 * look.cFringeTip, 'hair', rnd, 0.4));
+    return out;
+  }
+
+  if (mood === 'negative') {
+    // 링 바깥 면을 가로지르는 굵은 막대 하나. 반경 방향이다.
+    const r0 = surf, r1 = surf + L;
+    const bar: Pt[] = [];
+    const n = 12;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, rr = r0 + (r1 - r0) * t;
+      bar.push([Math.cos(base) * rr, Math.sin(base) * rr]);
+    }
+    push(bar, widthProfile(bar.length, W * 1.5, W * 1.5, 'flat', rnd, J * 0.4));
+    return out;
+  }
+
+  // volitional — 바깥으로 벌어지는 두 갈래
+  for (const side of [-1, 1] as const) {
+    const a0 = base + side * 0.10;
+    const root: Pt = [Math.cos(a0) * surf, Math.sin(a0) * surf];
+    const dir = a0 + side * 0.45;
+    const tip: Pt = [root[0] + Math.cos(dir) * L * 1.3, root[1] + Math.sin(dir) * L * 1.3];
+    const mid: Pt = [
+      root[0] + Math.cos(dir - side * 0.25) * L * 0.7,
+      root[1] + Math.sin(dir - side * 0.25) * L * 0.7,
+    ];
+    const pts = bezPts(root, mid, tip, 10);
+    push(pts, widthProfile(pts.length, W * 1.1, W * 1.1 * look.cFringeTip, 'hair', rnd, 0.4));
+  }
   return out;
 }

@@ -5,7 +5,7 @@ import { ENGINE_VERSION } from '../version';
 import type { LookParams } from './look';
 import { conceptParams } from './mapping';
 import { outlineOf, type Pt } from './geometry';
-import { ringStrokes, bloomStrokes } from './vocab';
+import { ringStrokes, bloomStrokes, moodStrokes } from './vocab';
 import { nameStrokes } from './name';
 import { layout } from './layout';
 import { ringFloor, pushOutside, type Stroke } from './stroke';
@@ -91,6 +91,9 @@ export function buildStrokes(ir: IR, lex: Lexicon, look: LookParams): SkeletonRe
 
   // ── 링 ──
   all.push(...ringStrokes(look, mulberry32(subSeed(seed, 'ring'))));
+
+  // 문장 종류 표지 — 6시 양상 슬롯. 평서문이면 빈 배열이다 (설계 문서 6.2).
+  all.push(...moodStrokes(look, ir.mood, mulberry32(subSeed(seed, 'mood'))));
 
   // ── 성분 ──
   for (const pl of placements) {

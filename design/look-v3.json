@@ -29,6 +29,8 @@
   "cSpeck": 0,
   "cSpeckR": 0.0008,
   "cJitter": 1.8,
+  "cMoodLen": 0.16,
+  "cMoodThick": 0.026,
 
   "pSharp": 1,
   "pSoft": 0.057,

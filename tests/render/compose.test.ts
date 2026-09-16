@@ -149,4 +149,17 @@ describe('render', () => {
     const b = buildStrokes(ir([C('너','대상'), C('사랑','행위'), C('나','주체')]), lex, look).strokes;
     expect(JSON.stringify(b)).toBe(JSON.stringify(a));
   });
+
+  it('문장 종류가 달라지면 그림이 달라진다 (설계 문서 6.2)', () => {
+    const a = render(three, lex, look).svg;
+    const q = render(ir([C('사랑','행위'), C('나','주체'), C('너','대상')], 'interrogative'), lex, look).svg;
+    expect(q).not.toBe(a);
+  });
+
+  it('평서문에는 양상 표지가 없고 의문문에는 있다', () => {
+    const decl = render(three, lex, look).strokes;
+    const ques = render(ir([C('사랑','행위'), C('나','주체'), C('너','대상')], 'interrogative'), lex, look).strokes;
+    expect(decl.some((s) => s.role === '양상')).toBe(false);
+    expect(ques.some((s) => s.role === '양상')).toBe(true);
+  });
 });
