@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, scaleFor } from '../../src/render/compose';
+import { render, scaleFor, buildStrokes } from '../../src/render/compose';
 import { outlineOf } from '../../src/render/geometry';
 import { loadLook } from '../../src/render/look';
 import { loadSeedLexicon } from '../../src/core/lexicon';
@@ -126,5 +126,27 @@ describe('render', () => {
         }
       }
     }
+  });
+
+  it('buildStrokes 가 render 와 같은 골격을 낸다', () => {
+    const { strokes, seed, total } = buildStrokes(three, lex, look);
+    const r = render(three, lex, look);
+    expect(seed).toBe(r.seed);
+    expect(total).toBe(3);
+    expect(strokes.length).toBe(r.strokes.length);
+    expect(strokes.map((s) => `${String(s.role)}|${s.label}`))
+      .toEqual(r.strokes.map((s) => `${String(s.role)}|${s.label}`));
+  });
+
+  it('buildStrokes 의 좌표는 p 공간이다 — 화면 좌표가 아니다', () => {
+    for (const s of buildStrokes(three, lex, look).strokes) {
+      for (const p of s.pts) expect(Math.hypot(p[0], p[1])).toBeLessThanOrEqual(0.9);
+    }
+  });
+
+  it('buildStrokes 도 성분 순서에 영향받지 않는다 (원칙 1)', () => {
+    const a = buildStrokes(three, lex, look).strokes;
+    const b = buildStrokes(ir([C('너','대상'), C('사랑','행위'), C('나','주체')]), lex, look).strokes;
+    expect(JSON.stringify(b)).toBe(JSON.stringify(a));
   });
 });

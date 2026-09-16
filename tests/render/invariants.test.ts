@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, scaleFor } from '../../src/render/compose';
+import { render, scaleFor, type RenderResult } from '../../src/render/compose';
 import { loadLook } from '../../src/render/look';
 import { loadSeedLexicon } from '../../src/core/lexicon';
 import { syllabify } from '../../src/core/phonology';
@@ -132,6 +132,11 @@ describe('조형 불변식', () => {
 });
 
 describe('골든 파일 — 의도치 않은 조형 변화 감지', () => {
+  // 이 스냅샷은 의도치 않은 조형 변화를 잡는 그물이다.
+  // `design/look-v3.json` 을 바꾸면 전부 달라지는 것이 정상이므로 그때는
+  // `npx vitest run tests/render/invariants.test.ts -u` 로 갱신하고,
+  // 커밋 메시지에 어떤 조형을 왜 바꿨는지 적는다.
+  // 룩을 바꾸지 않았는데 이 테스트가 깨졌다면 회귀다 — 갱신하지 말고 원인을 찾는다.
   const golden: Array<[string, IR]> = [
     ['사랑', ir([LOVE])],
     ['나는 너를 사랑해', ir([LOVE, ME_S, YOU_O])],
@@ -140,9 +145,30 @@ describe('골든 파일 — 의도치 않은 조형 변화 감지', () => {
     ['나는 루이즈를 사랑해', ir([LOVE, ME_S,
       { kind: 'phonetic', role: '대상', syllables: syllabify('루이즈') }])],
   ];
+
+  // 전체 SVG 스냅샷은 34KB 한 줄이라 사람이 diff 를 읽을 수 없다. 역할별
+  // 획 수·경계·최소 폭처럼 작은 요약을 나란히 고정해 두면, "룩을 의도적으로
+  // 바꿨다"와 "조립이 깨졌다"를 diff 에서 구별할 수 있다.
+  const fingerprint = (svg: string, strokes: RenderResult['strokes']) => {
+    const nums = (svg.match(/ d="[^"]+"/g) ?? []).join(' ').match(/-?\d+(\.\d+)?/g)!.map(Number);
+    const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
+    const r2 = (n: number) => Math.round(n * 10) / 10;
+    return {
+      획수: strokes.length,
+      역할: [...new Set(strokes.map((s) => String(s.role)))].sort().join(','),
+      경계: [r2(Math.min(...xs)), r2(Math.min(...ys)), r2(Math.max(...xs)), r2(Math.max(...ys))],
+      최소폭: r2(Math.min(...strokes.map((s) => s.minWidth)) * 100) / 100,
+    };
+  };
+
   for (const [name, input] of golden) {
     it(`${name} 의 SVG가 고정되어 있다`, () => {
       expect(render(input, lex, look).svg).toMatchSnapshot();
+    });
+
+    it(`${name} 의 조형 요약`, () => {
+      const { svg, strokes } = render(input, lex, look);
+      expect(fingerprint(svg, strokes)).toMatchSnapshot();
     });
   }
 });

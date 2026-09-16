@@ -58,26 +58,32 @@ function labelOf(c: Constituent): string {
   return c.syllables.map((s) => `${s.onset}${s.nucleus}${s.coda}`).join('');
 }
 
+export interface SkeletonResult {
+  /** p 공간 획들. 화면 렌더러(계획 IV)와 목걸이 검증이 같은 골격을 쓴다. */
+  strokes: Stroke[];
+  seed: number;
+  /** 성분 수 — 복잡도 예산의 분모 */
+  total: number;
+}
+
 /**
- * IR → SVG. 순수 함수이며 브라우저 API 에 의존하지 않는다.
+ * IR → 골격(`Stroke[]`). `render` 가 SVG 로 굳히기 전까지 하는 조립 — `layout`,
+ * 링 획, 성분별(서브시드가 붙은) 블룸·이름 획, 사전 미등재 에러 — 전부를 한다.
+ *
+ * **좌표는 p 공간이다 — 화면 좌표가 아니다.** 스케일링·y 뒤집기·
+ * `minStrokeWidth` 재클램프는 여기 없다. `render` 가 이 결과를 받아 그
+ * 화면 변환을 적용한다. 화면 렌더러(계획 IV)의 삼각형 셰이더와 목걸이의
+ * 틈·연결성 검증이 SVG 를 역파싱하지 않고 같은 골격을 직접 쓰게 하려고
+ * 뽑아냈다.
  *
  * 성분은 canonical 순서로 순회하고 성분마다 독립된 서브시드를 쓰기 때문에,
  * 파서가 성분을 어떤 순서로 뱉어도 결과가 같다 (원칙 1).
  *
  * 조형 수치는 전부 `look` 에서 온다. 이 파일에 수치를 박지 않는다.
  */
-export function render(
-  ir: IR, lex: Lexicon, look: LookParams, opts: RenderOptions = {},
-): RenderResult {
-  const size = opts.size ?? 300;
-  const minW = opts.minStrokeWidth ?? 0;
+export function buildStrokes(ir: IR, lex: Lexicon, look: LookParams): SkeletonResult {
   const seed = seedOf(ir);
   const { placements, total } = layout(ir, look);
-
-  const scale = scaleFor(size);
-  const cx = size / 2, cy = size / 2;
-  // 링 밖 여유 (p 공간). 링이 아닌 획의 안쪽 가장자리는 이 반경 밖에 있어야 한다.
-  const floor = look.pR - look.pRingBase;
 
   const all: Stroke[] = [];
 
@@ -100,6 +106,27 @@ export function render(
         { angle: pl.angle, depth: pl.depth, n: total, label, role: pl.item.role }, rnd));
     }
   }
+
+  return { strokes: all, seed, total };
+}
+
+/**
+ * IR → SVG. 순수 함수이며 브라우저 API 에 의존하지 않는다.
+ *
+ * 골격 조립은 `buildStrokes` 가 한다 — 여기서는 그 결과를 받아 폭 넓히기·
+ * 재클램프, 좌표 변환, 윤곽선, 메타데이터, SVG 문자열만 만든다.
+ */
+export function render(
+  ir: IR, lex: Lexicon, look: LookParams, opts: RenderOptions = {},
+): RenderResult {
+  const size = opts.size ?? 300;
+  const minW = opts.minStrokeWidth ?? 0;
+  const { strokes: all, seed } = buildStrokes(ir, lex, look);
+
+  const scale = scaleFor(size);
+  const cx = size / 2, cy = size / 2;
+  // 링 밖 여유 (p 공간). 링이 아닌 획의 안쪽 가장자리는 이 반경 밖에 있어야 한다.
+  const floor = look.pR - look.pRingBase;
 
   // ── SVG ──
   const body: string[] = [];
