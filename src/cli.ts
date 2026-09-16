@@ -33,11 +33,25 @@ export function parseArgs(argv: string[]): CliArgs {
   if (!out) throw new Error(`--out 이 필요하다\n\n${USAGE}`);
   const sizeRaw = get('--size');
   const mmRaw = get('--min-stroke-mm');
+  let size: number | undefined;
+  if (sizeRaw !== undefined) {
+    size = Number(sizeRaw);
+    if (!Number.isFinite(size) || size <= 0 || !Number.isInteger(size) || size < 16) {
+      throw new Error(`--size 는 16 이상의 정수여야 한다: "${sizeRaw}"\n\n${USAGE}`);
+    }
+  }
+  let minStrokeMm: number | undefined;
+  if (mmRaw !== undefined) {
+    minStrokeMm = Number(mmRaw);
+    if (!Number.isFinite(minStrokeMm) || minStrokeMm <= 0) {
+      throw new Error(`--min-stroke-mm 은 0보다 큰 수여야 한다: "${mmRaw}"\n\n${USAGE}`);
+    }
+  }
   return {
     input, out,
     necklace: argv.includes('--necklace'),
-    ...(sizeRaw !== undefined ? { size: Number(sizeRaw) } : {}),
-    ...(mmRaw !== undefined ? { minStrokeMm: Number(mmRaw) } : {}),
+    ...(size !== undefined ? { size } : {}),
+    ...(minStrokeMm !== undefined ? { minStrokeMm } : {}),
   };
 }
 

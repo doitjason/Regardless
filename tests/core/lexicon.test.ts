@@ -69,6 +69,27 @@ describe('씨앗 사전', () => {
     expect(lookup(lex, 'toString')).toBeUndefined();
     expect(lookup(lex, 'constructor')).toBeUndefined();
   });
+
+  it('호출마다 다른 객체를 준다', () => {
+    // loadLook() 과 대칭이어야 한다 — 임포트한 객체를 그대로 돌려주면
+    // 호출자가 값을 바꿀 때 프로세스 전역 상태가 된다.
+    expect(loadSeedLexicon()).not.toBe(loadSeedLexicon());
+  });
+
+  it('반환값에 쓰면 엄격 모드에서 던진다', () => {
+    const l = loadSeedLexicon();
+    expect(() => { (l as any).새말 = {} }).toThrow();
+  });
+
+  it('항목에 쓰는 것도 엄격 모드에서 던진다', () => {
+    const l = loadSeedLexicon();
+    expect(() => { (l['사랑'] as any).gloss_en = 'x' }).toThrow();
+  });
+
+  it('얼려도 기존 조회는 그대로 된다', () => {
+    const l = loadSeedLexicon();
+    expect(lookup(l, '사랑')?.gloss_en).toBeTruthy();
+  });
 });
 
 describe('자질 유일성', () => {

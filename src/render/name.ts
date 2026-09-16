@@ -3,12 +3,15 @@ import type { Pt } from './geometry';
 import type { Role, Syllable } from '../core/ir';
 import { consonantFeatures, vowelFeatures } from '../core/phonology';
 import { widthProfile } from './profile';
-import { arcPts, bezPts, clampOutside, type Stroke } from './stroke';
+import { arcPts, bezPts, ringFloor, bloomSurface, pushOutside, type Stroke } from './stroke';
 
+/**
+ * 이름은 음절 수가 곧 복잡도이므로 덩어리(`BloomCtx.n`)와 달리 복잡도
+ * 예산을 타지 않는다 — 그래서 성분 수(`n`) 필드가 없다.
+ */
 export interface NameCtx {
   angle: number;
   depth: number;
-  n: number;
   label: string;
   role: Role;
 }
@@ -47,15 +50,12 @@ export function nameStrokes(
   const { angle, label, role } = ctx;
   const depth = Math.max(0, ctx.depth);
   const J = look.cJitter;
-  const floor = look.pR - look.pRingBase;
-  const surf = look.pR + look.pRingBase * 0.5 + depth * look.cBloomThick * 0.80;
-  const step = look.cBloomThick * 0.95;
+  const floor = ringFloor(look);
+  const surf = bloomSurface(look, depth);
+  const step = look.cBloomThick * 0.95; // 룩 JSON 후보 (목걸이 룩에서 달라질 값 — 나선 간격)
 
-  // 중심선만 floor 로 밀면 굵기의 절반만큼 여전히 안쪽으로 번진다
-  // (strokeMinRadius 는 굵기를 뺀다). 점마다 자기 반폭만큼 더 민다.
   const push = (pts: readonly Pt[], widths: number[]) => {
-    const safe = pts.map((p, i) => clampOutside([p], floor + (widths[i] ?? 0) / 2)[0]!);
-    out.push({ pts: safe, widths, label, role });
+    out.push({ pts: pushOutside(pts, widths, floor), widths, label, role });
   };
 
   syls.forEach((syl, i) => {
@@ -67,7 +67,7 @@ export function nameStrokes(
     // 배수에 바닥을 건다 — 상한(MAX_SYLLABLES) 안에서는 바닥이 걸리지 않고
     // 옛 수치와 같지만, 상한이 없던 시절엔 i 가 커지며 음수가 되어 획이
     // 뒤집혔다.
-    const thick = look.cBloomThick * Math.max(0.12, 0.55 - i * 0.06)
+    const thick = look.cBloomThick * Math.max(0.12, 0.55 - i * 0.06) // 룩 JSON 후보 (목걸이 룩에서 달라질 값 — 음절 감쇠)
                 * (0.55 + c.place * 0.16) * (1 + c.tense * 0.18);
     // 모음 고저 → 호 길이, 전후설 → 감기는 방향
     const span = look.cBloomSpan * (0.45 + v.height * 0.55) * Math.max(0.2, 1 - i * 0.08);

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { clampOutside, strokeMinRadius, arcPts, bezPts, type Stroke } from '../../src/render/stroke';
+import {
+  clampOutside, strokeMinRadius, arcPts, bezPts, pushOutside, type Stroke,
+} from '../../src/render/stroke';
 import type { Pt } from '../../src/render/geometry';
 
 const rad = (p: Pt) => Math.hypot(p[0], p[1]);
@@ -72,5 +74,15 @@ describe('strokeMinRadius', () => {
 
   it('점이 없으면 Infinity 를 낸다', () => {
     expect(strokeMinRadius({ pts: [], widths: [], label: '', role: 'ring' })).toBe(Infinity);
+  });
+});
+
+describe('pushOutside', () => {
+  it('pushOutside 는 굵기까지 링 밖에 둔다', () => {
+    const pts: Pt[] = [[0.1, 0], [0.5, 0], [0.9, 0]];
+    const widths = [0.2, 0.2, 0.2];
+    for (const p of pushOutside(pts, widths, 0.5)) {
+      expect(Math.hypot(p[0], p[1])).toBeGreaterThanOrEqual(0.5 + 0.1 - 1e-12);
+    }
   });
 });

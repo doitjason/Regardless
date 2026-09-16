@@ -1,5 +1,6 @@
 import type { Pt } from './geometry';
 import type { Role } from '../core/ir';
+import type { LookParams } from './look';
 
 /**
  * 획 하나 — 중심선과 각 점에서의 굵기.
@@ -69,4 +70,31 @@ export function strokeMinRadius(s: Stroke): number {
     m = Math.min(m, Math.hypot(p[0], p[1]) - w / 2);
   }
   return m;
+}
+
+/**
+ * 링 바깥 면. 모든 표시가 이 밖에 있어야 한다.
+ *
+ * `vocab.ts`·`name.ts`·`compose.ts` 세 곳이 각자 이 식을 다시 썼었다 —
+ * 링 안쪽을 비운다는 규칙이 이 프로젝트에서 가장 자주 깨진 불변식인데,
+ * 세 곳 중 한 곳만 고치면 아무 테스트도 잡지 못하는 모양이었다. 여기
+ * 한 곳으로 모은다.
+ */
+export function ringFloor(look: LookParams): number {
+  return look.pR - look.pRingBase;
+}
+
+/** 깊이만큼 바깥으로 쌓은 표면. 덩어리·이름 획이 여기서부터 자란다. */
+export function bloomSurface(look: LookParams, depth: number): number {
+  return look.pR + look.pRingBase * 0.5 + depth * look.cBloomThick * 0.80; // 룩 JSON 후보 (목걸이 룩에서 달라질 값 — 쌓기 계수)
+}
+
+/**
+ * 점마다 자기 반폭만큼 더 밀어 굵기까지 링 밖에 두는 클램프.
+ *
+ * 중심선만 `floor` 로 밀면 굵기의 절반만큼 여전히 안쪽으로 번진다
+ * (`strokeMinRadius` 는 굵기를 뺀다). 점마다 자기 폭의 절반만큼 더 민다.
+ */
+export function pushOutside(pts: readonly Pt[], widths: number[], floor: number): Pt[] {
+  return pts.map((p, i) => clampOutside([p], floor + (widths[i] ?? 0) / 2)[0]!);
 }

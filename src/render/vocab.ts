@@ -3,7 +3,7 @@ import type { ShapeParams } from './mapping';
 import type { Role } from '../core/ir';
 import type { Pt } from './geometry';
 import { widthProfile, smoothJit } from './profile';
-import { arcPts, bezPts, clampOutside, type Stroke } from './stroke';
+import { arcPts, bezPts, ringFloor, bloomSurface, pushOutside, type Stroke } from './stroke';
 
 /**
  * 링 — 로고그램의 뼈대인 원 하나.
@@ -92,9 +92,9 @@ export function bloomStrokes(
   const depth = Math.max(0, ctx.depth);
 
   // 링 바깥 면. 모든 표시가 이 선 밖에만 존재한다.
-  const floor = look.pR - look.pRingBase;
-  const surf = look.pR + look.pRingBase * 0.5 + depth * look.cBloomThick * 0.80;
-  const dk = 1 / (1 + depth * 0.20);
+  const floor = ringFloor(look);
+  const surf = bloomSurface(look, depth);
+  const dk = 1 / (1 + depth * 0.20); // 룩 JSON 후보 (목걸이 룩에서 달라질 값 — 깊이 축소)
 
   // 복잡도 예산 — 개념이 많으면 각자 몫이 줄어든 총량이 대체로 일정하다
   const bud = Math.pow(Math.max(1, ctx.n), -look.cBudget);
@@ -102,17 +102,14 @@ export function bloomStrokes(
   const span0 = look.cBloomSpan * sp.spanK;
   const st0 = angle - span0 * 0.5;
 
-  // 중심선만 floor 로 밀면 굵기의 절반만큼 여전히 안쪽으로 번진다
-  // (strokeMinRadius 는 굵기를 뺀다). 점마다 자기 반폭만큼 더 민다.
   const push = (pts: readonly Pt[], widths: number[], lbl: string) => {
-    const safe = pts.map((p, i) => clampOutside([p], floor + (widths[i] ?? 0) / 2)[0]!);
-    out.push({ pts: safe, widths, label: lbl, role });
+    out.push({ pts: pushOutside(pts, widths, floor), widths, label: lbl, role });
   };
 
   // ── 덩어리 층 ──
   const layers = Math.max(1, Math.round(look.cLayers));
   for (let k = 0; k < layers; k++) {
-    const sk = (1 - k * 0.24) * dk;
+    const sk = (1 - k * 0.24) * dk; // 룩 JSON 후보 (목걸이 룩에서 달라질 값 — 층 축소)
     const span = span0 * (0.70 + rnd() * 0.55) * sk;
     const st = st0 + (rnd() - 0.5) * span0 * 0.30 * J;
     const thick = look.cBloomThick * sp.thickK * sk * (0.7 + rnd() * 0.5);
@@ -186,7 +183,7 @@ export function bloomStrokes(
   // ── 작은 닫힌 고리 — 생물성 ──
   if (sp.loop) {
     const la = st0 + span0 * (0.15 + rnd() * 0.7);
-    const rr = 0.020 * dk;
+    const rr = 0.020 * dk; // 룩 JSON 후보 (목걸이 룩에서 달라질 값 — 고리 반경)
     const lr = surf + look.cBloomThick * 0.9 + rr;
     const c0: Pt = [Math.cos(la) * lr, Math.sin(la) * lr];
     const ring = arcPts(rr, 0, Math.PI * 2, 0, 18).map((q) => [q[0] + c0[0], q[1] + c0[1]] as Pt);

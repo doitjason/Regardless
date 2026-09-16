@@ -32,8 +32,20 @@ export interface LexiconEntry {
 
 export type Lexicon = Record<string, LexiconEntry>;
 
+/**
+ * 사전 성장은 별도 레이어의 일이고, 조회용 객체는 불변이어야 한다.
+ *
+ * 임포트한 원본 객체를 그대로 돌려주면 `loadSeedLexicon() === loadSeedLexicon()`
+ * 이 `true` 가 되어, 호출자가 반환값에 항목을 더하는 순간(계획 V 의 런타임
+ * 메모이제이션, 스펙 10.3) 프로세스 전역 상태가 된다. `loadLook()` 은 매 호출마다
+ * 새 객체를 주고 테스트가 그것을 잠그는데, 여기는 정확히 반대였다. 얼린
+ * 복사본을 준다.
+ */
 export function loadSeedLexicon(): Lexicon {
-  return seed as unknown as Lexicon;
+  const src = seed as unknown as Lexicon;
+  const out: Lexicon = {};
+  for (const [lemma, entry] of Object.entries(src)) out[lemma] = Object.freeze({ ...entry });
+  return Object.freeze(out);
 }
 
 /**

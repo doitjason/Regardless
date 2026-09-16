@@ -38,6 +38,18 @@ describe('parseArgs', () => {
   it('--out 이 없으면 던진다', () => {
     expect(() => parseArgs(['--ir','a.json'])).toThrow(/--out/);
   });
+
+  it('--size 가 숫자가 아니면 던진다', () => {
+    expect(() => parseArgs(['--ir','a.json','--out','b.svg','--size','abc'])).toThrow(/--size/);
+  });
+
+  it('--size 가 0이면 던진다', () => {
+    expect(() => parseArgs(['--ir','a.json','--out','b.svg','--size','0'])).toThrow(/--size/);
+  });
+
+  it('--min-stroke-mm 이 음수면 던진다', () => {
+    expect(() => parseArgs(['--ir','a.json','--out','b.svg','--min-stroke-mm','-1'])).toThrow(/--min-stroke-mm/);
+  });
 });
 
 describe('runCli', () => {
