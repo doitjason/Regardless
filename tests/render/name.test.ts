@@ -91,4 +91,27 @@ describe('nameStrokes', () => {
     expect(nameStrokes(look, syllabify('루이즈'), ctx(), r()))
       .toEqual(nameStrokes(look, syllabify('루이즈'), ctx(), r()));
   });
+
+  it('음절 상한을 넘는 이름은 잘라낸다', () => {
+    const long = syllabify('가나다라마바사아자차카타파');
+    const capped = syllabify('가나다라마바사아');
+    expect(JSON.stringify(nameStrokes(look, long, ctx(), r())))
+      .toBe(JSON.stringify(nameStrokes(look, capped, ctx(), r())));
+  });
+
+  it('긴 이름도 캔버스 반경 0.9 를 넘지 않는다', () => {
+    for (let depth = 0; depth <= 3; depth++) {
+      for (const s of nameStrokes(look, syllabify('가나다라마바사아자차카타파'), ctx({ depth }), r())) {
+        s.pts.forEach((p, i) => {
+          expect(Math.hypot(p[0], p[1]) + (s.widths[i] ?? 0) / 2, `depth=${depth}`).toBeLessThanOrEqual(0.9);
+        });
+      }
+    }
+  });
+
+  it('모든 획의 굵기가 양수다 — 긴 이름에서도 뒤집히지 않는다', () => {
+    for (const s of nameStrokes(look, syllabify('가나다라마바사아자차카타파'), ctx(), r())) {
+      for (const w of s.widths) expect(w).toBeGreaterThan(0);
+    }
+  });
 });

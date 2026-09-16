@@ -105,6 +105,12 @@ describe('render', () => {
     expect(render(ir([C('나','주체'), C('너','대상'), C('사랑','행위')]), lex, look).svg).toBe(a);
   });
 
+  it('성분 객체의 키 순서나 여분 필드가 SVG 에 새지 않는다 (원칙 1)', () => {
+    const a = render(ir([{ kind: 'concept', lemma: '사랑', role: '행위' }]), lex, look).svg;
+    const b = render(ir([{ role: '행위', lemma: '사랑', kind: 'concept', extra: 1 } as unknown as Constituent]), lex, look).svg;
+    expect(b).toBe(a);
+  });
+
   it('최소 선폭을 올려도 링이 아닌 획의 안쪽 가장자리가 링 안으로 들어오지 않는다', () => {
     const size = 300, scale = scaleFor(size);
     const floorPx = (look.pR - look.pRingBase) * scale;

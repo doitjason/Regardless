@@ -94,6 +94,15 @@ describe('layout', () => {
     expect(() => layout(ir([]), look)).toThrow();
   });
 
+  it('알 수 없는 역할은 조용히 넘어가지 않고 던진다', () => {
+    expect(() => layout(ir([C('물', '없는역할' as never)]), look)).toThrow(/없는역할/);
+  });
+
+  it('알 수 없는 역할 하나가 이웃의 각도를 망가뜨리지 않는다', () => {
+    // 옛 구현은 NaN 각도를 폴백으로 흡수하면서 같은 덩어리의 멀쩡한 성분까지 끌고 갔다
+    expect(() => layout(ir([C('사랑','행위'), C('물','없는역할' as never)]), look)).toThrow();
+  });
+
   const slotOf = (p: { item: Constituent }) => ROLE_SLOT[p.item.role];
   const angDist = (a: number, b: number) => {
     const d = Math.abs(a - b) % (Math.PI * 2);

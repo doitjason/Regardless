@@ -125,7 +125,14 @@ export function render(
 
   // 메타데이터도 SVG 의 일부이므로 어순이 새면 원칙 1(같은 뜻 → 같은 SVG)이
   // 깨진다. 정렬된 성분을 담아 입력 어순 정보를 지운다.
-  const canonicalIr: IR = { constituents: sortedConstituents(ir), mood: ir.mood, engineVersion: ir.engineVersion };
+  // 호출자가 만든 성분 객체를 그대로 직렬화하면 키 순서·여분 필드가 새어
+  // 같은 뜻이 다른 바이트가 된다. 알려진 필드만 고정된 순서로 다시 담는다.
+  const canonicalConstituents: Constituent[] = sortedConstituents(ir).map((c) =>
+    c.kind === 'concept'
+      ? { kind: 'concept', role: c.role, lemma: c.lemma }
+      : { kind: 'phonetic', role: c.role, syllables: c.syllables.map(({ onset, nucleus, coda }) => ({ onset, nucleus, coda })) },
+  );
+  const canonicalIr: IR = { constituents: canonicalConstituents, mood: ir.mood, engineVersion: ir.engineVersion };
   const meta = escapeXml(JSON.stringify({ ir: canonicalIr, seed, engineVersion: ENGINE_VERSION }));
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" ` +

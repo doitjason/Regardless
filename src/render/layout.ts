@@ -42,6 +42,10 @@ export interface Placement {
   depth: number;
 }
 
+function labelOf(c: Constituent): string {
+  return c.kind === 'concept' ? c.lemma : c.syllables.map((s) => `${s.onset}${s.nucleus}${s.coda}`).join('');
+}
+
 const wrapPi = (a: number): number => {
   let x = a;
   while (x > Math.PI) x -= Math.PI * 2;
@@ -74,6 +78,18 @@ const wrapPi = (a: number): number => {
 export function layout(ir: IR, look: LookParams): { placements: Placement[]; total: number } {
   const items = sortedConstituents(ir).slice(0, MAX_WORDS);
   if (items.length === 0) throw new Error('layout: IR에 성분이 없다');
+
+  // 지도 밖 역할이나 알 수 없는 kind 를 조용히 받으면 슬롯이 undefined 가
+  // 되어 NaN 각도 → 시드 폴백으로 흡수되고, 같은 덩어리를 공유하는 멀쩡한
+  // 성분까지 끌고 간다 (계획 II 최종 리뷰 I2). 사전 미등재 표제어처럼 던진다.
+  for (const c of items) {
+    if (c.kind !== 'concept' && c.kind !== 'phonetic') {
+      throw new Error(`layout: 알 수 없는 성분 종류 "${String((c as { kind: unknown }).kind)}"`);
+    }
+    if (!(c.role in ROLE_SLOT)) {
+      throw new Error(`layout: 알 수 없는 역할 "${c.role}" (성분 "${labelOf(c)}")`);
+    }
+  }
 
   const zones = Math.max(1, Math.min(Math.round(look.cZones), items.length));
 

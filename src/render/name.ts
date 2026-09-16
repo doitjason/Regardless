@@ -13,6 +13,12 @@ export interface NameCtx {
   role: Role;
 }
 
+/**
+ * 이름이 길어지면 나선이 캔버스를 넘고 획이 뒤집힌다; 상한을 넘는 음절은
+ * 잘라낸다 — 단어 상한 `MAX_WORDS` 와 같은 성격이다.
+ */
+export const MAX_SYLLABLES = 8;
+
 /** 조음 방법 → 획의 형태 가중치 */
 const MANNER_SHAPE: Record<string, number> = {
   stop: 0.0, fricative: 0.35, nasal: 0.7, liquid: 1.0, affricate: 0.5, none: 0.15,
@@ -35,6 +41,7 @@ export function nameStrokes(
   look: LookParams, syllables: Syllable[], ctx: NameCtx, rnd: () => number,
 ): Stroke[] {
   if (syllables.length === 0) throw new Error('nameStrokes: 음절이 없다');
+  const syls = syllables.slice(0, MAX_SYLLABLES);
 
   const out: Stroke[] = [];
   const { angle, label, role } = ctx;
@@ -51,16 +58,19 @@ export function nameStrokes(
     out.push({ pts: safe, widths, label, role });
   };
 
-  syllables.forEach((syl, i) => {
+  syls.forEach((syl, i) => {
     const c = consonantFeatures(syl.onset);
     const v = vowelFeatures(syl.nucleus);
     const hasCoda = syl.coda !== '';
 
     // 조음 위치 → 굵기, 긴장도 → 장력
-    const thick = look.cBloomThick * (0.55 - i * 0.06)
+    // 배수에 바닥을 건다 — 상한(MAX_SYLLABLES) 안에서는 바닥이 걸리지 않고
+    // 옛 수치와 같지만, 상한이 없던 시절엔 i 가 커지며 음수가 되어 획이
+    // 뒤집혔다.
+    const thick = look.cBloomThick * Math.max(0.12, 0.55 - i * 0.06)
                 * (0.55 + c.place * 0.16) * (1 + c.tense * 0.18);
     // 모음 고저 → 호 길이, 전후설 → 감기는 방향
-    const span = look.cBloomSpan * (0.45 + v.height * 0.55) * (1 - i * 0.08);
+    const span = look.cBloomSpan * (0.45 + v.height * 0.55) * Math.max(0.2, 1 - i * 0.08);
     const lean = (v.back - 0.5) * 0.6;
     // 조음 방법 → 바깥으로 부푸는 정도
     const bow = look.cBloomThick * (0.12 + (MANNER_SHAPE[c.manner] ?? 0.3) * 0.5);
