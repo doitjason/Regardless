@@ -1,0 +1,16 @@
+{
+  "constituents": [
+    { "kind": "concept", "lemma": "사랑", "role": "행위" },
+    { "kind": "concept", "lemma": "나", "role": "주체" },
+    {
+      "kind": "phonetic", "role": "대상",
+      "syllables": [
+        { "onset": "l", "nucleus": "u", "coda": "" },
+        { "onset": "", "nucleus": "i", "coda": "" },
+        { "onset": "j", "nucleus": "eu", "coda": "" }
+      ]
+    }
+  ],
+  "mood": "declarative",
+  "engineVersion": "1.0.0"
+}
