@@ -11,6 +11,7 @@ export interface CliArgs {
   necklace: boolean;
   size?: number;
   minStrokeMm?: number;
+  minGapMm?: number;
 }
 
 const USAGE = `
@@ -20,6 +21,7 @@ const USAGE = `
   --necklace              목걸이 각인용으로 내보낸다 (최소 선폭 보정)
   --size <px>             SVG 좌표계 한 변. 화면용 기본 300, 각인용 기본 600
   --min-stroke-mm <mm>    각인 최소 선폭. 기본 ${DEFAULT_NECKLACE.minStrokeMm}
+  --min-gap-mm <mm>       최소 틈. 기본 ${DEFAULT_NECKLACE.minGapMm}
 `.trim();
 
 export function parseArgs(argv: string[]): CliArgs {
@@ -33,6 +35,7 @@ export function parseArgs(argv: string[]): CliArgs {
   if (!out) throw new Error(`--out 이 필요하다\n\n${USAGE}`);
   const sizeRaw = get('--size');
   const mmRaw = get('--min-stroke-mm');
+  const gapRaw = get('--min-gap-mm');
   let size: number | undefined;
   if (sizeRaw !== undefined) {
     size = Number(sizeRaw);
@@ -47,11 +50,19 @@ export function parseArgs(argv: string[]): CliArgs {
       throw new Error(`--min-stroke-mm 은 0보다 큰 수여야 한다: "${mmRaw}"\n\n${USAGE}`);
     }
   }
+  let minGapMm: number | undefined;
+  if (gapRaw !== undefined) {
+    minGapMm = Number(gapRaw);
+    if (!Number.isFinite(minGapMm) || minGapMm <= 0) {
+      throw new Error(`--min-gap-mm 은 0보다 큰 수여야 한다: "${gapRaw}"\n\n${USAGE}`);
+    }
+  }
   return {
     input, out,
     necklace: argv.includes('--necklace'),
     ...(size !== undefined ? { size } : {}),
     ...(minStrokeMm !== undefined ? { minStrokeMm } : {}),
+    ...(minGapMm !== undefined ? { minGapMm } : {}),
   };
 }
 
@@ -74,8 +85,9 @@ export async function runCli(argv: string[]): Promise<number> {
       const opts = {
         ...(args.size !== undefined ? { size: args.size } : {}),
         ...(args.minStrokeMm !== undefined ? { minStrokeMm: args.minStrokeMm } : {}),
+        ...(args.minGapMm !== undefined ? { minGapMm: args.minGapMm } : {}),
       };
-      const result = renderForNecklace(ir, lex, look, opts);
+      const result = renderForNecklace(ir, lex, opts);
       const merged = { ...DEFAULT_NECKLACE, ...opts };
       const problems = validateNecklace(result, merged);
       if (problems.length > 0) {

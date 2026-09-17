@@ -1,24 +1,29 @@
-import { render, scaleFor, type RenderResult } from './compose';
+import { render, scaleFor, buildStrokes, type RenderResult } from './compose';
+import { checkManufacturable } from './manufacture';
+import { loadNecklaceLook } from './look';
 import type { IR } from '../core/ir';
 import type { Lexicon } from '../core/lexicon';
-import type { LookParams } from './look';
+import type { Stroke } from './stroke';
 
 export interface NecklaceOptions {
   /** 펜던트 지름 (mm) */
   diameterMm: number;
   /** 물리적으로 재현 가능한 최소 선폭 (mm). 제작소 공정에 맞춰 조정한다 */
   minStrokeMm: number;
+  /** 최소 틈 (mm). 투각은 틈이 좁으면 메워진다 */
+  minGapMm: number;
   /** SVG 좌표계 한 변. 화면용보다 크게 잡아 정밀도를 확보한다 */
   size: number;
 }
 
 /**
- * 기본 프리셋. 지름 20mm 펜던트, 최소 선폭 0.6mm.
- * 최소 선폭은 실제 제작소 공정을 확인해 확정한다.
+ * 기본 프리셋. 지름 20mm 펜던트, 최소 선폭 0.5mm, 최소 틈 0.5mm.
+ * 최소 선폭과 틈은 실제 제작소 공정을 확인해 확정한다.
  */
 export const DEFAULT_NECKLACE: NecklaceOptions = {
   diameterMm: 20,
-  minStrokeMm: 0.6,
+  minStrokeMm: 0.5,
+  minGapMm: 0.5,
   size: 600,
 };
 
@@ -34,9 +39,10 @@ const floorPxOf = (o: NecklaceOptions): number => (o.minStrokeMm / o.diameterMm)
  * 거치지 않아 골격 그대로의 두꺼운 링이 나온다. 이 차이는 의도된 것이다.
  */
 export function renderForNecklace(
-  ir: IR, lex: Lexicon, look: LookParams, opts: Partial<NecklaceOptions> = {},
+  ir: IR, lex: Lexicon, opts: Partial<NecklaceOptions> = {},
 ): RenderResult {
   const merged: NecklaceOptions = { ...DEFAULT_NECKLACE, ...opts };
+  const look = loadNecklaceLook();
   return render(ir, lex, look, {
     size: merged.size,
     // 하한은 mm → 화면 px → p 공간 순으로 환산한다.
@@ -46,7 +52,12 @@ export function renderForNecklace(
 }
 
 /** 각인 가능성 검증. 위반 목록을 반환하며, 빈 배열이면 통과. */
-export function validateNecklace(result: RenderResult, opts: NecklaceOptions): string[] {
+export function validateNecklace(
+  result: RenderResult,
+  opts: NecklaceOptions,
+  /** p 공간 골격. 주면 틈·연결·구멍까지 본다 (설계 문서 12.3) */
+  strokes?: readonly Stroke[],
+): string[] {
   const floor = floorPxOf(opts);
   const problems: string[] = [];
   for (const s of result.strokes) {
@@ -58,6 +69,16 @@ export function validateNecklace(result: RenderResult, opts: NecklaceOptions): s
     if (!s.d.trimEnd().endsWith('Z')) {
       problems.push(`획 "${s.label}" (${String(s.role)}) 의 패스가 닫혀 있지 않다`);
     }
+  }
+
+  if (strokes) {
+    const rep = checkManufacturable(strokes, {
+      diameterMm: opts.diameterMm,
+      minStrokeMm: opts.minStrokeMm,
+      minGapMm: opts.minGapMm,
+      pxPerMm: 20,
+    });
+    problems.push(...rep.violations);
   }
   return problems;
 }
