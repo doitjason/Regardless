@@ -46,6 +46,7 @@
   <div id="panel">
     <h1>룩 랩</h1>
     <div class="btns" id="presets"></div>
+    <div class="btns" id="moods"></div>
     <input id="free" type="text" placeholder="자유 입력 — 단어를 띄어쓰기로 (비우면 프리셋)"
            style="width:100%;background:#0d1011;color:var(--tx);border:1px solid var(--line);
                   border-radius:4px;padding:6px 8px;font:inherit;font-size:11px;margin:2px 0 4px">
@@ -268,6 +269,8 @@ const P = [
     ['cSpeck',     '떨어진 반점 수', 0, 30, 1, 0.0, 1],
     ['cSpeckR',    '반점 크기',      0.0008, 0.0080, 0.0002, 0.0008, 1],
     ['cJitter',    '불규칙성',       0.00, 2.00, 0.02, 1.8, 1],
+    ['cMoodLen',   '문장 표지 길이', 0.04, 0.32, 0.005, 0.16, 1],
+    ['cMoodThick', '문장 표지 굵기', 0.008, 0.060, 0.001, 0.026, 1],
   ]],
   ['먹물', [
     ['pSharp',    '얇은 세부 살리기',   0.00, 1.00, 0.02, 1],
@@ -856,6 +859,73 @@ function nameSpiral(angle, syllables, seedKey, out, ctx = {}) {
   });
 }
 
+/**
+ * 문장 종류 표지 — src/render/vocab.ts 의 moodStrokes 와 같은 규칙이다.
+ *
+ * mood 는 문장 수준 속성이고 6시 양상 슬롯이 그것이 그려지는 자리다 (스펙 6.2).
+ * 평서문은 표지가 없다 — 표지가 없다는 것 자체가 평서문의 표시다.
+ */
+let moodMode = 'declarative';
+
+function moodMark(out) {
+  if (moodMode === 'declarative') return;
+  const rnd = rng(fnv1a(`mood|${moodMode}`));
+  const R = val.pR;
+  const floor = R - val.pRingBase;
+  const surf = R + val.pRingBase * 0.5;
+  const base = slotAngle(ROLE_SLOT['양상'], 0);
+  const L = val.cMoodLen, W = val.cMoodThick, J = val.cJitter;
+
+  const push = (pts, ws) => {
+    const safe = pts.map((p, i) => {
+      const need = floor + (ws[i] ?? 0) / 2;
+      const r = Math.hypot(p[0], p[1]);
+      if (r >= need) return p;
+      if (r < 1e-12) return [need, 0];
+      const k = need / r;
+      return [p[0] * k, p[1] * k];
+    });
+    strip(safe, ws, out);
+  };
+
+  if (moodMode === 'interrogative') {
+    // 링을 따라 짧은 호를 그리고, 그 끝에서 바깥으로 말아 올린다
+    const span = L * 1.6;
+    const arc = arcPts(surf + W * 0.5, base - span * 0.5, span, W * 0.4, 20);
+    push(arc, profile(arc.length, W, W * 0.45, 'bloom', rnd, J * 0.5));
+    const e = arc[arc.length - 1];
+    const ea = Math.atan2(e[1], e[0]);
+    const tip = [e[0] + Math.cos(ea + 0.9) * L, e[1] + Math.sin(ea + 0.9) * L];
+    const mid = [e[0] + Math.cos(ea + 0.2) * L * 0.7, e[1] + Math.sin(ea + 0.2) * L * 0.7];
+    const hook = bezPts(e, mid, tip, 10);
+    push(hook, profile(hook.length, W * 0.8, W * 0.8 * val.cFringeTip, 'hair', rnd, 0.4));
+    return;
+  }
+
+  if (moodMode === 'negative') {
+    // 링 바깥 면을 가로지르는 굵은 막대 하나. 반경 방향이다.
+    const bar = [];
+    for (let i = 0; i <= 12; i++) {
+      const rr = surf + L * (i / 12);
+      bar.push([Math.cos(base) * rr, Math.sin(base) * rr]);
+    }
+    push(bar, profile(bar.length, W * 1.5, W * 1.5, 'flat', rnd, J * 0.4));
+    return;
+  }
+
+  // volitional — 바깥으로 벌어지는 두 갈래
+  for (const side of [-1, 1]) {
+    const a0 = base + side * 0.10;
+    const root = [Math.cos(a0) * surf, Math.sin(a0) * surf];
+    const dir = a0 + side * 0.45;
+    const tip = [root[0] + Math.cos(dir) * L * 1.3, root[1] + Math.sin(dir) * L * 1.3];
+    const mid = [root[0] + Math.cos(dir - side * 0.25) * L * 0.7,
+                 root[1] + Math.sin(dir - side * 0.25) * L * 0.7];
+    const pts = bezPts(root, mid, tip, 10);
+    push(pts, profile(pts.length, W * 1.1, W * 1.1 * val.cFringeTip, 'hair', rnd, 0.4));
+  }
+}
+
 // ── 로고그램 조립 ──
 //
 // **링은 언제나 하나다.** 문장이 여러 개여도 동심 링으로 쌓지 않는다.
@@ -991,6 +1061,9 @@ function buildGeometry() {
   // 링은 하나뿐이다
   const R = val.pR;
   ringGeometry(rng(fnv1a(`ring|${tag}`)), out, R, 1);
+
+  // 문장 종류 표지 — 6시. 평서문이면 아무것도 그리지 않는다.
+  moodMark(out);
 
   // 전체 성분 수 — 복잡도 예산의 분모. 문장이 늘어도 총량이 대체로 일정하다.
   const total = parts.reduce(
@@ -1192,6 +1265,23 @@ Object.keys(PRESETS).forEach((name) => {
     rebuildGeometry(); draw();
   };
   pres.appendChild(b);
+});
+
+// 문장 종류 — 스펙 6.2. 평서문만 표지가 없다.
+const MOODS = [['declarative','평서'], ['interrogative','의문'],
+               ['negative','부정'], ['volitional','의지']];
+const moodsEl = document.getElementById('moods');
+MOODS.forEach(([value, label]) => {
+  const b = document.createElement('button');
+  b.textContent = label;
+  if (value === moodMode) b.className = 'on';
+  b.onclick = () => {
+    moodMode = value;
+    [...moodsEl.children].forEach((x) => (x.className = ''));
+    b.className = 'on';
+    rebuildGeometry(); draw();
+  };
+  moodsEl.appendChild(b);
 });
 
 const freeEl = document.getElementById('free'), lexNote = document.getElementById('lexNote');
