@@ -273,6 +273,8 @@ const P = [
     ['cJitter',    '불규칙성',       0.00, 2.00, 0.02, 1.8, 1],
     ['cMoodLen',   '문장 표지 길이', 0.04, 0.32, 0.005, 0.16, 1],
     ['cMoodThick', '문장 표지 굵기', 0.008, 0.060, 0.001, 0.026, 1],
+    ['cPassSpan',  '양보 지나침 각도', 0.10, 1.40, 0.05, 0.55, 1],
+    ['cPassOut',   '양보 벌어짐',     0.03, 0.20, 0.002, 0.086, 1],
   ]],
   ['먹물', [
     ['pSharp',    '얇은 세부 살리기',   0.00, 1.00, 0.02, 1],
@@ -621,6 +623,26 @@ function specks(at, outAng, count, reach, rad, rnd, out) {
 function ringGeometry(rnd, out, R = val.pR, wScale = 1) {
   const J = val.cJitter;
   const gaps = val.cGaps;
+
+  // 양보 — 링이 닫히지 않고 자기 시작점을 스쳐 지나간다 (설계 문서 6.2).
+  // 엔진 src/render/vocab.ts 의 ringStrokes 와 같은 규칙이다.
+  if (moodMode === 'concessive') {
+    const base = slotAngle(ROLE_SLOT['양상'], 0);
+    const over = val.cPassSpan;
+    const span = Math.PI * 2 + over;
+    const n = 240, pts = [], w = [];
+    const j = smoothJit(rnd, 0.55 * J);
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const a = base + span * t;
+      const k = Math.max(0, (t - (1 - over / span)) / (over / span));
+      const r = R + val.cPassOut * (k * k * (3 - 2 * k));
+      pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+      w.push(Math.max(0.0018, (val.pRingBase * wScale + val.pRingAmp * wScale * (j(t) - 1) * 1.8) * j(t)));
+    }
+    strip(pts, w, out);
+    return;
+  }
   const segs = gaps + 1;
   const gapEach = gaps > 0 ? (val.cGapSize * Math.PI * 2) / gaps : 0;
   const segSpan = (Math.PI * 2 - gapEach * gaps) / segs;
@@ -878,7 +900,8 @@ function nameSpiral(angle, syllables, seedKey, out, ctx = {}) {
 let moodMode = 'declarative';
 
 function moodMark(out) {
-  if (moodMode === 'declarative') return;
+  // 양보는 표지 획이 아니라 링 자체가 담당한다 (ringGeometry 참조)
+  if (moodMode === 'declarative' || moodMode === 'concessive') return;
   const rnd = rng(fnv1a(`mood|${moodMode}`));
   const R = val.pR;
   const floor = R - val.pRingBase;
@@ -1470,7 +1493,7 @@ Object.keys(PRESETS).forEach((name) => {
 
 // 문장 종류 — 스펙 6.2. 평서문만 표지가 없다.
 const MOODS = [['declarative','평서'], ['interrogative','의문'],
-               ['negative','부정'], ['volitional','의지']];
+               ['negative','부정'], ['volitional','의지'], ['concessive','양보']];
 const moodsEl = document.getElementById('moods');
 MOODS.forEach(([value, label]) => {
   const b = document.createElement('button');
@@ -1507,7 +1530,7 @@ bMask.onclick = () => { showMask = showMask ? 0 : 1; bMask.className = showMask 
 const NECKLACE_LOOK = {
   pRingBase: 0.05, cGaps: 0, cDouble: 0, cBloomSpan: 0.35, cBloomThick: 0.06,
   cFringe: 8, cFringeLen: 0.08, cFringeFine: 0.05, cFringeTip: 0.62,
-  cWhisker: 2, cWhiskerLen: 0.12,
+  cWhisker: 2, cWhiskerLen: 0.12, cPassOut: 0.106,
 };
 
 const bMill = document.getElementById('bMill');
