@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderForNecklace, validateNecklace, DEFAULT_NECKLACE } from '../../src/render/necklace';
-import { render } from '../../src/render/compose';
+import { render, buildStrokes } from '../../src/render/compose';
+import { checkManufacturable, type MillOptions } from '../../src/render/manufacture';
 import { loadLook } from '../../src/render/look';
 import { loadSeedLexicon } from '../../src/core/lexicon';
 import { syllabify } from '../../src/core/phonology';
@@ -70,5 +71,28 @@ describe('validateNecklace', () => {
   it('위반 메시지에 어느 획인지 담는다', () => {
     const v = validateNecklace(render(sample, lex, look, { size: 600 }), DEFAULT_NECKLACE);
     expect(v.some((x) => /사랑|나|루이즈|링/.test(x))).toBe(true);
+  });
+});
+
+describe('투각 20mm 제작 가능성 — 화면 룩 기준선', () => {
+  const mill: MillOptions = { diameterMm: 20, minStrokeMm: 0.5, minGapMm: 0.5, pxPerMm: 20 };
+
+  it('확정 화면 룩은 투각으로 만들 수 없다 — 위반을 수치로 고정한다', () => {
+    // 이 테스트는 "지금은 안 된다"를 고정한다. 목걸이 룩이 확정되면 그 룩으로
+    // 위반 0 을 요구하는 테스트가 따로 생긴다 (계획 II-b Task 8).
+    const { strokes } = buildStrokes(sample, lex, look);
+    const rep = checkManufacturable(strokes, mill);
+    expect(rep.violations.length).toBeGreaterThan(0);
+    expect(rep.thinPx).toBeGreaterThan(0);
+    // 가장 큰 문제는 선폭이 아니라 연결이다 — 가시가 링에 붙어 있지 않아
+    // 투각하면 떨어져 나간다.
+    expect(rep.components).toBeGreaterThan(1);
+  });
+
+  it('무엇이 위반인지 사람이 읽을 수 있게 적힌다', () => {
+    const { strokes } = buildStrokes(sample, lex, look);
+    for (const v of checkManufacturable(strokes, mill).violations) {
+      expect(v).toMatch(/mm|조각/);
+    }
   });
 });
