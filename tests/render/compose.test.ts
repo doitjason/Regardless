@@ -162,4 +162,22 @@ describe('render', () => {
     expect(decl.some((s) => s.role === '양상')).toBe(false);
     expect(ques.some((s) => s.role === '양상')).toBe(true);
   });
+
+  it('양보는 다른 문장 종류와 다른 그림이다', () => {
+    const conc = render(ir([C('사랑','행위'), C('나','주체'), C('너','대상')], 'concessive'), lex, look).svg;
+    for (const m of ['declarative', 'interrogative', 'negative', 'volitional'] as const) {
+      expect(conc).not.toBe(render(ir([C('사랑','행위'), C('나','주체'), C('너','대상')], m), lex, look).svg);
+    }
+  });
+
+  it('양보 로고그램도 링 안쪽을 비운다', () => {
+    const { strokes } = buildStrokes(ir([C('사랑','행위'), C('나','주체'), C('너','대상')], 'concessive'), lex, look);
+    const floor = look.pR - look.pRingBase;
+    for (const s of strokes) {
+      if (s.role === 'ring') continue;
+      s.pts.forEach((p, i) => {
+        expect(Math.hypot(p[0], p[1]) - (s.widths[i] ?? 0) / 2, s.label).toBeGreaterThanOrEqual(floor - 1e-9);
+      });
+    }
+  });
 });

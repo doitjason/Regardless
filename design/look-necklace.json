@@ -10,6 +10,8 @@
   "cGapSize": 0.01,
   "cDouble": 0,
   "cDoubleGap": 0.019,
+  "cPassSpan": 0.55,
+  "cPassOut": 0.106,
 
   "cZones": 5,
   "cBloomSpan": 0.35,

@@ -14,7 +14,9 @@ import { ROLE_SLOT, slotAngle } from './layout';
  *
  * 굵기는 완만하게만 변한다. 양 끝이 살짝 가늘어져 붓이 떨어진 느낌을 낸다.
  */
-export function ringStrokes(look: LookParams, rnd: () => number): Stroke[] {
+export function ringStrokes(
+  look: LookParams, rnd: () => number, opts: { concessive?: boolean } = {},
+): Stroke[] {
   const out: Stroke[] = [];
   const R = look.pR;
   const J = look.cJitter;
@@ -22,6 +24,32 @@ export function ringStrokes(look: LookParams, rnd: () => number): Stroke[] {
   const segs = gaps + 1;
   const gapEach = gaps > 0 ? (look.cGapSize * Math.PI * 2) / gaps : 0;
   const segSpan = (Math.PI * 2 - gapEach * gaps) / segs;
+
+  // 양보 — 링이 닫히지 않고 자기 시작점을 스쳐 지나간다 (설계 문서 6.2).
+  // 다른 문장 종류처럼 표지를 따로 붙이지 않는 이유: 링 밖에 떠 있는 획은
+  // 끊김으로 읽히지 않고, 투각 펜던트에서는 떨어져 나가는 두 번째 조각이 된다.
+  // 끊김과 이어짐이 한 줄에 다 있어야 한다.
+  if (opts.concessive) {
+    const base = slotAngle(ROLE_SLOT['양상'], 0);
+    const over = look.cPassSpan;
+    const span = Math.PI * 2 + over;
+    const n = 240;
+    const pts: Pt[] = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const a = base + span * t;
+      // 마지막 구간에서만 바깥으로 벌어진다 — smoothstep 으로 완만하게
+      const k = Math.max(0, (t - (1 - over / span)) / (over / span));
+      const r = look.pR + look.cPassOut * (k * k * (3 - 2 * k));
+      pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    const j = smoothJit(rnd, 0.55 * look.cJitter);
+    const widths = pts.map((_, i) => {
+      const t = i / (pts.length - 1);
+      return Math.max(0.0018, (look.pRingBase + look.pRingAmp * (j(t) - 1) * 1.8) * j(t));
+    });
+    return [{ pts, widths, label: '링·양보', role: 'ring' }];
+  }
 
   let a = rnd() * Math.PI * 2;
   for (let s = 0; s < segs; s++) {
@@ -220,9 +248,16 @@ export function bloomStrokes(
  * - 의문: 링을 따라간 뒤 끝이 바깥으로 말리는 **갈고리**. 원작 규칙이다.
  * - 부정: 링 바깥 면에 수직으로 얹힌 **짧고 굵은 막대**. 흐름을 끊는 모양이다.
  * - 의지: 바깥으로 벌어지는 **두 갈래**. 아직 일어나지 않은 방향을 가리킨다.
+ *
+ * 양보는 여기서 표지를 그리지 않는다 — `ringStrokes` 가 링 자체를 닫지
+ * 않는 형태로 이미 나타냈기 때문이다 (설계 문서 6.2). 표지를 하나 더
+ * 얹으면 이중 표시가 된다.
  */
 export function moodStrokes(look: LookParams, mood: Mood, rnd: () => number): Stroke[] {
   if (mood === 'declarative') return [];
+  // 양보 — 표지 획이 없다. 링이 닫히지 않는 것 자체가 양보의 표시이므로
+  // (ringStrokes 의 concessive 분기), 여기서 또 그리면 표지가 두 개가 된다.
+  if (mood === 'concessive') return [];
 
   const out: Stroke[] = [];
   const floor = ringFloor(look);
@@ -264,18 +299,26 @@ export function moodStrokes(look: LookParams, mood: Mood, rnd: () => number): St
     return out;
   }
 
-  // volitional — 바깥으로 벌어지는 두 갈래
-  for (const side of [-1, 1] as const) {
-    const a0 = base + side * 0.10;
-    const root: Pt = [Math.cos(a0) * surf, Math.sin(a0) * surf];
-    const dir = a0 + side * 0.45;
-    const tip: Pt = [root[0] + Math.cos(dir) * L * 1.3, root[1] + Math.sin(dir) * L * 1.3];
-    const mid: Pt = [
-      root[0] + Math.cos(dir - side * 0.25) * L * 0.7,
-      root[1] + Math.sin(dir - side * 0.25) * L * 0.7,
-    ];
-    const pts = bezPts(root, mid, tip, 10);
-    push(pts, widthProfile(pts.length, W * 1.1, W * 1.1 * look.cFringeTip, 'hair', rnd, 0.4));
+  if (mood === 'volitional') {
+    // 의지 — 바깥으로 벌어지는 두 갈래
+    for (const side of [-1, 1] as const) {
+      const a0 = base + side * 0.10;
+      const root: Pt = [Math.cos(a0) * surf, Math.sin(a0) * surf];
+      const dir = a0 + side * 0.45;
+      const tip: Pt = [root[0] + Math.cos(dir) * L * 1.3, root[1] + Math.sin(dir) * L * 1.3];
+      const mid: Pt = [
+        root[0] + Math.cos(dir - side * 0.25) * L * 0.7,
+        root[1] + Math.sin(dir - side * 0.25) * L * 0.7,
+      ];
+      const pts = bezPts(root, mid, tip, 10);
+      push(pts, widthProfile(pts.length, W * 1.1, W * 1.1 * look.cFringeTip, 'hair', rnd, 0.4));
+    }
+    return out;
   }
-  return out;
+
+  // 여기 도달하면 위 분기 중 아무것도 처리하지 않은 mood 가 새로 생긴 것이다.
+  // 조용히 어떤 표지로든 넘기지 않고 던진다 — 사전 미등재 표제어를 던지는
+  // 것과 같은 이유다 (layout.ts).
+  const unhandled: never = mood;
+  throw new Error(`moodStrokes: 처리되지 않은 mood "${String(unhandled)}"`);
 }

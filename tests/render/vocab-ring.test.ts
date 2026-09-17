@@ -86,3 +86,44 @@ describe('링 이음매', () => {
     expect(first).toBeLessThan(mid * 0.7);
   });
 });
+
+describe('양보 링', () => {
+  const conc = (l = look) => ringStrokes(l, mulberry32(9), { concessive: true });
+
+  it('획이 하나다 — 틈도 겹선도 쓰지 않는다', () => {
+    expect(conc()).toHaveLength(1);
+  });
+
+  it('닫히지 않는다 — 끝이 시작을 지나쳐 바깥에 있다', () => {
+    const r = conc()[0]!;
+    const first = r.pts[0]!, last = r.pts[r.pts.length - 1]!;
+    expect(Math.hypot(last[0], last[1])).toBeGreaterThan(Math.hypot(first[0], first[1]) + look.cPassOut * 0.8);
+  });
+
+  it('한 바퀴를 넘어 돈다', () => {
+    const r = conc()[0]!;
+    let total = 0;
+    for (let i = 1; i < r.pts.length; i++) {
+      const a = Math.atan2(r.pts[i - 1]![1], r.pts[i - 1]![0]);
+      const b = Math.atan2(r.pts[i]![1], r.pts[i]![0]);
+      let d = b - a;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      total += d;
+    }
+    expect(Math.abs(total)).toBeGreaterThan(Math.PI * 2);
+  });
+
+  it('두 가닥이 겹치는 구간에서 서로 떨어져 있다', () => {
+    const r = conc()[0]!;
+    const last = r.pts[r.pts.length - 1]!;
+    const near = r.pts.slice(0, 40)
+      .map((p) => Math.hypot(p[0] - last[0], p[1] - last[1]));
+    expect(Math.min(...near)).toBeGreaterThan(look.pRingBase);
+  });
+
+  it('굵기가 양 끝에서 가늘어지지 않는다 — 겹치는 자리에 홈이 생기면 안 된다', () => {
+    const r = conc({ ...look, cJitter: 0, pRingAmp: 0 })[0]!;
+    expect(r.widths[0]!).toBeCloseTo(r.widths[Math.floor(r.widths.length / 2)]!, 6);
+  });
+});

@@ -98,7 +98,7 @@ export function buildStrokes(
   const all: Stroke[] = [];
 
   // ── 링 ──
-  all.push(...ringStrokes(look, mulberry32(subSeed(seed, 'ring'))));
+  all.push(...ringStrokes(look, mulberry32(subSeed(seed, 'ring')), { concessive: ir.mood === 'concessive' }));
 
   // 문장 종류 표지 — 6시 양상 슬롯. 평서문이면 빈 배열이다 (설계 문서 6.2).
   all.push(...moodStrokes(look, ir.mood, mulberry32(subSeed(seed, 'mood'))));

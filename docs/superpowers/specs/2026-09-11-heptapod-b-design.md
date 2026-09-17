@@ -185,12 +185,12 @@ type Constituent =
 
 interface IR {
   constituents: Constituent[];
-  mood: 'declarative' | 'interrogative' | 'negative' | 'volitional';
+  mood: 'declarative' | 'interrogative' | 'negative' | 'volitional' | 'concessive';
   engineVersion: string;
 }
 ```
 
-**`mood`와 `양상` 역할의 관계.** 둘은 같은 것의 두 층이며 중복이 아니다. `mood`는 IR의 문장 수준 속성이고, `양상`은 그것이 렌더링되는 **자리**(6시 슬롯)다. 렌더러는 `mood !== 'declarative'`일 때만 6시에 표지 획을 그린다 — 의문이면 `hook`, 부정·의지면 각각의 표지 획. 파서는 `양상` 역할을 가진 `Constituent`를 직접 만들지 않는다. 이 슬롯은 오직 `mood`에서만 채워진다.
+**`mood`와 `양상` 역할의 관계.** 둘은 같은 것의 두 층이며 중복이 아니다. `mood`는 IR의 문장 수준 속성이고, `양상`은 그것이 렌더링되는 **자리**(6시 슬롯)다. 렌더러는 `mood !== 'declarative'`일 때만 6시에 표지 획을 그린다 — 의문이면 `hook`, 부정·의지면 각각의 표지 획. 파서는 `양상` 역할을 가진 `Constituent`를 직접 만들지 않는다. 이 슬롯은 오직 `mood`에서만 채워진다. 양보(`concessive`, "그럼에도 불구하고")는 이 자리에 속하면서도 예외다 — 양보는 표지 획이 아니라 **링이 닫히지 않는 것**으로 그린다; 링 밖에 붙인 획은 끊김으로 읽히지 않고 투각에서 떨어져 나가는 조각이 되기 때문이다 (12.3).
 
 ### 6.3 정규화 및 시드
 

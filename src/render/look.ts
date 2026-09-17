@@ -13,6 +13,7 @@ export const LOOK_KEYS = [
   // 링
   'pR', 'pRingBase', 'pRingAmp', 'pWobble',
   'cGaps', 'cGapSize', 'cDouble', 'cDoubleGap',
+  'cPassSpan', 'cPassOut',
   // 먹물 덩어리
   'cZones', 'cBloomSpan', 'cBloomThick', 'cBloomOut', 'cLayers', 'cBudget',
   // 가시 · 반점

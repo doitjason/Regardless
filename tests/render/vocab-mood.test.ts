@@ -15,6 +15,10 @@ describe('moodStrokes', () => {
     expect(moodStrokes(look, 'declarative', r())).toHaveLength(0);
   });
 
+  it('양보도 표지를 그리지 않는다 — 링이 닫히지 않는 것으로 이미 나타냈다', () => {
+    expect(moodStrokes(look, 'concessive', r())).toHaveLength(0);
+  });
+
   it('의문·부정·의지는 각각 획을 낸다', () => {
     for (const m of MOODS) {
       expect(moodStrokes(look, m, r()).length, m).toBeGreaterThan(0);
