@@ -69,3 +69,20 @@ describe('ringStrokes', () => {
     expect(avg(thick)).toBeGreaterThan(avg(thin));
   });
 });
+
+describe('링 이음매', () => {
+  it('틈이 없으면 끝을 가늘게 빼지 않는다 — 이음매에 홈이 생기면 투각에서 끊긴다', () => {
+    const noGap = { ...look, cGaps: 0, cJitter: 0, pRingAmp: 0 };
+    const ss = ringStrokes(noGap, mulberry32(5));
+    const ring = ss.find((s) => s.role === 'ring')!;
+    const first = ring.widths[0]!, mid = ring.widths[Math.floor(ring.widths.length / 2)]!;
+    expect(first).toBeCloseTo(mid, 6);
+  });
+
+  it('틈이 있으면 끊긴 끝은 가늘게 뺀다 — 붓 자국이다', () => {
+    const gapped = { ...look, cGaps: 2, cJitter: 0, pRingAmp: 0 };
+    const ring = ringStrokes(gapped, mulberry32(5)).find((s) => s.role === 'ring')!;
+    const first = ring.widths[0]!, mid = ring.widths[Math.floor(ring.widths.length / 2)]!;
+    expect(first).toBeLessThan(mid * 0.7);
+  });
+});

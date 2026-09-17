@@ -31,7 +31,12 @@ export function ringStrokes(look: LookParams, rnd: () => number): Stroke[] {
     const widths: number[] = [];
     for (let i = 0; i < pts.length; i++) {
       const t = i / (pts.length - 1);
-      const taper = 0.45 + 0.55 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.12)), 0.30);
+      // 끝을 가늘게 빼는 것은 **끊긴 끝**의 붓 자국이다. 틈이 없으면 링은
+      // 닫힌 고리이고 양 끝은 서로 맞닿는 이음매이므로, 가늘게 빼면 그 자리에
+      // 홈이 생긴다 — 투각에서는 이 홈이 하한 미만의 살이 된다.
+      const taper = gaps === 0
+        ? 1
+        : 0.45 + 0.55 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.12)), 0.30);
       widths.push(Math.max(0.0018, (look.pRingBase + look.pRingAmp * (j(t) - 1) * 1.8) * taper * j(t)));
     }
     out.push({ pts, widths, label: '링', role: 'ring' });

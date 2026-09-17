@@ -51,6 +51,23 @@ export function renderForNecklace(
   });
 }
 
+/**
+ * 목걸이 경로가 실제로 잘라 낼 골격 (p 공간).
+ *
+ * `renderForNecklace` 와 **같은 룩·같은 하한**을 지나므로, 이것을 검증에
+ * 넘기면 검증이 출력과 같은 모양을 본다. 넓히기 전 골격을 검증하면 얇은
+ * 곳은 과하게 잡고 좁은 틈은 놓친다 — 후자는 만들 수 없는 것을 통과시키는
+ * 방향이라 특히 위험하다.
+ */
+export function necklaceSkeleton(
+  ir: IR, lex: Lexicon, opts: Partial<NecklaceOptions> = {},
+): Stroke[] {
+  const merged: NecklaceOptions = { ...DEFAULT_NECKLACE, ...opts };
+  return buildStrokes(ir, lex, loadNecklaceLook(), {
+    minStrokeWidth: floorPxOf(merged) / scaleFor(merged.size),
+  }).strokes;
+}
+
 /** 각인 가능성 검증. 위반 목록을 반환하며, 빈 배열이면 통과. */
 export function validateNecklace(
   result: RenderResult,

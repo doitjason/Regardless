@@ -72,18 +72,26 @@ export interface SkeletonResult {
  * IR → 골격(`Stroke[]`). `render` 가 SVG 로 굳히기 전까지 하는 조립 — `layout`,
  * 링 획, 성분별(서브시드가 붙은) 블룸·이름 획, 사전 미등재 에러 — 전부를 한다.
  *
- * **좌표는 p 공간이다 — 화면 좌표가 아니다.** 스케일링·y 뒤집기·
- * `minStrokeWidth` 재클램프는 여기 없다. `render` 가 이 결과를 받아 그
- * 화면 변환을 적용한다. 화면 렌더러(계획 IV)의 삼각형 셰이더와 목걸이의
- * 틈·연결성 검증이 SVG 를 역파싱하지 않고 같은 골격을 직접 쓰게 하려고
- * 뽑아냈다.
+ * **좌표는 p 공간이다 — 화면 좌표가 아니다.** 스케일링과 y 뒤집기는 여기
+ * 없다. `render` 가 이 결과를 받아 화면 변환을 적용한다. 화면 렌더러(계획
+ * IV)의 삼각형 셰이더와 목걸이의 틈·연결성 검증이 SVG 를 역파싱하지 않고
+ * 같은 골격을 직접 쓰게 하려고 뽑아냈다.
+ *
+ * `opts.minStrokeWidth` (p 공간)를 주면 폭을 그 하한까지 넓히고 링이 아닌
+ * 획을 넓어진 반폭만큼 다시 링 밖으로 민다 — 목걸이 모드가 쓰는 경로다.
+ * **이 처리를 `render` 안에만 두면 안 된다.** 제작 검증은 실제로 잘리는
+ * 모양을 봐야 하는데, 넓히기 전 골격을 보면 얇은 곳은 과하게 잡고 좁은
+ * 틈은 놓친다. 그래서 두 경로가 같은 함수를 지난다.
  *
  * 성분은 canonical 순서로 순회하고 성분마다 독립된 서브시드를 쓰기 때문에,
  * 파서가 성분을 어떤 순서로 뱉어도 결과가 같다 (원칙 1).
  *
  * 조형 수치는 전부 `look` 에서 온다. 이 파일에 수치를 박지 않는다.
  */
-export function buildStrokes(ir: IR, lex: Lexicon, look: LookParams): SkeletonResult {
+export function buildStrokes(
+  ir: IR, lex: Lexicon, look: LookParams,
+  opts: { minStrokeWidth?: number } = {},
+): SkeletonResult {
   const seed = seedOf(ir);
   const { placements, total } = layout(ir, look);
 
@@ -112,44 +120,47 @@ export function buildStrokes(ir: IR, lex: Lexicon, look: LookParams): SkeletonRe
     }
   }
 
-  return { strokes: all, seed, total };
+  const minW = opts.minStrokeWidth ?? 0;
+  if (minW <= 0) return { strokes: all, seed, total };
+
+  // 생성기는 원래 폭 기준으로 각 점을 이미 링 밖으로 밀어 두었다. 폭만 넓히면
+  // 넓어진 폭의 안쪽 가장자리가 링 안으로 들어오므로, 넓어진 폭으로 다시 민다.
+  // 링 자신은 경계를 정의하는 도형이므로 위치는 그대로 두고 굵기만 키운다 —
+  // 목걸이 모드에서 링이 두꺼워지는 것은 설계 문서가 예상한 결과다.
+  const floor = ringFloor(look);
+  const widened = all.map((s) => {
+    const widths = s.widths.map((w) => Math.max(w, minW));
+    const pts = s.role === 'ring' ? s.pts : pushOutside(s.pts, widths, floor);
+    return { ...s, pts, widths };
+  });
+  return { strokes: widened, seed, total };
 }
 
 /**
  * IR → SVG. 순수 함수이며 브라우저 API 에 의존하지 않는다.
  *
- * 골격 조립은 `buildStrokes` 가 한다 — 여기서는 그 결과를 받아 폭 넓히기·
- * 재클램프, 좌표 변환, 윤곽선, 메타데이터, SVG 문자열만 만든다.
+ * 골격 조립과 폭 넓히기·재클램프는 `buildStrokes` 가 한다 — 여기서는 그
+ * 결과를 받아 좌표 변환, 윤곽선, 메타데이터, SVG 문자열만 만든다. 제작
+ * 검증도 같은 `buildStrokes` 를 지나므로 검증과 출력이 같은 모양을 본다.
  */
 export function render(
   ir: IR, lex: Lexicon, look: LookParams, opts: RenderOptions = {},
 ): RenderResult {
   const size = opts.size ?? 300;
   const minW = opts.minStrokeWidth ?? 0;
-  const { strokes: all, seed } = buildStrokes(ir, lex, look);
+  const { strokes: all, seed } = buildStrokes(ir, lex, look, { minStrokeWidth: minW });
 
   const scale = scaleFor(size);
   const cx = size / 2, cy = size / 2;
-  // 링 밖 여유 (p 공간). 링이 아닌 획의 안쪽 가장자리는 이 반경 밖에 있어야 한다.
-  const floor = ringFloor(look);
 
   // ── SVG ──
   const body: string[] = [];
   const strokes: StrokeMeta[] = [];
   for (const s of all) {
     if (s.pts.length < 2) continue;
-    const widths = minW > 0 ? s.widths.map((w) => Math.max(w, minW)) : s.widths;
-    // 생성기는 원래 폭 기준으로 각 점을 이미 링 밖(`floor + 원폭/2`)으로 밀어
-    // 두었다(`pushOutside`, vocab.ts/name.ts). 여기서 폭만 넓히면 넓어진
-    // 폭의 안쪽 가장자리(중심 - 새폭/2)가 링 안으로 들어올 수 있으므로, 넓어진
-    // 폭으로 다시 링 밖으로 민다. 링 자신은 경계를 정의하는 도형이므로 위치는
-    // 그대로 두고 굵기만 키운다 — 목걸이 모드에서 링이 두꺼워지는 것은
-    // 설계 문서가 예상한 결과다.
-    const ptsP = minW > 0 && s.role !== 'ring'
-      ? pushOutside(s.pts, widths, floor)
-      : s.pts;
+    const widths = s.widths;
     // p 공간에서 화면 좌표로. y 는 위쪽이 + 이므로 뒤집는다.
-    const pts: Pt[] = ptsP.map((p) => [cx + p[0] * scale, cy - p[1] * scale]);
+    const pts: Pt[] = s.pts.map((p) => [cx + p[0] * scale, cy - p[1] * scale]);
     const d = outlineOf(pts, widths.map((w) => w * scale));
     body.push(`<path d="${d}" fill="${INK}" fill-rule="nonzero"/>`);
     strokes.push({ d, role: s.role, label: s.label, minWidth: Math.min(...widths) * scale });

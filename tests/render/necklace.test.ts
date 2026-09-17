@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { renderForNecklace, validateNecklace, DEFAULT_NECKLACE } from '../../src/render/necklace';
-import { render, buildStrokes } from '../../src/render/compose';
+import { renderForNecklace, validateNecklace, necklaceSkeleton, DEFAULT_NECKLACE } from '../../src/render/necklace';
+import { render, buildStrokes, scaleFor } from '../../src/render/compose';
 import { checkManufacturable, type MillOptions } from '../../src/render/manufacture';
 import { loadLook, loadNecklaceLook } from '../../src/render/look';
 import { loadSeedLexicon } from '../../src/core/lexicon';
@@ -107,6 +107,27 @@ describe('투각 20mm 제작 가능성 — 화면 룩 기준선', () => {
     const { strokes } = buildStrokes(sample, lex, look);
     for (const v of checkManufacturable(strokes, mill).violations) {
       expect(v).toMatch(/mm|조각/);
+    }
+  });
+});
+
+describe('necklaceSkeleton', () => {
+  it('내보내기와 같은 하한을 적용한 골격을 낸다 — 검증이 출력과 같은 모양을 본다', () => {
+    const floorP = floorPx(DEFAULT_NECKLACE) / scaleFor(DEFAULT_NECKLACE.size);
+    for (const s of necklaceSkeleton(sample, lex)) {
+      for (const w of s.widths) expect(w).toBeGreaterThanOrEqual(floorP - 1e-9);
+    }
+  });
+
+  it('하한을 적용해도 링이 아닌 획은 링 밖에 머문다', () => {
+    const look2 = loadNecklaceLook();
+    const floor = look2.pR - look2.pRingBase;
+    for (const s of necklaceSkeleton(sample, lex)) {
+      if (s.role === 'ring') continue;
+      s.pts.forEach((p, i) => {
+        expect(Math.hypot(p[0], p[1]) - (s.widths[i] ?? 0) / 2, s.label)
+          .toBeGreaterThanOrEqual(floor - 1e-9);
+      });
     }
   });
 });
