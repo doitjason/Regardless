@@ -21,6 +21,7 @@ export const LOOK_KEYS = [
   'cFringeSpan', 'cWhisker', 'cWhiskerLen', 'cSpeck', 'cSpeckR', 'cJitter',
   // 문장 종류 표지
   'cMoodLen', 'cMoodThick',
+  'cFringeRoot',
   // 먹물 (화면 렌더러용 — 계획 III 에서 쓴다)
   'pSharp', 'pSoft', 'pDScale', 'pErode', 'pContrast', 'pFloor', 'pCore',
   'pGrainAmp', 'pGrainA', 'pGrainX', 'pInkWarp', 'pInkWarpF', 'pInkWarpS',

@@ -39,7 +39,10 @@ export function ringStrokes(
       const t = i / n;
       const a = base + span * t;
       // 마지막 구간에서만 바깥으로 벌어진다 — smoothstep 으로 완만하게
-      const k = Math.max(0, (t - (1 - over / span)) / (over / span));
+      // 벌어짐을 지나침 각도의 두 배에 걸쳐 시작한다. 짧게 벌리면 두 가닥이
+      // 스치는 구간이 생기고, 그 좁은 틈은 투각에서 메워진다.
+      const ramp = Math.min(1, (2 * over) / span);
+      const k = Math.max(0, (t - (1 - ramp)) / ramp);
       const r = look.pR + look.cPassOut * (k * k * (3 - 2 * k));
       pts.push([Math.cos(a) * r, Math.sin(a) * r]);
     }
@@ -201,8 +204,11 @@ export function bloomStrokes(
   const fLen = look.cFringeLen * sp.fringeLenK * dk;
   for (let i = 0; i < fCount; i++) {
     const t = Math.min(1, Math.max(0, (i + 0.5) / fCount + (rnd() - 0.5) / fCount));
+    // 뿌리 깊이 — 가시가 덩어리에 얼마나 물려 있는가. 값이 작을수록 안쪽에서
+    // 시작한다. 살짝 걸쳐만 있으면 두 도형이 접선으로 만나 아주 얇은 목이
+    // 생기고, 투각에서는 그 자리가 부러진다 (설계 문서 12.3).
     hair(st0 + span0 * t,
-         surf + look.cBloomThick * (0.25 + rnd() * 0.55),
+         surf + look.cBloomThick * (look.cFringeRoot + rnd() * 0.55),
          fLen, look.cFringeFine, look.cFringeSpan, 0.55, 0.9);
   }
 
@@ -210,7 +216,7 @@ export function bloomStrokes(
   const wCount = Math.max(0, Math.round(look.cWhisker * sp.fringeK * bud));
   for (let i = 0; i < wCount; i++) {
     hair(st0 + span0 * rnd(),
-         surf + look.cBloomThick * 0.4,
+         surf + look.cBloomThick * (look.cFringeRoot + 0.15),
          look.cWhiskerLen * dk * sp.reachK, look.cFringeFine * 1.25, look.cFringeSpan * 1.2, 0.6, 0.7);
   }
 

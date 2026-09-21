@@ -151,3 +151,25 @@ describe('bloomStrokes', () => {
     }
   });
 });
+
+describe('가시 뿌리 깊이', () => {
+  it('뿌리 깊이를 낮추면 가시가 덩어리 안쪽에서 시작한다', () => {
+    const inner = (root: number) => {
+      const l = { ...look, cFringeRoot: root };
+      const ss = bloomStrokes(l, conceptParams(NEUTRAL_FEATURES), ctx(), mulberry32(5))
+        .filter((s) => s.pts.length <= 8);          // 가시 (bezPts 7 → 8점)
+      return Math.min(...ss.map((s) => Math.hypot(s.pts[0]![0], s.pts[0]![1])));
+    };
+    expect(inner(0)).toBeLessThan(inner(0.25));
+  });
+
+  it('뿌리를 안쪽으로 박아도 링 안으로는 들어가지 않는다', () => {
+    const l = { ...look, cFringeRoot: -0.3 };
+    const floor = l.pR - l.pRingBase;
+    for (const s of bloomStrokes(l, conceptParams(NEUTRAL_FEATURES), ctx(), mulberry32(5))) {
+      s.pts.forEach((p, i) => {
+        expect(Math.hypot(p[0], p[1]) - (s.widths[i] ?? 0) / 2).toBeGreaterThanOrEqual(floor - 1e-9);
+      });
+    }
+  });
+});
