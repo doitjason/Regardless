@@ -87,3 +87,25 @@ describe('runCli', () => {
     expect(await runCli(['--ir',bad,'--out',outPath('y.svg')])).not.toBe(0);
   });
 });
+
+describe('--cut', () => {
+  it('플래그를 읽는다', () => {
+    expect(parseArgs(['--ir','a.json','--out','b.svg','--cut']).cut).toBe(true);
+    expect(parseArgs(['--ir','a.json','--out','b.svg']).cut).toBe(false);
+  });
+
+  it('투각용 컷 파일을 쓴다 — 정리한 모양의 윤곽선이다', async () => {
+    const out = outPath('cut.svg');
+    expect(await runCli(['--ir','fixtures/regardless.ir.json','--out',out,'--cut'])).toBe(0);
+    const svg = readFileSync(out, 'utf8');
+    expect(svg).toContain('fill-rule="evenodd"');
+    expect(svg).toContain('<metadata>');
+  });
+
+  it('같은 입력은 같은 컷 파일을 낸다 (원칙 1)', async () => {
+    const a = outPath('cut-a.svg'), b = outPath('cut-b.svg');
+    await runCli(['--ir','fixtures/regardless.ir.json','--out',a,'--cut']);
+    await runCli(['--ir','fixtures/regardless.ir.json','--out',b,'--cut']);
+    expect(readFileSync(b, 'utf8')).toBe(readFileSync(a, 'utf8'));
+  });
+});

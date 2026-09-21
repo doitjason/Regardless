@@ -69,3 +69,61 @@ describe('ringStrokes', () => {
     expect(avg(thick)).toBeGreaterThan(avg(thin));
   });
 });
+
+describe('링 이음매', () => {
+  it('틈이 없으면 끝을 가늘게 빼지 않는다 — 이음매에 홈이 생기면 투각에서 끊긴다', () => {
+    const noGap = { ...look, cGaps: 0, cJitter: 0, pRingAmp: 0 };
+    const ss = ringStrokes(noGap, mulberry32(5));
+    const ring = ss.find((s) => s.role === 'ring')!;
+    const first = ring.widths[0]!, mid = ring.widths[Math.floor(ring.widths.length / 2)]!;
+    expect(first).toBeCloseTo(mid, 6);
+  });
+
+  it('틈이 있으면 끊긴 끝은 가늘게 뺀다 — 붓 자국이다', () => {
+    const gapped = { ...look, cGaps: 2, cJitter: 0, pRingAmp: 0 };
+    const ring = ringStrokes(gapped, mulberry32(5)).find((s) => s.role === 'ring')!;
+    const first = ring.widths[0]!, mid = ring.widths[Math.floor(ring.widths.length / 2)]!;
+    expect(first).toBeLessThan(mid * 0.7);
+  });
+});
+
+describe('양보 링', () => {
+  const conc = (l = look) => ringStrokes(l, mulberry32(9), { concessive: true });
+
+  it('획이 하나다 — 틈도 겹선도 쓰지 않는다', () => {
+    expect(conc()).toHaveLength(1);
+  });
+
+  it('닫히지 않는다 — 끝이 시작을 지나쳐 바깥에 있다', () => {
+    const r = conc()[0]!;
+    const first = r.pts[0]!, last = r.pts[r.pts.length - 1]!;
+    expect(Math.hypot(last[0], last[1])).toBeGreaterThan(Math.hypot(first[0], first[1]) + look.cPassOut * 0.8);
+  });
+
+  it('한 바퀴를 넘어 돈다', () => {
+    const r = conc()[0]!;
+    let total = 0;
+    for (let i = 1; i < r.pts.length; i++) {
+      const a = Math.atan2(r.pts[i - 1]![1], r.pts[i - 1]![0]);
+      const b = Math.atan2(r.pts[i]![1], r.pts[i]![0]);
+      let d = b - a;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      total += d;
+    }
+    expect(Math.abs(total)).toBeGreaterThan(Math.PI * 2);
+  });
+
+  it('두 가닥이 겹치는 구간에서 서로 떨어져 있다', () => {
+    const r = conc()[0]!;
+    const last = r.pts[r.pts.length - 1]!;
+    const near = r.pts.slice(0, 40)
+      .map((p) => Math.hypot(p[0] - last[0], p[1] - last[1]));
+    expect(Math.min(...near)).toBeGreaterThan(look.pRingBase);
+  });
+
+  it('굵기가 양 끝에서 가늘어지지 않는다 — 겹치는 자리에 홈이 생기면 안 된다', () => {
+    const r = conc({ ...look, cJitter: 0, pRingAmp: 0 })[0]!;
+    expect(r.widths[0]!).toBeCloseTo(r.widths[Math.floor(r.widths.length / 2)]!, 6);
+  });
+});

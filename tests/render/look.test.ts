@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadLook, LOOK_KEYS } from '../../src/render/look';
+import { loadLook, loadNecklaceLook, LOOK_KEYS } from '../../src/render/look';
 
 const look = loadLook();
 
@@ -71,5 +71,19 @@ describe('loadLook — 잘못된 입력', () => {
   it('정상 입력은 선언된 파라미터를 모두 낸다', () => {
     const out = loadLook(valid());
     for (const k of LOOK_KEYS) expect(out[k], k).toBe(1);
+  });
+});
+
+describe('loadNecklaceLook', () => {
+  it('목걸이 룩도 같은 키 계약을 만족한다', () => {
+    const n = loadNecklaceLook();
+    const s = loadLook();
+    expect(Object.keys(n).sort()).toEqual(Object.keys(s).sort());
+  });
+
+  it('목걸이 룩은 링 틈과 겹선을 쓰지 않는다', () => {
+    const n = loadNecklaceLook();
+    expect(n.cGaps).toBe(0);
+    expect(n.cDouble).toBe(0);
   });
 });

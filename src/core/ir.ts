@@ -28,8 +28,11 @@ export type Constituent =
 /**
  * 문장 수준 양상. 6시 양상 슬롯은 오직 이 값에서만 채워지며,
  * 파서는 role이 '양상'인 Constituent를 직접 만들지 않는다 (설계 문서 6.2).
+ *
+ * `concessive` — 양보 — "그럼에도 불구하고". 문장 전체에 걸리는 태도이므로
+ * mood 다. 주체·대상·시간·장소 어디에도 속하지 않는다.
  */
-export type Mood = 'declarative' | 'interrogative' | 'negative' | 'volitional';
+export type Mood = 'declarative' | 'interrogative' | 'negative' | 'volitional' | 'concessive';
 
 export interface IR {
   constituents: Constituent[];

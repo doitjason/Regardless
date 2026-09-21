@@ -40,12 +40,14 @@
 
 <div id="app">
   <div id="left">
-    <div id="stage"><div class="bar t"></div><canvas id="c"></canvas><div class="bar b"></div></div>
-    <div id="hud"><span id="fps">—</span> · 스페이스 일렁임 · G 격자 · R 분사 · P 종이 · M 마스크 · S PNG</div>
+    <div id="stage"><div class="bar t"></div><canvas id="c"></canvas><canvas id="mill"
+      style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;display:none"></canvas><div class="bar b"></div></div>
+    <div id="hud"><span id="millHud" style="display:block"></span><span id="fps">—</span> · 스페이스 일렁임 · G 격자 · R 분사 · P 종이 · M 마스크 · S PNG</div>
   </div>
   <div id="panel">
     <h1>룩 랩</h1>
     <div class="btns" id="presets"></div>
+    <div class="btns" id="moods"></div>
     <input id="free" type="text" placeholder="자유 입력 — 단어를 띄어쓰기로 (비우면 프리셋)"
            style="width:100%;background:#0d1011;color:var(--tx);border:1px solid var(--line);
                   border-radius:4px;padding:6px 8px;font:inherit;font-size:11px;margin:2px 0 4px">
@@ -56,13 +58,14 @@
       <button id="bPaper">종이</button>
       <button id="bMask">마스크</button>
       <button id="bSpray">분사</button>
+      <button id="bMill">목걸이</button>
       <button id="bPng">PNG</button>
     </div>
     <div id="groups"></div>
     <details open>
       <summary>설정 내보내기</summary>
       <div class="btns">
-        <button id="bCopy">JSON 복사</button><button id="bReset">기본값</button>
+        <button id="bCopy">JSON 복사</button><button id="bCopyMill">목걸이 JSON</button><button id="bReset">기본값</button>
       </div>
       <textarea id="out" readonly></textarea>
       <p class="note">마음에 드는 조합이 나오면 이 JSON을 주세요. 그게 확정 스펙이 됩니다.</p>
@@ -268,6 +271,10 @@ const P = [
     ['cSpeck',     '떨어진 반점 수', 0, 30, 1, 0.0, 1],
     ['cSpeckR',    '반점 크기',      0.0008, 0.0080, 0.0002, 0.0008, 1],
     ['cJitter',    '불규칙성',       0.00, 2.00, 0.02, 1.8, 1],
+    ['cMoodLen',   '문장 표지 길이', 0.04, 0.32, 0.005, 0.16, 1],
+    ['cMoodThick', '문장 표지 굵기', 0.008, 0.060, 0.001, 0.026, 1],
+    ['cPassSpan',  '양보 지나침 각도', 0.10, 1.40, 0.05, 0.55, 1],
+    ['cPassOut',   '양보 벌어짐',     0.03, 0.20, 0.002, 0.086, 1],
   ]],
   ['먹물', [
     ['pSharp',    '얇은 세부 살리기',   0.00, 1.00, 0.02, 1],
@@ -382,6 +389,97 @@ function rng(seed) {
   };
 }
 
+// -- 음운 자질 --
+// src/core/phonology.ts 를 그대로 옮긴 것이다. 엔진과 랩이 어긋나면 안 된다.
+const HANGUL_BASE = 0xac00, HANGUL_LAST = 0xd7a3;
+const ONSETS = ['g','kk','n','d','tt','l','m','b','pp','s','ss','','j','jj','ch','k','t','p','h'];
+const NUCLEI = ['a','ae','ya','yae','eo','e','yeo','ye','o','wa','wae','oe','yo','u','wo','we','wi','yu','eu','ui','i'];
+const CODAS = ['','g','kk','gs','n','nj','nh','d','l','lg','lm','lb','ls','lt','lp','lh','m','b','bs','s','ss','ng','j','ch','k','t','p','h'];
+
+function decomposeHangul(ch) {
+  const cp = ch.codePointAt(0);
+  if (cp === undefined || cp < HANGUL_BASE || cp > HANGUL_LAST) return null;
+  const code = cp - HANGUL_BASE;
+  return {
+    onset: ONSETS[Math.floor(code / 588)] ?? '',
+    nucleus: NUCLEI[Math.floor((code % 588) / 28)] ?? 'a',
+    coda: CODAS[code % 28] ?? '',
+  };
+}
+
+function syllabify(text) {
+  const out = [];
+  for (const ch of text) { const s = decomposeHangul(ch); if (s) out.push(s); }
+  return out;
+}
+
+const CONSONANTS = {
+  'b':  { place: 0, manner: 'stop',      tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'p':  { place: 0, manner: 'stop',      tense: 1, secondPlace: null, secondManner: null, secondTense: null },
+  'pp': { place: 0, manner: 'stop',      tense: 2, secondPlace: null, secondManner: null, secondTense: null },
+  'm':  { place: 0, manner: 'nasal',     tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'd':  { place: 1, manner: 'stop',      tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  't':  { place: 1, manner: 'stop',      tense: 1, secondPlace: null, secondManner: null, secondTense: null },
+  'tt': { place: 1, manner: 'stop',      tense: 2, secondPlace: null, secondManner: null, secondTense: null },
+  'n':  { place: 1, manner: 'nasal',     tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'l':  { place: 1, manner: 'liquid',    tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  's':  { place: 1, manner: 'fricative', tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'ss': { place: 1, manner: 'fricative', tense: 2, secondPlace: null, secondManner: null, secondTense: null },
+  'z':  { place: 1, manner: 'fricative', tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'j':  { place: 2, manner: 'affricate', tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'ch': { place: 2, manner: 'affricate', tense: 1, secondPlace: null, secondManner: null, secondTense: null },
+  'jj': { place: 2, manner: 'affricate', tense: 2, secondPlace: null, secondManner: null, secondTense: null },
+  'g':  { place: 3, manner: 'stop',      tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'k':  { place: 3, manner: 'stop',      tense: 1, secondPlace: null, secondManner: null, secondTense: null },
+  'kk': { place: 3, manner: 'stop',      tense: 2, secondPlace: null, secondManner: null, secondTense: null },
+  'ng': { place: 3, manner: 'nasal',     tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'h':  { place: 4, manner: 'fricative', tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  '':   { place: 3, manner: 'none',      tense: 0, secondPlace: null, secondManner: null, secondTense: null },
+  'gs': { place: 3, manner: 'stop',   tense: 0, secondPlace: 1, secondManner: 'fricative', secondTense: 0 },
+  'nj': { place: 1, manner: 'nasal',  tense: 0, secondPlace: 2, secondManner: 'affricate', secondTense: 0 },
+  'nh': { place: 1, manner: 'nasal',  tense: 0, secondPlace: 4, secondManner: 'fricative', secondTense: 0 },
+  'lg': { place: 1, manner: 'liquid', tense: 0, secondPlace: 3, secondManner: 'stop',      secondTense: 0 },
+  'lm': { place: 1, manner: 'liquid', tense: 0, secondPlace: 0, secondManner: 'nasal',     secondTense: 0 },
+  'lb': { place: 1, manner: 'liquid', tense: 0, secondPlace: 0, secondManner: 'stop',      secondTense: 0 },
+  'ls': { place: 1, manner: 'liquid', tense: 0, secondPlace: 1, secondManner: 'fricative', secondTense: 0 },
+  'lt': { place: 1, manner: 'liquid', tense: 0, secondPlace: 1, secondManner: 'stop',      secondTense: 1 },
+  'lp': { place: 1, manner: 'liquid', tense: 0, secondPlace: 0, secondManner: 'stop',      secondTense: 1 },
+  'lh': { place: 1, manner: 'liquid', tense: 0, secondPlace: 4, secondManner: 'fricative', secondTense: 0 },
+  'bs': { place: 0, manner: 'stop',   tense: 0, secondPlace: 1, secondManner: 'fricative', secondTense: 0 },
+};
+const NEUTRAL_CONSONANT = { place: 2, manner: 'stop', tense: 0, secondPlace: null, secondManner: null, secondTense: null };
+const consonantFeatures = (id) => CONSONANTS[id] ?? NEUTRAL_CONSONANT;
+
+const VOWELS = {
+  'a':   { height: 0.05, back: 0.60, round: 0 },
+  'ae':  { height: 0.30, back: 0.05, round: 0 },
+  'ya':  { height: 0.15, back: 0.55, round: 0 },
+  'yae': { height: 0.35, back: 0.05, round: 0 },
+  'eo':  { height: 0.40, back: 0.70, round: 0 },
+  'e':   { height: 0.50, back: 0.05, round: 0 },
+  'yeo': { height: 0.45, back: 0.65, round: 0 },
+  'ye':  { height: 0.55, back: 0.05, round: 0 },
+  'o':   { height: 0.60, back: 1.00, round: 1 },
+  'wa':  { height: 0.30, back: 0.80, round: 1 },
+  'wae': { height: 0.40, back: 0.45, round: 1 },
+  'oe':  { height: 0.55, back: 0.30, round: 1 },
+  'yo':  { height: 0.65, back: 0.95, round: 1 },
+  'u':   { height: 1.00, back: 1.00, round: 1 },
+  'wo':  { height: 0.50, back: 0.75, round: 1 },
+  'we':  { height: 0.55, back: 0.35, round: 1 },
+  'wi':  { height: 0.90, back: 0.30, round: 1 },
+  'yu':  { height: 0.95, back: 0.95, round: 1 },
+  'eu':  { height: 1.00, back: 0.80, round: 0 },
+  'ui':  { height: 0.95, back: 0.45, round: 0 },
+  'i':   { height: 1.00, back: 0.05, round: 0 },
+};
+const NEUTRAL_VOWEL = { height: 0.5, back: 0.5, round: 0 };
+const vowelFeatures = (id) => VOWELS[id] ?? NEUTRAL_VOWEL;
+
+/** 이름 상한. 엔진의 MAX_SYLLABLES 와 같아야 한다. */
+const MAX_SYLLABLES = 8;
+const MANNER_SHAPE = { stop: 0.0, fricative: 0.35, nasal: 0.7, liquid: 1.0, affricate: 0.5, none: 0.15 };
+
 // ── 자질 → 조형 파라미터 ──
 // 계획 1의 render/mapping.ts 프로토타입이다. 여기서 확정된 식이 그대로 명세가 된다.
 // 원칙 2를 지키려면 8개 자질이 모두 어딘가에 도달해야 한다.
@@ -465,6 +563,8 @@ function bezPts(a, b, c, n) {
 
 // ── 삼각형화 ──
 function strip(pts, ws, out) {
+  // 목걸이 모드에서는 각인 최소 선폭을 강제한다 — 엔진의 minStrokeWidth 와 같은 자리다.
+  if (necklaceMode) { const f = millFloorP(); ws = ws.map((w) => Math.max(w, f)); }
   const L = [], R = [], last = pts.length - 1;
   for (let i = 0; i <= last; i++) {
     const h = ws[i] / 2;
@@ -523,6 +623,26 @@ function specks(at, outAng, count, reach, rad, rnd, out) {
 function ringGeometry(rnd, out, R = val.pR, wScale = 1) {
   const J = val.cJitter;
   const gaps = val.cGaps;
+
+  // 양보 — 링이 닫히지 않고 자기 시작점을 스쳐 지나간다 (설계 문서 6.2).
+  // 엔진 src/render/vocab.ts 의 ringStrokes 와 같은 규칙이다.
+  if (moodMode === 'concessive') {
+    const base = slotAngle(ROLE_SLOT['양상'], 0);
+    const over = val.cPassSpan;
+    const span = Math.PI * 2 + over;
+    const n = 240, pts = [], w = [];
+    const j = smoothJit(rnd, 0.55 * J);
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const a = base + span * t;
+      const k = Math.max(0, (t - (1 - over / span)) / (over / span));
+      const r = R + val.cPassOut * (k * k * (3 - 2 * k));
+      pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+      w.push(Math.max(0.0018, (val.pRingBase * wScale + val.pRingAmp * wScale * (j(t) - 1) * 1.8) * j(t)));
+    }
+    strip(pts, w, out);
+    return;
+  }
   const segs = gaps + 1;
   const gapEach = gaps > 0 ? (val.cGapSize * Math.PI * 2) / gaps : 0;
   const segSpan = (Math.PI * 2 - gapEach * gaps) / segs;
@@ -538,7 +658,13 @@ function ringGeometry(rnd, out, R = val.pR, wScale = 1) {
     const j = smoothJit(rnd, 0.55 * J);
     for (let i = 0; i < pts.length; i++) {
       const t = i / (pts.length - 1);
-      const taper = 0.45 + 0.55 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.12)), 0.30);
+      // 끝을 가늘게 빼는 것은 **끊긴 끝**의 붓 자국이다. 틈이 없으면 링은
+      // 닫힌 고리이고 양 끝은 서로 맞닿는 이음매이므로, 가늘게 빼면 그 자리에
+      // 홈이 생긴다 — 투각에서는 이 홈이 하한 미만의 살이 된다.
+      // (엔진 src/render/vocab.ts 의 ringStrokes 와 같은 규칙)
+      const taper = gaps === 0
+        ? 1
+        : 0.45 + 0.55 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.12)), 0.30);
       w.push(Math.max(0.0018, (base + amp * (j(t) - 1) * 1.8) * taper * j(t)));
     }
     strip(pts, w, out);
@@ -681,23 +807,346 @@ function bloomAt(word, angle, out, ctx) {
 // ── 이름의 음절 나선 — 순서를 각도가 아니라 반경에 인코딩 ──
 // 원래는 안쪽으로 감겨 들어갔으나, 링 안쪽을 비우기로 했으므로 바깥으로
 // 감아 나간다. 순서를 반경에 담는다는 원리(스펙 9.2)는 그대로다.
-function nameSpiral(angle, count, seedKey, out, ctx = {}) {
+/**
+ * 이름의 음절 나선 — src/render/name.ts 를 그대로 옮긴 것이다.
+ *
+ * 옛 랩은 음절 **개수**만 썼다. 그래서 어떤 이름을 넣어도 같은 호가 개수만큼
+ * 쌓였고 이름끼리 구별되지 않았다 (원칙 2 위반). 이제 소리를 읽는다 —
+ * 초성의 조음 위치·방법·긴장도가 굵기·부풂·장력을, 모음의 고저·전후설·
+ * 원순성이 호 길이·기울기·곁가지를, 종성이 끝의 표지를 정한다.
+ */
+function nameSpiral(angle, syllables, seedKey, out, ctx = {}) {
+  const syls = syllables.slice(0, MAX_SYLLABLES);
+  if (syls.length === 0) return;
   const rnd = rng(fnv1a(seedKey));
   const depth = ctx.depth ?? 0;
   const R = ctx.R ?? val.pR;
   const J = val.cJitter;
+  const floor = R - val.pRingBase;
   const surf = R + val.pRingBase * 0.5 + depth * val.cBloomThick * 0.80;
   const step = val.cBloomThick * 0.95;
-  for (let i = 0; i < count; i++) {
-    const r = surf + i * step, a = angle + i * 0.13;
-    const span = val.cBloomSpan * 0.5 * (1 - i * 0.10);
-    const thick = val.cBloomThick * (0.55 - i * 0.08);
-    const pts = arcPts(r + thick * 0.44, a - span * 0.5, span, val.cBloomThick * 0.25, 20);
-    strip(pts, profile(pts.length, thick, val.pRingBase * 0.5, 'bloom', rnd, J * 0.7), out);
-    const mid = pts[Math.floor(pts.length * 0.5)];
-    fringe(mid, Math.atan2(mid[1], mid[0]), Math.round(val.cFringe * 0.22),
-           val.cFringeLen * 0.7, val.cFringeFine, val.cFringeBend, rnd, out);
+
+  // 점마다 자기 반폭만큼 링 밖으로 민다 (엔진 pushOutside 와 같다)
+  const push = (pts, ws) => {
+    const safe = pts.map((p, i) => {
+      const need = floor + (ws[i] ?? 0) / 2;
+      const r = Math.hypot(p[0], p[1]);
+      if (r >= need) return p;
+      if (r < 1e-12) return [need, 0];
+      const k = need / r;
+      return [p[0] * k, p[1] * k];
+    });
+    strip(safe, ws, out);
+  };
+
+  syls.forEach((syl, i) => {
+    const c = consonantFeatures(syl.onset);
+    const v = vowelFeatures(syl.nucleus);
+
+    const thick = val.cBloomThick * Math.max(0.12, 0.55 - i * 0.06)
+                * (0.55 + c.place * 0.16) * (1 + c.tense * 0.18);
+    const span = val.cBloomSpan * (0.45 + v.height * 0.55) * Math.max(0.2, 1 - i * 0.08);
+    const lean = (v.back - 0.5) * 0.6;
+    const bow = val.cBloomThick * (0.12 + (MANNER_SHAPE[c.manner] ?? 0.3) * 0.5);
+
+    const r = surf + i * step;
+    const a0 = angle + i * 0.13 + lean * 0.2 - span * 0.5;
+    const pts = arcPts(r + thick * 0.44, a0, span, bow, 22);
+    push(pts, profile(pts.length, thick, val.pRingBase * 0.5, 'bloom', rnd, J * 0.7));
+
+    if (syl.coda !== '') {
+      const cc = consonantFeatures(syl.coda);
+      const e = pts[pts.length - 1];
+      const ea = Math.atan2(e[1], e[0]) + (cc.place - 2) * 0.18;
+      const L = val.cFringeLen * (0.5 + cc.place * 0.12);
+      const bend0 = 0.15 + (MANNER_SHAPE[cc.manner] ?? 0.3) * 0.6;
+      const tip = [e[0] + Math.cos(ea) * L, e[1] + Math.sin(ea) * L];
+      const mid = [e[0] + Math.cos(ea + bend0) * L * 0.55, e[1] + Math.sin(ea + bend0) * L * 0.55];
+      const cp = bezPts(e, mid, tip, 7);
+      const w0 = val.cFringeFine * (1.0 + cc.place * 0.15) * (1 + cc.tense * 0.22);
+      push(cp, profile(cp.length, w0, w0 * val.cFringeTip, 'hair', rnd, 0.4));
+
+      // 겹종성이면 두 번째 자음의 표지를 하나 더. 갈과 갉이 구별되어야 한다.
+      if (cc.secondManner !== null) {
+        const sa = ea - 0.55;
+        const L2 = L * 0.7;
+        const bend2 = -(0.1 + (MANNER_SHAPE[cc.secondManner] ?? 0.3) * 0.5);
+        const tip2 = [e[0] + Math.cos(sa) * L2, e[1] + Math.sin(sa) * L2];
+        const mid2 = [e[0] + Math.cos(sa + bend2) * L2 * 0.55, e[1] + Math.sin(sa + bend2) * L2 * 0.55];
+        const cp2 = bezPts(e, mid2, tip2, 6);
+        const w2 = val.cFringeFine * (0.7 + (cc.secondPlace ?? 2) * 0.12) * (1 + (cc.secondTense ?? 0) * 0.22);
+        push(cp2, profile(cp2.length, w2, w2 * val.cFringeTip, 'hair', rnd, 0.4));
+      }
+    }
+
+    if (v.round === 1) {
+      const m = pts[Math.floor(pts.length * 0.5)];
+      const ma = Math.atan2(m[1], m[0]) + 0.5;
+      const L = val.cFringeLen * 0.55;
+      const tip = [m[0] + Math.cos(ma) * L, m[1] + Math.sin(ma) * L];
+      const mid = [m[0] + Math.cos(ma + 0.3) * L * 0.55, m[1] + Math.sin(ma + 0.3) * L * 0.55];
+      const cp = bezPts(m, mid, tip, 6);
+      push(cp, profile(cp.length, val.cFringeFine * 0.8, val.cFringeFine * 0.8 * val.cFringeTip, 'hair', rnd, 0.4));
+    }
+  });
+}
+
+/**
+ * 문장 종류 표지 — src/render/vocab.ts 의 moodStrokes 와 같은 규칙이다.
+ *
+ * mood 는 문장 수준 속성이고 6시 양상 슬롯이 그것이 그려지는 자리다 (스펙 6.2).
+ * 평서문은 표지가 없다 — 표지가 없다는 것 자체가 평서문의 표시다.
+ */
+let moodMode = 'declarative';
+
+function moodMark(out) {
+  // 양보는 표지 획이 아니라 링 자체가 담당한다 (ringGeometry 참조)
+  if (moodMode === 'declarative' || moodMode === 'concessive') return;
+  const rnd = rng(fnv1a(`mood|${moodMode}`));
+  const R = val.pR;
+  const floor = R - val.pRingBase;
+  const surf = R + val.pRingBase * 0.5;
+  const base = slotAngle(ROLE_SLOT['양상'], 0);
+  const L = val.cMoodLen, W = val.cMoodThick, J = val.cJitter;
+
+  const push = (pts, ws) => {
+    const safe = pts.map((p, i) => {
+      const need = floor + (ws[i] ?? 0) / 2;
+      const r = Math.hypot(p[0], p[1]);
+      if (r >= need) return p;
+      if (r < 1e-12) return [need, 0];
+      const k = need / r;
+      return [p[0] * k, p[1] * k];
+    });
+    strip(safe, ws, out);
+  };
+
+  if (moodMode === 'interrogative') {
+    // 링을 따라 짧은 호를 그리고, 그 끝에서 바깥으로 말아 올린다
+    const span = L * 1.6;
+    const arc = arcPts(surf + W * 0.5, base - span * 0.5, span, W * 0.4, 20);
+    push(arc, profile(arc.length, W, W * 0.45, 'bloom', rnd, J * 0.5));
+    const e = arc[arc.length - 1];
+    const ea = Math.atan2(e[1], e[0]);
+    const tip = [e[0] + Math.cos(ea + 0.9) * L, e[1] + Math.sin(ea + 0.9) * L];
+    const mid = [e[0] + Math.cos(ea + 0.2) * L * 0.7, e[1] + Math.sin(ea + 0.2) * L * 0.7];
+    const hook = bezPts(e, mid, tip, 10);
+    push(hook, profile(hook.length, W * 0.8, W * 0.8 * val.cFringeTip, 'hair', rnd, 0.4));
+    return;
   }
+
+  if (moodMode === 'negative') {
+    // 링 바깥 면을 가로지르는 굵은 막대 하나. 반경 방향이다.
+    const bar = [];
+    for (let i = 0; i <= 12; i++) {
+      const rr = surf + L * (i / 12);
+      bar.push([Math.cos(base) * rr, Math.sin(base) * rr]);
+    }
+    push(bar, profile(bar.length, W * 1.5, W * 1.5, 'flat', rnd, J * 0.4));
+    return;
+  }
+
+  // volitional — 바깥으로 벌어지는 두 갈래
+  for (const side of [-1, 1]) {
+    const a0 = base + side * 0.10;
+    const root = [Math.cos(a0) * surf, Math.sin(a0) * surf];
+    const dir = a0 + side * 0.45;
+    const tip = [root[0] + Math.cos(dir) * L * 1.3, root[1] + Math.sin(dir) * L * 1.3];
+    const mid = [root[0] + Math.cos(dir - side * 0.25) * L * 0.7,
+                 root[1] + Math.sin(dir - side * 0.25) * L * 0.7];
+    const pts = bezPts(root, mid, tip, 10);
+    push(pts, profile(pts.length, W * 1.1, W * 1.1 * val.cFringeTip, 'hair', rnd, 0.4));
+  }
+}
+
+// -- 목걸이 제작 가능성 --
+// src/render/manufacture.ts 와 같은 판정이다. 랩에서 통과한 조형이 엔진에서
+// 떨어지면 안 되므로, 기준과 메시지 문구를 같게 유지한다.
+//
+// 투각 펜던트: 바깥 지름 20mm, 최소 선폭 0.5mm, 최소 틈 0.5mm, 한 덩어리.
+const MILL = { diameterMm: 20, minStrokeMm: 0.5, minGapMm: 0.5, pxPerMm: 20 };
+let necklaceMode = false;
+
+/** 최소 선폭을 p 공간 단위로. 목걸이 모드에서 획 굵기의 하한이 된다. */
+function millFloorP() {
+  return (MILL.minStrokeMm / MILL.diameterMm) * 2 * 0.9;
+}
+
+function millErode(grid, n, r) {
+  const out = new Uint8Array(n * n), rr = r * r, off = [];
+  for (let dy = -Math.ceil(r); dy <= Math.ceil(r); dy++)
+    for (let dx = -Math.ceil(r); dx <= Math.ceil(r); dx++)
+      if (dx * dx + dy * dy <= rr) off.push(dx, dy);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    if (!grid[y * n + x]) continue;
+    let ok = 1;
+    for (let k = 0; k < off.length && ok; k += 2) {
+      const nx = x + off[k], ny = y + off[k + 1];
+      if (nx < 0 || ny < 0 || nx >= n || ny >= n || !grid[ny * n + nx]) ok = 0;
+    }
+    out[y * n + x] = ok;
+  }
+  return out;
+}
+
+function millDilate(grid, n, r) {
+  const out = new Uint8Array(n * n), rr = r * r, off = [];
+  for (let dy = -Math.ceil(r); dy <= Math.ceil(r); dy++)
+    for (let dx = -Math.ceil(r); dx <= Math.ceil(r); dx++)
+      if (dx * dx + dy * dy <= rr) off.push(dx, dy);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    if (!grid[y * n + x]) continue;
+    for (let k = 0; k < off.length; k += 2) {
+      const nx = x + off[k], ny = y + off[k + 1];
+      if (nx >= 0 && ny >= 0 && nx < n && ny < n) out[ny * n + nx] = 1;
+    }
+  }
+  return out;
+}
+
+function millComponents(grid, n, want) {
+  const label = new Int32Array(n * n).fill(-1), sizes = [], stack = [];
+  for (let i = 0; i < grid.length; i++) {
+    if (grid[i] !== want || label[i] !== -1) continue;
+    const id = sizes.length;
+    let size = 0;
+    stack.push(i); label[i] = id;
+    while (stack.length) {
+      const q = stack.pop(); size++;
+      const x = q % n, y = (q / n) | 0;
+      if (x > 0 && grid[q - 1] === want && label[q - 1] === -1) { label[q - 1] = id; stack.push(q - 1); }
+      if (x < n - 1 && grid[q + 1] === want && label[q + 1] === -1) { label[q + 1] = id; stack.push(q + 1); }
+      if (y > 0 && grid[q - n] === want && label[q - n] === -1) { label[q - n] = id; stack.push(q - n); }
+      if (y < n - 1 && grid[q + n] === want && label[q + n] === -1) { label[q + n] = id; stack.push(q + n); }
+    }
+    sizes.push(size);
+  }
+  return { sizes, label };
+}
+
+/** 배경 화소의 거리장 (체임퍼 3-4). 구멍의 내접 지름을 재는 데 쓴다. */
+function millDistance(grid, n) {
+  const INF = 1e9, d = new Float32Array(n * n);
+  for (let i = 0; i < d.length; i++) d[i] = grid[i] ? INF : 0;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const i = y * n + x;
+    if (!grid[i]) continue;
+    let v = d[i];
+    if (x > 0) v = Math.min(v, d[i - 1] + 3);
+    if (y > 0) v = Math.min(v, d[i - n] + 3);
+    if (x > 0 && y > 0) v = Math.min(v, d[i - n - 1] + 4);
+    if (x < n - 1 && y > 0) v = Math.min(v, d[i - n + 1] + 4);
+    d[i] = v;
+  }
+  for (let y = n - 1; y >= 0; y--) for (let x = n - 1; x >= 0; x--) {
+    const i = y * n + x;
+    if (!grid[i]) continue;
+    let v = d[i];
+    if (x < n - 1) v = Math.min(v, d[i + 1] + 3);
+    if (y < n - 1) v = Math.min(v, d[i + n] + 3);
+    if (x < n - 1 && y < n - 1) v = Math.min(v, d[i + n + 1] + 4);
+    if (x > 0 && y < n - 1) v = Math.min(v, d[i + n - 1] + 4);
+    d[i] = v;
+  }
+  for (let i = 0; i < d.length; i++) d[i] /= 3;
+  return d;
+}
+
+/** 위반 목록과, 화면에 겹쳐 그릴 위반 마스크를 함께 낸다. */
+function millReport(ink, n, mm) {
+  const violations = [];
+  const rThin = (mm.minStrokeMm * mm.pxPerMm) / 2;
+  const opened = millDilate(millErode(ink, n, rThin), n, rThin);
+  const thinMask = new Uint8Array(n * n);
+  let thinPx = 0;
+  for (let i = 0; i < ink.length; i++) if (ink[i] && !opened[i]) { thinMask[i] = 1; thinPx++; }
+  if (thinPx) violations.push(`가는 살 ${thinPx}화소 (${mm.minStrokeMm}mm 미만)`);
+
+  const rGap = Math.max(0.5, (mm.minGapMm * mm.pxPerMm) / 2 - 0.5);
+  const closed = millErode(millDilate(ink, n, rGap), n, rGap);
+  const gapMask = new Uint8Array(n * n);
+  let narrowGapPx = 0;
+  for (let i = 0; i < ink.length; i++) if (!ink[i] && closed[i]) { gapMask[i] = 1; narrowGapPx++; }
+  if (narrowGapPx) violations.push(`좁은 틈 ${narrowGapPx}화소 (${mm.minGapMm}mm 미만)`);
+
+  const inkC = millComponents(ink, n, 1);
+  if (inkC.sizes.length !== 1) violations.push(`잉크 ${inkC.sizes.length}조각`);
+
+  // 구멍 — 바깥 테두리에 닿지 않는 배경 덩어리. 넓이가 아니라 내접 지름으로 잰다.
+  const bg = millComponents(ink, n, 0);
+  const inv = new Uint8Array(n * n);
+  for (let i = 0; i < ink.length; i++) inv[i] = ink[i] ? 0 : 1;
+  const dist = millDistance(inv, n);
+  const outer = new Set();
+  for (let x = 0; x < n; x++) {
+    outer.add(bg.label[x]); outer.add(bg.label[(n - 1) * n + x]);
+    outer.add(bg.label[x * n]); outer.add(bg.label[x * n + n - 1]);
+  }
+  const holeMax = new Map();
+  for (let i = 0; i < ink.length; i++) {
+    if (ink[i]) continue;
+    const id = bg.label[i];
+    if (outer.has(id)) continue;
+    holeMax.set(id, Math.max(holeMax.get(id) ?? 0, dist[i]));
+  }
+  const holeMask = new Uint8Array(n * n);
+  let smallHoles = 0;
+  const small = new Set();
+  holeMax.forEach((maxD, id) => {
+    if ((2 * maxD) / mm.pxPerMm < mm.minGapMm) { small.add(id); smallHoles++; }
+  });
+  if (smallHoles) {
+    for (let i = 0; i < ink.length; i++) if (!ink[i] && small.has(bg.label[i])) holeMask[i] = 1;
+    violations.push(`작은 구멍 ${smallHoles}개 (${mm.minGapMm}mm 미만)`);
+  }
+
+  return { violations, components: inkC.sizes.length, thinPx, narrowGapPx, smallHoles,
+           thinMask, gapMask, holeMask, n };
+}
+
+/** 삼각형을 실척 격자에 채워 검사한다. */
+function millCheck(tris) {
+  const n = Math.round(MILL.diameterMm * MILL.pxPerMm);
+  const cv = document.createElement('canvas');
+  cv.width = n; cv.height = n;
+  const g = cv.getContext('2d', { willReadFrequently: true });
+  g.fillStyle = '#000';
+  const scale = (MILL.diameterMm * MILL.pxPerMm * 0.5) / 0.9; // P_SPAN = 0.9
+  for (let i = 0; i + 5 < tris.length; i += 6) {
+    g.beginPath();
+    g.moveTo(n / 2 + tris[i] * scale,     n / 2 - tris[i + 1] * scale);
+    g.lineTo(n / 2 + tris[i + 2] * scale, n / 2 - tris[i + 3] * scale);
+    g.lineTo(n / 2 + tris[i + 4] * scale, n / 2 - tris[i + 5] * scale);
+    g.closePath();
+    g.fill();
+  }
+  const img = g.getImageData(0, 0, n, n).data;
+  const ink = new Uint8Array(n * n);
+  for (let i = 0; i < n * n; i++) ink[i] = img[i * 4 + 3] > 128 ? 1 : 0;
+  return millReport(ink, n, MILL);
+}
+
+/** 위반 화소를 겹쳐 그린다. 가는 살은 빨강, 메워질 틈은 주황, 작은 구멍은 파랑. */
+function showMill(tris) {
+  const cv = document.getElementById('mill');
+  const hud = document.getElementById('millHud');
+  if (!necklaceMode) { cv.style.display = 'none'; hud.textContent = ''; return; }
+  const rep = millCheck(tris);
+  const n = rep.n;
+  cv.width = n; cv.height = n;
+  cv.style.display = 'block';
+  const g = cv.getContext('2d');
+  const img = g.createImageData(n, n);
+  for (let i = 0; i < n * n; i++) {
+    if (rep.thinMask[i]) { img.data[i*4] = 255; img.data[i*4+3] = 200; }
+    else if (rep.gapMask[i]) { img.data[i*4] = 255; img.data[i*4+1] = 150; img.data[i*4+3] = 180; }
+    else if (rep.holeMask[i]) { img.data[i*4+2] = 255; img.data[i*4+1] = 120; img.data[i*4+3] = 180; }
+  }
+  g.putImageData(img, 0, 0);
+  hud.textContent = rep.violations.length
+    ? '제작 불가 — ' + rep.violations.join(' · ')
+    : '제작 가능 — 지름 20mm · 선폭 0.5mm · 틈 0.5mm · 한 덩어리';
+  hud.style.color = rep.violations.length ? '#e08b7a' : '#7fb8a8';
 }
 
 // ── 로고그램 조립 ──
@@ -753,7 +1202,7 @@ const PRESETS = {
   '이름 포함': {
     parts: [{
       concepts: S(['사랑','행위'], ['나','주체']),
-      names: [{ role: '대상', count: 3, key: '루이즈' }],
+      names: [{ role: '대상', syllables: syllabify('루이즈'), key: '루이즈' }],
     }],
   },
 };
@@ -768,7 +1217,11 @@ function specFromText(text) {
   for (const w of words) {
     const role = SLOT_ORDER[i % 12];
     if (MINI_LEX[w]) concepts.push({ word: w, role });
-    else names.push({ role, count: Math.max(1, Math.min(5, [...w].length)), key: w });
+    else {
+      const syl = syllabify(w);
+      // 한글이 아니면 그릴 음운 정보가 없다. 랩은 설계 도구이므로 조용히 건너뛴다.
+      if (syl.length > 0) names.push({ role, syllables: syl, key: w });
+    }
     i++;
   }
   return { parts: [{ concepts, names }] };
@@ -832,6 +1285,9 @@ function buildGeometry() {
   const R = val.pR;
   ringGeometry(rng(fnv1a(`ring|${tag}`)), out, R, 1);
 
+  // 문장 종류 표지 — 6시. 평서문이면 아무것도 그리지 않는다.
+  moodMark(out);
+
   // 전체 성분 수 — 복잡도 예산의 분모. 문장이 늘어도 총량이 대체로 일정하다.
   const total = parts.reduce(
     (n, p) => n + (p.concepts?.length ?? 0) + (p.names?.length ?? 0), 0);
@@ -855,7 +1311,7 @@ function buildGeometry() {
         const a = z.angle
           + (mi - (z.members.length - 1) / 2) * val.cBloomSpan * 0.30 * squeeze;
         if (m.kind === 'n') {
-          nameSpiral(a, m.count, `name|${m.key}`, out, { R, depth: mi, n: nIn });
+          nameSpiral(a, m.syllables, `name|${m.key}`, out, { R, depth: mi });
         } else {
           bloomAt(m.word, a, out, { R, depth: mi, n: nIn });
         }
@@ -923,6 +1379,7 @@ const PL = {}; Object.keys(DEF).forEach((k) => (PL[k] = gl.getUniformLocation(sm
 let partCount = 1;
 function rebuildGeometry() {
   const { data, parts } = buildGeometry();
+  showMill(data);
   geoCount = data.length / 2;
   partCount = parts;
   gl.bindBuffer(gl.ARRAY_BUFFER, geoBuf);
@@ -1034,6 +1491,23 @@ Object.keys(PRESETS).forEach((name) => {
   pres.appendChild(b);
 });
 
+// 문장 종류 — 스펙 6.2. 평서문만 표지가 없다.
+const MOODS = [['declarative','평서'], ['interrogative','의문'],
+               ['negative','부정'], ['volitional','의지'], ['concessive','양보']];
+const moodsEl = document.getElementById('moods');
+MOODS.forEach(([value, label]) => {
+  const b = document.createElement('button');
+  b.textContent = label;
+  if (value === moodMode) b.className = 'on';
+  b.onclick = () => {
+    moodMode = value;
+    [...moodsEl.children].forEach((x) => (x.className = ''));
+    b.className = 'on';
+    rebuildGeometry(); draw();
+  };
+  moodsEl.appendChild(b);
+});
+
 const freeEl = document.getElementById('free'), lexNote = document.getElementById('lexNote');
 lexNote.textContent = '등재어 ' + Object.keys(MINI_LEX).length + '개: ' + Object.keys(MINI_LEX).join(' ');
 freeEl.addEventListener('input', () => {
@@ -1051,8 +1525,47 @@ bPaper.onclick = () => {
   syncUI(); draw();
 };
 bMask.onclick = () => { showMask = showMask ? 0 : 1; bMask.className = showMask ? 'on' : ''; draw(); };
+// 목걸이 전용 조형의 출발점. design/look-necklace.json 과 같아야 한다.
+// 나머지 값은 화면 룽을 그대로 쓴다.
+const NECKLACE_LOOK = {
+  pRingBase: 0.05, cGaps: 0, cDouble: 0, cBloomSpan: 0.35, cBloomThick: 0.06,
+  cFringe: 8, cFringeLen: 0.08, cFringeFine: 0.05, cFringeTip: 0.62,
+  cWhisker: 2, cWhiskerLen: 0.12, cPassOut: 0.106,
+};
+
+const bMill = document.getElementById('bMill');
+let screenVal = null;
+bMill.onclick = () => {
+  necklaceMode = !necklaceMode;
+  bMill.className = necklaceMode ? 'on' : '';
+  // 목걸이는 각인 경로라 연기가 없다 — 곰격 실루에으로 본다.
+  showMask = necklaceMode ? 1 : 0;
+  bMask.className = showMask ? 'on' : '';
+  if (necklaceMode) {
+    // 화면 룽을 따로 보관했다가 모드를 끄면 되돌린다. 두 룽은 서로 다른
+    // 제약을 받으므로 한쪽에서 맞춘 값이 다른 쪽으로 새면 안 된다.
+    screenVal = { ...val };
+    val = { ...val, ...NECKLACE_LOOK };
+  } else if (screenVal) {
+    val = { ...screenVal };
+    screenVal = null;
+  }
+  syncUI(); rebuildGeometry(); draw();
+};
 document.getElementById('bSpray').onclick = () => (spray = { t0: performance.now(), dur: 3200 });
 document.getElementById('bPng').onclick = savePng;
+document.getElementById('bCopyMill').onclick = async () => {
+  // 목걸이 룽은 화면 룽과 같은 키 집합을 갖는다 — 수치만 다르다.
+  const o = { _: '목걸이 룽 — 투각 펜던트 20mm (룽 랩 목걸이 모드에서 확정).',
+    _모델: '가시는 적고 굵고 짧다. 링 틈과 링 바깥 겹선은 쓰지 않는다 — 투각에서 틈은 메워지고 겹선은 떨어져 나간다.' };
+  Object.keys(DEF).forEach((k) => { if (k !== 'pProg') o[k] = +val[k].toFixed(4); });
+  const json = JSON.stringify(o, null, 2);
+  outEl.value = json;
+  const b = document.getElementById('bCopyMill'), old = b.textContent;
+  try { await navigator.clipboard.writeText(json); b.textContent = '복사됨'; }
+  catch { outEl.select(); b.textContent = '선택됨 — Ctrl+C'; }
+  setTimeout(() => (b.textContent = old), 1400);
+};
 document.getElementById('bReset').onclick = () => { val = { ...DEF }; syncUI(); rebuildGeometry(); draw(); };
 document.getElementById('bCopy').onclick = async () => {
   outEl.select();

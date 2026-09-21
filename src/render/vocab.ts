@@ -1,9 +1,10 @@
 import type { LookParams } from './look';
 import type { ShapeParams } from './mapping';
-import type { Role } from '../core/ir';
+import type { Role, Mood } from '../core/ir';
 import type { Pt } from './geometry';
 import { widthProfile, smoothJit } from './profile';
 import { arcPts, bezPts, ringFloor, bloomSurface, pushOutside, type Stroke } from './stroke';
+import { ROLE_SLOT, slotAngle } from './layout';
 
 /**
  * 링 — 로고그램의 뼈대인 원 하나.
@@ -13,7 +14,9 @@ import { arcPts, bezPts, ringFloor, bloomSurface, pushOutside, type Stroke } fro
  *
  * 굵기는 완만하게만 변한다. 양 끝이 살짝 가늘어져 붓이 떨어진 느낌을 낸다.
  */
-export function ringStrokes(look: LookParams, rnd: () => number): Stroke[] {
+export function ringStrokes(
+  look: LookParams, rnd: () => number, opts: { concessive?: boolean } = {},
+): Stroke[] {
   const out: Stroke[] = [];
   const R = look.pR;
   const J = look.cJitter;
@@ -21,6 +24,35 @@ export function ringStrokes(look: LookParams, rnd: () => number): Stroke[] {
   const segs = gaps + 1;
   const gapEach = gaps > 0 ? (look.cGapSize * Math.PI * 2) / gaps : 0;
   const segSpan = (Math.PI * 2 - gapEach * gaps) / segs;
+
+  // 양보 — 링이 닫히지 않고 자기 시작점을 스쳐 지나간다 (설계 문서 6.2).
+  // 다른 문장 종류처럼 표지를 따로 붙이지 않는 이유: 링 밖에 떠 있는 획은
+  // 끊김으로 읽히지 않고, 투각 펜던트에서는 떨어져 나가는 두 번째 조각이 된다.
+  // 끊김과 이어짐이 한 줄에 다 있어야 한다.
+  if (opts.concessive) {
+    const base = slotAngle(ROLE_SLOT['양상'], 0);
+    const over = look.cPassSpan;
+    const span = Math.PI * 2 + over;
+    const n = 240;
+    const pts: Pt[] = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const a = base + span * t;
+      // 마지막 구간에서만 바깥으로 벌어진다 — smoothstep 으로 완만하게
+      // 벌어짐을 지나침 각도의 두 배에 걸쳐 시작한다. 짧게 벌리면 두 가닥이
+      // 스치는 구간이 생기고, 그 좁은 틈은 투각에서 메워진다.
+      const ramp = Math.min(1, (2 * over) / span);
+      const k = Math.max(0, (t - (1 - ramp)) / ramp);
+      const r = look.pR + look.cPassOut * (k * k * (3 - 2 * k));
+      pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    const j = smoothJit(rnd, 0.55 * look.cJitter);
+    const widths = pts.map((_, i) => {
+      const t = i / (pts.length - 1);
+      return Math.max(0.0018, (look.pRingBase + look.pRingAmp * (j(t) - 1) * 1.8) * j(t));
+    });
+    return [{ pts, widths, label: '링·양보', role: 'ring' }];
+  }
 
   let a = rnd() * Math.PI * 2;
   for (let s = 0; s < segs; s++) {
@@ -30,7 +62,12 @@ export function ringStrokes(look: LookParams, rnd: () => number): Stroke[] {
     const widths: number[] = [];
     for (let i = 0; i < pts.length; i++) {
       const t = i / (pts.length - 1);
-      const taper = 0.45 + 0.55 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.12)), 0.30);
+      // 끝을 가늘게 빼는 것은 **끊긴 끝**의 붓 자국이다. 틈이 없으면 링은
+      // 닫힌 고리이고 양 끝은 서로 맞닿는 이음매이므로, 가늘게 빼면 그 자리에
+      // 홈이 생긴다 — 투각에서는 이 홈이 하한 미만의 살이 된다.
+      const taper = gaps === 0
+        ? 1
+        : 0.45 + 0.55 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.12)), 0.30);
       widths.push(Math.max(0.0018, (look.pRingBase + look.pRingAmp * (j(t) - 1) * 1.8) * taper * j(t)));
     }
     out.push({ pts, widths, label: '링', role: 'ring' });
@@ -167,8 +204,11 @@ export function bloomStrokes(
   const fLen = look.cFringeLen * sp.fringeLenK * dk;
   for (let i = 0; i < fCount; i++) {
     const t = Math.min(1, Math.max(0, (i + 0.5) / fCount + (rnd() - 0.5) / fCount));
+    // 뿌리 깊이 — 가시가 덩어리에 얼마나 물려 있는가. 값이 작을수록 안쪽에서
+    // 시작한다. 살짝 걸쳐만 있으면 두 도형이 접선으로 만나 아주 얇은 목이
+    // 생기고, 투각에서는 그 자리가 부러진다 (설계 문서 12.3).
     hair(st0 + span0 * t,
-         surf + look.cBloomThick * (0.25 + rnd() * 0.55),
+         surf + look.cBloomThick * (look.cFringeRoot + rnd() * 0.55),
          fLen, look.cFringeFine, look.cFringeSpan, 0.55, 0.9);
   }
 
@@ -176,7 +216,7 @@ export function bloomStrokes(
   const wCount = Math.max(0, Math.round(look.cWhisker * sp.fringeK * bud));
   for (let i = 0; i < wCount; i++) {
     hair(st0 + span0 * rnd(),
-         surf + look.cBloomThick * 0.4,
+         surf + look.cBloomThick * (look.cFringeRoot + 0.15),
          look.cWhiskerLen * dk * sp.reachK, look.cFringeFine * 1.25, look.cFringeSpan * 1.2, 0.6, 0.7);
   }
 
@@ -202,4 +242,89 @@ export function bloomStrokes(
   }
 
   return out;
+}
+
+/**
+ * 문장 종류 표지 (설계 문서 6.2, 2.3 원작 규칙).
+ *
+ * `mood` 는 문장 수준 속성이고 6시 양상 슬롯이 그것이 그려지는 자리다.
+ * 평서문은 표지가 없다 — 표지가 없다는 것 자체가 평서문의 표시다.
+ *
+ * 세 표지는 형태로 구별된다:
+ * - 의문: 링을 따라간 뒤 끝이 바깥으로 말리는 **갈고리**. 원작 규칙이다.
+ * - 부정: 링 바깥 면에 수직으로 얹힌 **짧고 굵은 막대**. 흐름을 끊는 모양이다.
+ * - 의지: 바깥으로 벌어지는 **두 갈래**. 아직 일어나지 않은 방향을 가리킨다.
+ *
+ * 양보는 여기서 표지를 그리지 않는다 — `ringStrokes` 가 링 자체를 닫지
+ * 않는 형태로 이미 나타냈기 때문이다 (설계 문서 6.2). 표지를 하나 더
+ * 얹으면 이중 표시가 된다.
+ */
+export function moodStrokes(look: LookParams, mood: Mood, rnd: () => number): Stroke[] {
+  if (mood === 'declarative') return [];
+  // 양보 — 표지 획이 없다. 링이 닫히지 않는 것 자체가 양보의 표시이므로
+  // (ringStrokes 의 concessive 분기), 여기서 또 그리면 표지가 두 개가 된다.
+  if (mood === 'concessive') return [];
+
+  const out: Stroke[] = [];
+  const floor = ringFloor(look);
+  const surf = bloomSurface(look, 0);
+  const base = slotAngle(ROLE_SLOT['양상'], 0);
+  const L = look.cMoodLen;
+  const W = look.cMoodThick;
+  const J = look.cJitter;
+
+  const push = (pts: readonly Pt[], widths: number[]) => {
+    out.push({ pts: pushOutside(pts, widths, floor), widths, label: mood, role: '양상' });
+  };
+
+  if (mood === 'interrogative') {
+    // 링을 따라 짧은 호를 그리고, 그 끝에서 바깥으로 말아 올린다
+    const span = L * 1.6;
+    const arc = arcPts(surf + W * 0.5, base - span * 0.5, span, W * 0.4, 20);
+    push(arc, widthProfile(arc.length, W, W * 0.45, 'bloom', rnd, J * 0.5));
+
+    const e = arc[arc.length - 1]!;
+    const ea = Math.atan2(e[1], e[0]);
+    const tip: Pt = [e[0] + Math.cos(ea + 0.9) * L, e[1] + Math.sin(ea + 0.9) * L];
+    const mid: Pt = [e[0] + Math.cos(ea + 0.2) * L * 0.7, e[1] + Math.sin(ea + 0.2) * L * 0.7];
+    const hook = bezPts(e, mid, tip, 10);
+    push(hook, widthProfile(hook.length, W * 0.8, W * 0.8 * look.cFringeTip, 'hair', rnd, 0.4));
+    return out;
+  }
+
+  if (mood === 'negative') {
+    // 링 바깥 면을 가로지르는 굵은 막대 하나. 반경 방향이다.
+    const r0 = surf, r1 = surf + L;
+    const bar: Pt[] = [];
+    const n = 12;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, rr = r0 + (r1 - r0) * t;
+      bar.push([Math.cos(base) * rr, Math.sin(base) * rr]);
+    }
+    push(bar, widthProfile(bar.length, W * 1.5, W * 1.5, 'flat', rnd, J * 0.4));
+    return out;
+  }
+
+  if (mood === 'volitional') {
+    // 의지 — 바깥으로 벌어지는 두 갈래
+    for (const side of [-1, 1] as const) {
+      const a0 = base + side * 0.10;
+      const root: Pt = [Math.cos(a0) * surf, Math.sin(a0) * surf];
+      const dir = a0 + side * 0.45;
+      const tip: Pt = [root[0] + Math.cos(dir) * L * 1.3, root[1] + Math.sin(dir) * L * 1.3];
+      const mid: Pt = [
+        root[0] + Math.cos(dir - side * 0.25) * L * 0.7,
+        root[1] + Math.sin(dir - side * 0.25) * L * 0.7,
+      ];
+      const pts = bezPts(root, mid, tip, 10);
+      push(pts, widthProfile(pts.length, W * 1.1, W * 1.1 * look.cFringeTip, 'hair', rnd, 0.4));
+    }
+    return out;
+  }
+
+  // 여기 도달하면 위 분기 중 아무것도 처리하지 않은 mood 가 새로 생긴 것이다.
+  // 조용히 어떤 표지로든 넘기지 않고 던진다 — 사전 미등재 표제어를 던지는
+  // 것과 같은 이유다 (layout.ts).
+  const unhandled: never = mood;
+  throw new Error(`moodStrokes: 처리되지 않은 mood "${String(unhandled)}"`);
 }

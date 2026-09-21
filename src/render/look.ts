@@ -1,4 +1,5 @@
 import raw from '../../design/look-v3.json' with { type: 'json' };
+import necklaceRaw from '../../design/look-necklace.json' with { type: 'json' };
 
 /**
  * 조형 파라미터 이름. `design/look-v3.json` 의 키와 정확히 일치해야 한다.
@@ -12,11 +13,15 @@ export const LOOK_KEYS = [
   // 링
   'pR', 'pRingBase', 'pRingAmp', 'pWobble',
   'cGaps', 'cGapSize', 'cDouble', 'cDoubleGap',
+  'cPassSpan', 'cPassOut',
   // 먹물 덩어리
   'cZones', 'cBloomSpan', 'cBloomThick', 'cBloomOut', 'cLayers', 'cBudget',
   // 가시 · 반점
   'cFringe', 'cFringeLen', 'cFringeFine', 'cFringeTip', 'cFringeBend',
   'cFringeSpan', 'cWhisker', 'cWhiskerLen', 'cSpeck', 'cSpeckR', 'cJitter',
+  // 문장 종류 표지
+  'cMoodLen', 'cMoodThick',
+  'cFringeRoot',
   // 먹물 (화면 렌더러용 — 계획 III 에서 쓴다)
   'pSharp', 'pSoft', 'pDScale', 'pErode', 'pContrast', 'pFloor', 'pCore',
   'pGrainAmp', 'pGrainA', 'pGrainX', 'pInkWarp', 'pInkWarpF', 'pInkWarpS',
@@ -56,4 +61,14 @@ export function loadLook(source: Record<string, unknown> = raw as unknown as Rec
     throw new Error(`look-v3.json 에 선언되지 않은 파라미터가 있다: ${extra.join(', ')}`);
   }
   return out;
+}
+
+/**
+ * 목걸이 전용 조형 (설계 문서 12.3).
+ *
+ * 화면 룩을 하한까지 굵혀 내보내면 가시가 사각 막대가 되고 링 틈은 메워진다.
+ * 투각은 제약이 다르므로 수치를 따로 갖는다. 키 계약은 화면 룩과 같다.
+ */
+export function loadNecklaceLook(): LookParams {
+  return loadLook(necklaceRaw as Record<string, unknown>);
 }
