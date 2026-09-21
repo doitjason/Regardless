@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderForNecklace, validateNecklace, necklaceSkeleton, DEFAULT_NECKLACE } from '../../src/render/necklace';
+import { renderForNecklace, validateNecklace, necklaceSkeleton, renderCutFile, DEFAULT_NECKLACE } from '../../src/render/necklace';
 import { render, buildStrokes, scaleFor } from '../../src/render/compose';
 import { checkManufacturable, type MillOptions } from '../../src/render/manufacture';
 import { loadLook, loadNecklaceLook } from '../../src/render/look';
@@ -129,5 +129,31 @@ describe('necklaceSkeleton', () => {
           .toBeGreaterThanOrEqual(floor - 1e-9);
       });
     }
+  });
+});
+
+describe('renderCutFile', () => {
+  it('제작 검사를 위반 없이 통과하는 SVG 를 낸다', () => {
+    const { svg, report } = renderCutFile(sample, lex);
+    expect(report.violations, report.violations.join(' / ')).toHaveLength(0);
+    expect(report.components).toBe(1);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('fill-rule="evenodd"');
+    expect(svg).toContain('<metadata>');
+  });
+
+  it('10단어 문장도 위반 없이 나온다', () => {
+    const ROLES = ['행위','주체','대상','시간','장소','행위수식','주체수식','대상수식','정도','방향'] as const;
+    const many: IR = {
+      constituents: ['사랑','시간','나','너','아이','약속','선택','빛','물','하늘']
+        .map((lemma, i): Constituent => ({ kind: 'concept', lemma, role: ROLES[i]! })),
+      mood: 'declarative',
+      engineVersion: ENGINE_VERSION,
+    };
+    expect(renderCutFile(many, lex).report.violations).toHaveLength(0);
+  });
+
+  it('같은 입력은 같은 파일을 낸다 (원칙 1)', () => {
+    expect(renderCutFile(sample, lex).svg).toBe(renderCutFile(sample, lex).svg);
   });
 });

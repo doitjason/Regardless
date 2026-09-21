@@ -1,9 +1,11 @@
 import { render, scaleFor, buildStrokes, type RenderResult } from './compose';
-import { checkManufacturable } from './manufacture';
+import { checkManufacturable, cleanForManufacture, checkManufacturableShape, type CleanedShape, type MillReport, type MillOptions } from './manufacture';
 import { loadNecklaceLook } from './look';
-import type { IR } from '../core/ir';
+import { seedOf, sortedConstituents, type IR, type Constituent } from '../core/ir';
 import type { Lexicon } from '../core/lexicon';
 import type { Stroke } from './stroke';
+import type { Pt } from './geometry';
+import { ENGINE_VERSION } from '../version';
 
 export interface NecklaceOptions {
   /** 펜던트 지름 (mm) */
@@ -98,4 +100,77 @@ export function validateNecklace(
     problems.push(...rep.violations);
   }
   return problems;
+}
+
+// `compose.ts`의 render()가 쓰는 것과 같은 잉크색. 그 파일의 상수는 모듈
+// 내부용이라 노출되지 않으므로 여기서 다시 적는다.
+const INK = '#16120e';
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * 각인·절단용 SVG. `renderForNecklace` 와 달리 획을 그대로 내보내지 않고,
+ * 제작 가능하도록 정리한 모양의 윤곽선을 내보낸다 — 내보낸 파일이 곧
+ * 잘릴 모양이다 (설계 문서 12.3).
+ */
+export function renderCutFile(
+  ir: IR, lex: Lexicon, opts: Partial<NecklaceOptions> = {},
+): { svg: string; cleaned: CleanedShape; report: MillReport } {
+  const merged: NecklaceOptions = { ...DEFAULT_NECKLACE, ...opts };
+  const millOpts: MillOptions = {
+    diameterMm: merged.diameterMm,
+    minStrokeMm: merged.minStrokeMm,
+    minGapMm: merged.minGapMm,
+    pxPerMm: 20,
+  };
+
+  // `renderForNecklace` 와 같은 룩·같은 하한을 지난 골격 — 이미 최소
+  // 선폭을 적용했으므로, 정리 단계는 틈·연결·구멍만 손보면 된다.
+  const skeleton = necklaceSkeleton(ir, lex, merged);
+  const cleaned = cleanForManufacture(skeleton, millOpts);
+
+  // 정리한 다각형을 다시 래스터화해 검사한다 — 골격이 아니라 실제로
+  // 내보낼 모양을 봐야 "내보낸 파일이 곧 잘릴 모양"이라는 전제가 선다.
+  // 위반이 남아 있으면 절대 내보내지 않는다: 자기 검사를 통과하지 못하는
+  // 컷 파일은 없는 것만 못하다.
+  const report = checkManufacturableShape(cleaned, millOpts);
+  if (report.violations.length > 0) {
+    throw new Error(
+      `renderCutFile: 정리 후에도 제작 위반이 남았다 — ${report.violations.join(' / ')}`,
+    );
+  }
+
+  const size = merged.size;
+  const scale = scaleFor(size);
+  const cx = size / 2, cy = size / 2;
+  const toScreen = (p: Pt): Pt => [cx + p[0] * scale, cy - p[1] * scale];
+
+  // 고리마다 M...Z 서브패스 하나. 바깥 윤곽과 구멍 둘 다 담고, evenodd 로
+  // 채우므로 감음 방향이 아니라 중첩 횟수만으로 구멍이 생긴다.
+  const body = cleaned.rings
+    .map((r) => `M${r.pts.map(toScreen).map(([x, y]) => `${x.toFixed(3)},${y.toFixed(3)}`).join('L')}Z`)
+    .join('');
+
+  // `compose.ts`의 render()가 쓰는 것과 같은 메타데이터 — 정규화한 IR·시드·
+  // 엔진 버전을 담아 수년 후에도 같은 컷 파일을 재현할 수 있게 한다.
+  // render()는 이 구성을 별도 헬퍼로 내보내지 않으므로(모듈 내부 전용),
+  // 여기서 최소한으로 다시 만든다.
+  const canonicalConstituents: Constituent[] = sortedConstituents(ir).map((c) =>
+    c.kind === 'concept'
+      ? { kind: 'concept', role: c.role, lemma: c.lemma }
+      : { kind: 'phonetic', role: c.role, syllables: c.syllables.map(({ onset, nucleus, coda }) => ({ onset, nucleus, coda })) },
+  );
+  const canonicalIr: IR = { constituents: canonicalConstituents, mood: ir.mood, engineVersion: ir.engineVersion };
+  const seed = seedOf(ir);
+  const meta = escapeXml(JSON.stringify({ ir: canonicalIr, seed, engineVersion: ENGINE_VERSION }));
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" ` +
+    `width="${size}" height="${size}" data-engine-version="${ENGINE_VERSION}">` +
+    `<metadata>${meta}</metadata>` +
+    `<path d="${body}" fill="${INK}" fill-rule="evenodd"/></svg>`;
+
+  return { svg, cleaned, report };
 }
