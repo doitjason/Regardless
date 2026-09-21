@@ -298,9 +298,20 @@ function chamferDistanceToInk(grid: Uint8Array, n: number): Float64Array {
   return dist;
 }
 
-/** 선폭 판정이 쓰는 침식·팽창 반지름(화소). `reportForGrid`와 정리 단계가 공유한다. */
+/**
+ * 선폭 판정이 쓰는 침식·팽창 반지름(화소). `reportForGrid`와 정리 단계가 공유한다.
+ *
+ * 정확히 최소 선폭의 절반으로 침식하면 안 된다 — 화소는 정수 격자라, 폭이
+ * 정확히 하한(2r 화소)인 직선 살은 반지름 r 원판이 안쪽 어디에도 통째로
+ * 들어갈 자리가 없다(중심 화소 하나가 원판을 담으려면 살이 2r+1 화소는
+ * 되어야 한다). 그러면 열기가 "정확히 하한인" 살마저 완전히 지워버린다 —
+ * 하한을 만족하는 골격을 정리 단계가 스스로 위반작으로 둔갑시키는 셈이다.
+ * 반지름을 화소 하나 줄이면 정확히 하한인 살이 이산화 오차를 견디고
+ * 살아남는다(반 화소만 줄이는 틈 판정의 `gapRadius`보다 더 줄여야 하는
+ * 이유는, 열기가 침식·팽창 두 번 다 같은 반지름을 쓰기 때문이다).
+ */
 function thinRadius(opts: MillOptions): number {
-  return (opts.minStrokeMm * opts.pxPerMm) / 2;
+  return Math.max((opts.minStrokeMm * opts.pxPerMm) / 2 - 1, 0.5);
 }
 
 /**
@@ -430,8 +441,12 @@ export function checkManufacturable(
   return reportForGrid(grid, n, opts);
 }
 
-/** p 공간 폴리곤을 화소 좌표로 옮기고, `fillRingsNonzero` 로 함께 채운다. */
-function rasterizeShape(shape: CleanedShape, opts: MillOptions, n: number): Uint8Array {
+/**
+ * p 공간 폴리곤을 화소 좌표로 옮기고, `fillRingsNonzero` 로 함께 채운다.
+ * `checkManufacturableShape` 가 쓰는 것과 같은 래스터화라 테스트도 이걸
+ * 써야 "정리한 모양이 실제로 얼마나 잉크를 남겼는지"를 같은 잣대로 잰다.
+ */
+export function rasterizeShape(shape: CleanedShape, opts: MillOptions, n: number): Uint8Array {
   const grid = new Uint8Array(n * n);
   const rings = shape.rings.map((r) => r.pts.map((p) => {
     const q = toPx(n, opts.diameterMm, opts.pxPerMm, p);
@@ -599,9 +614,27 @@ export function cleanForManufacture(
   const openR = thinRadius(opts);
   const opened = dilate(erode(closed, n, openR), n, openR);
 
-  // 가장 큰 잉크 덩어리만 남긴다 — 나머지는 투각하면 떨어져 나갈 조각이므로
-  // 애초에 내보내지 않는다.
-  let main = keepLargestComponent(opened, n);
+  // 코어 — 원본 잉크(닫기·열기를 거치지 않은 `raw`)를 훨씬 작은 반지름으로
+  // 침식한 것. 골격은 어디서나 최소 선폭 이상으로 그려지므로(그렇게
+  // 그렸으니까), 이렇게 작은 반지름의 침식은 그 자리 어디서도 잉크를 완전히
+  // 지우지 않는다 — 반면 획들이 접선으로 만나는 자리의 구조적인 목(설계
+  // 문서가 말하는, 수치 튜닝으로도 안 사라지는 0.1mm 급 목)은 이 정도
+  // 침식으로도 끊어진다. `thinRadius`를 화소 하나 줄여도(위 주석) 화소
+  // 단위 이산화나 곡률이 겹치면 열기가 여전히 한 자리를 통째로 지워버릴 수
+  // 있다 — 그 최후 안전망으로, 열기 결과와 이 코어를 합집합해 골격이 있던
+  // 자리의 잉크를 절대 통째로 잃지 않게 한다.
+  const coreR = Math.max(openR / 4, 0.5);
+  const core = erode(raw, n, coreR);
+  const openedWithCore = new Uint8Array(opened);
+  for (let i = 0; i < core.length; i++) if (core[i]) openedWithCore[i] = 1;
+
+  // 가장 큰 덩어리만 남기는 건 최후 수단이다 — 먼저 용접을 시도한다. 열기가
+  // 만든 조각들은 대개 원래 하나로 이어져 있던 자리가 이산화 오차로 잠깐
+  // 끊긴 것뿐이라, 아래 용접 루프의 첫 라운드가 쓰는 틈-닫기(`gapRadius`)가
+  // 그 작은 틈을 다시 이어 붙인다. 그림 자체가 진짜로 떨어진 조각을 담고
+  // 있는 경우에만(용접이 다 끝나도 안 붙는 경우에만) 루프 끝의
+  // `keepLargestComponent` 가 그 조각을 골라 버린다.
+  let main: Uint8Array = openedWithCore;
 
   // 용접 — 닫기 다음에 연 열기가 방금 이은 다리를 도로 갉아먹을 수 있다
   // (닫기가 메운 틈의 폭이 열기의 침식 반경보다 좁으면, 열기가 그 다리를

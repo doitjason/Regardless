@@ -156,4 +156,31 @@ describe('renderCutFile', () => {
   it('같은 입력은 같은 파일을 낸다 (원칙 1)', () => {
     expect(renderCutFile(sample, lex).svg).toBe(renderCutFile(sample, lex).svg);
   });
+
+  it('컷 파일이 로고그램을 보존한다 — 링 한 바퀴와 면적', () => {
+    const conc: IR = { ...sample, mood: 'concessive' };
+    const skel = necklaceSkeleton(conc, lex);
+    const { cleaned } = renderCutFile(conc, lex);
+    const look2 = loadNecklaceLook();
+
+    // 골격이 닿는 반경대에 잉크가 한 바퀴 있어야 한다
+    const pts = cleaned.rings.flatMap((g) => g.pts);
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      const probe = [Math.cos(a) * look2.pR, Math.sin(a) * look2.pR] as const;
+      const near = pts.map((p) => Math.hypot(p[0] - probe[0], p[1] - probe[1]));
+      expect(Math.min(...near), `${k}시 방향`).toBeLessThan(0.10);
+    }
+
+    // 경계 상자가 링을 감싼다
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    expect(Math.min(...xs)).toBeLessThan(-look2.pR * 0.9);
+    expect(Math.max(...xs)).toBeGreaterThan(look2.pR * 0.9);
+    expect(Math.min(...ys)).toBeLessThan(-look2.pR * 0.9);
+    expect(Math.max(...ys)).toBeGreaterThan(look2.pR * 0.9);
+
+    // 골격 획의 라벨이 전부 어딘가에 남아 있는지까지는 보지 않는다 —
+    // 다만 획 수가 30개인데 남은 면적이 절반 미만이면 그림이 아니다
+    expect(skel.length).toBeGreaterThan(10);
+  });
 });

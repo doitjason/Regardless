@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   rasterize, checkManufacturable, cleanForManufacture, checkManufacturableShape as reportOfCleaned,
-  type MillOptions,
+  rasterizeShape,
+  type MillOptions, type CleanedShape,
 } from '../../src/render/manufacture';
 import type { Stroke } from '../../src/render/stroke';
 import { arcPts } from '../../src/render/stroke';
@@ -15,6 +16,19 @@ const ring = (r: number, widthMm: number, opts = OPTS): Stroke => {
   const wp = (widthMm / opts.diameterMm) * 2 * 0.9; // mm → p (지름 20mm 가 p 1.8)
   return { pts, widths: pts.map(() => wp), label: 'ring', role: 'ring' };
 };
+
+/** 원본 획을 래스터화했을 때의 잉크 화소 수. */
+function inkPixels(strokes: readonly Stroke[], opts: MillOptions): number {
+  const { grid } = rasterize(strokes, opts);
+  return grid.reduce((a, b) => a + b, 0);
+}
+
+/** 정리한 모양을 `checkManufacturableShape` 와 같은 방식으로 래스터화했을 때의 잉크 화소 수. */
+function cleanedInkPixels(shape: CleanedShape, opts: MillOptions): number {
+  const n = Math.round(opts.diameterMm * opts.pxPerMm);
+  const grid = rasterizeShape(shape, opts, n);
+  return grid.reduce((a, b) => a + b, 0);
+}
 
 describe('rasterize', () => {
   it('격자 크기가 지름과 해상도에서 나온다', () => {
@@ -141,5 +155,24 @@ describe('cleanForManufacture', () => {
   it('링 안쪽 구멍은 살아남는다 — 메우면 안 된다', () => {
     const cleaned = cleanForManufacture([ring(0.5, 1.2)], OPTS);
     expect(cleaned.rings.some((r) => r.hole)).toBe(true);
+  });
+
+  it('정리해도 그림이 남는다 — 링 한 바퀴가 유지된다', () => {
+    const r = 0.5, wMm = 0.6;
+    const cleaned = cleanForManufacture([ring(r, wMm)], OPTS);
+    // 12방향 전부에 잉크가 있어야 한 바퀴다
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      const probe: Pt = [Math.cos(a) * r, Math.sin(a) * r];
+      const near = cleaned.rings.flatMap((g) => g.pts)
+        .map((p) => Math.hypot(p[0] - probe[0], p[1] - probe[1]));
+      expect(Math.min(...near), `${k}시 방향에 잉크가 없다`).toBeLessThan(0.06);
+    }
+  });
+
+  it('정리가 잉크를 대부분 없애지 않는다', () => {
+    const before = inkPixels([ring(0.5, 0.8)], OPTS);
+    const after = cleanedInkPixels(cleanForManufacture([ring(0.5, 0.8)], OPTS), OPTS);
+    expect(after / before).toBeGreaterThan(0.8);
   });
 });
