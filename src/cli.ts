@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { render } from './render/compose';
-import { renderForNecklace, validateNecklace, DEFAULT_NECKLACE } from './render/necklace';
+import { renderForNecklace, renderCutFile, validateNecklace, DEFAULT_NECKLACE } from './render/necklace';
 import { loadLook } from './render/look';
 import { loadSeedLexicon } from './core/lexicon';
 import type { IR } from './core/ir';
@@ -9,6 +9,8 @@ export interface CliArgs {
   input: string;
   out: string;
   necklace: boolean;
+  /** 잘라 낼 모양 그대로 내보낸다 (제작용 정리 거침) */
+  cut: boolean;
   size?: number;
   minStrokeMm?: number;
   minGapMm?: number;
@@ -19,6 +21,8 @@ const USAGE = `
 
 옵션:
   --necklace              목걸이 각인용으로 내보낸다 (최소 선폭 보정)
+  --cut                   투각용 컷 파일. 제작 가능하도록 정리한 모양의
+                          윤곽선을 내보낸다 — 내보낸 파일이 곧 잘릴 모양이다
   --size <px>             SVG 좌표계 한 변. 화면용 기본 300, 각인용 기본 600
   --min-stroke-mm <mm>    각인 최소 선폭. 기본 ${DEFAULT_NECKLACE.minStrokeMm}
   --min-gap-mm <mm>       최소 틈. 기본 ${DEFAULT_NECKLACE.minGapMm}
@@ -60,6 +64,7 @@ export function parseArgs(argv: string[]): CliArgs {
   return {
     input, out,
     necklace: argv.includes('--necklace'),
+    cut: argv.includes('--cut'),
     ...(size !== undefined ? { size } : {}),
     ...(minStrokeMm !== undefined ? { minStrokeMm } : {}),
     ...(minGapMm !== undefined ? { minGapMm } : {}),
@@ -81,7 +86,21 @@ export async function runCli(argv: string[]): Promise<number> {
   const lex = loadSeedLexicon();
   const look = loadLook();
   try {
-    if (args.necklace) {
+    if (args.cut) {
+      const opts = {
+        ...(args.size !== undefined ? { size: args.size } : {}),
+        ...(args.minStrokeMm !== undefined ? { minStrokeMm: args.minStrokeMm } : {}),
+        ...(args.minGapMm !== undefined ? { minGapMm: args.minGapMm } : {}),
+      };
+      const merged = { ...DEFAULT_NECKLACE, ...opts };
+      // renderCutFile 은 정리 후에도 위반이 남으면 스스로 던진다 — 자기 검사를
+      // 통과하지 못한 컷 파일은 쓰지 않는다.
+      const { svg, cleaned, report } = renderCutFile(ir, lex, opts);
+      writeFileSync(args.out, svg, 'utf8');
+      console.log(`컷 파일을 썼다: ${args.out} (지름 ${merged.diameterMm}mm, 최소 선폭 ` +
+        `${merged.minStrokeMm}mm, 최소 틈 ${merged.minGapMm}mm, 고리 ${cleaned.rings.length}개, ` +
+        `조각 ${report.components}개, 위반 ${report.violations.length}건)`);
+    } else if (args.necklace) {
       const opts = {
         ...(args.size !== undefined ? { size: args.size } : {}),
         ...(args.minStrokeMm !== undefined ? { minStrokeMm: args.minStrokeMm } : {}),

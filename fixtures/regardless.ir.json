@@ -1,0 +1,9 @@
+{
+  "constituents": [
+    { "kind": "concept", "lemma": "사랑", "role": "행위" },
+    { "kind": "concept", "lemma": "나", "role": "주체" },
+    { "kind": "concept", "lemma": "너", "role": "대상" }
+  ],
+  "mood": "concessive",
+  "engineVersion": "1.0.0"
+}
