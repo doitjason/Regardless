@@ -1,0 +1,57 @@
+import { parse } from '../src/core/parse';
+import { loadSeedLexicon } from '../src/core/lexicon';
+import { render } from '../src/render/compose';
+import { loadLook } from '../src/render/look';
+
+const lex = loadSeedLexicon();
+const look = loadLook();
+
+/**
+ * 문장 하나를 그려 넣는다. 오류는 던지지 않고 화면에 적는다 —
+ * 사용자가 무엇을 고쳐야 하는지 알아야 하기 때문이다.
+ */
+export function renderInto(root: HTMLElement, text: string): void {
+  const errorEl = document.getElementById('error') as HTMLParagraphElement;
+  const captionEl = document.getElementById('caption') as HTMLElement;
+  const glyphEl = document.getElementById('glyph') as HTMLElement;
+
+  const trimmed = text.trim();
+  if (trimmed === '') {
+    glyphEl.innerHTML = '';
+    captionEl.textContent = '';
+    errorEl.hidden = true;
+    return;
+  }
+
+  try {
+    const ir = parse(trimmed, lex);
+    const result = render(ir, lex, look, { size: 640 });
+    glyphEl.innerHTML = result.svg;
+    glyphEl.setAttribute('aria-label', `${trimmed} 의 로고그램`);
+
+    const words = ir.constituents.length;
+    const spelled = ir.constituents.filter((c) => c.kind === 'phonetic').length;
+    const moodName: Record<string, string> = {
+      declarative: '평서', interrogative: '의문', negative: '부정',
+      volitional: '의지', concessive: '양보',
+    };
+    const parts = [`성분 ${words}개`, `${moodName[ir.mood] ?? ir.mood}문`];
+    if (spelled > 0) parts.push(`사전에 없는 말 ${spelled}개는 소리대로 적었습니다`);
+    captionEl.textContent = parts.join(' · ');
+    errorEl.hidden = true;
+  } catch (e) {
+    glyphEl.innerHTML = '';
+    captionEl.textContent = '';
+    errorEl.textContent = (e as Error).message;
+    errorEl.hidden = false;
+  }
+}
+
+const form = document.getElementById('form') as HTMLFormElement;
+const input = document.getElementById('text') as HTMLInputElement;
+const glyph = document.getElementById('glyph') as HTMLElement;
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  renderInto(glyph, input.value);
+});

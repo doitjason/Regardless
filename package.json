@@ -8,12 +8,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "glyph": "tsx src/cli.ts"
+    "glyph": "tsx src/cli.ts",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",
+    "vite": "^5.4.21",
     "vitest": "^2.1.1"
   }
 }
