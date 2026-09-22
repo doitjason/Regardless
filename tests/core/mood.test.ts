@@ -92,3 +92,17 @@ describe('detectMoodEn', () => {
     expect(detectMoodEn('I wait in the sky').mood).toBe('declarative');
   });
 });
+
+describe('자 로 끝나는 낱말', () => {
+  it('명사는 의지로 읽지 않는다', () => {
+    for (const s of ['나는 혼자', '이것은 감자', '나의 모자', '저기 의자', '그 남자']) {
+      expect(detectMoodKo(s).mood, s).toBe('declarative');
+    }
+  });
+
+  it('아는 동사의 청유형은 의지다', () => {
+    for (const s of ['우리 약속하자', '같이 가자', '이제 만나자', '조금 기다리자']) {
+      expect(detectMoodKo(s).mood, s).toBe('volitional');
+    }
+  });
+});
