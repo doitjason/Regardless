@@ -68,4 +68,38 @@ describe('parseKo', () => {
     expect(JSON.stringify(parseKo('나는 너를 사랑해', lex)))
       .toBe(JSON.stringify(parseKo('나는 너를 사랑해', lex)));
   });
+
+  it('공동격 조사를 뗀다', () => {
+    expect(roleOf(parseKo('나는 너와 바다를 보았다', lex), '너')).toBe('대상');
+    expect(roleOf(parseKo('너랑 가자', lex), '너')).toBe('대상');
+  });
+
+  it('과거형 어미를 뗀다', () => {
+    const cs = parseKo('나는 바다를 보았다', lex);
+    expect(cs.some((c) => c.kind === 'phonetic'), JSON.stringify(cs)).toBe(false);
+  });
+
+  it('축약형을 되돌려 사전에서 찾는다', () => {
+    // 기다려 = 기다리 + 어. 사전에는 명사형 '기다림' 이 있다.
+    const cs = parseKo('너를 기다려', lex);
+    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '기다림'), JSON.stringify(cs)).toBe(true);
+  });
+
+  it('하다형 용언은 어근으로 찾는다', () => {
+    for (const s of ['너를 사랑한다', '우리는 약속했다', '나는 선택했어']) {
+      const cs = parseKo(s, lex);
+      expect(cs.some((c) => c.kind === 'phonetic'), `${s}: ${JSON.stringify(cs)}`).toBe(false);
+    }
+  });
+
+  it('일상 문장이 음소 폴백 없이 그려진다', () => {
+    const cs = parseKo('나는 너와 함께 바다를 보았다', lex);
+    expect(cs.filter((c) => c.kind === 'phonetic'), JSON.stringify(cs)).toHaveLength(0);
+    expect(cs).toHaveLength(5);
+  });
+
+  it('사람 이름은 여전히 음소 폴백이다 — 되돌리기가 이름을 삼키면 안 된다', () => {
+    const cs = parseKo('루이즈를 기다려', lex);
+    expect(cs.some((c) => c.kind === 'phonetic' && c.syllables.length === 3)).toBe(true);
+  });
 });

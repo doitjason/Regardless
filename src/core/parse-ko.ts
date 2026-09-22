@@ -1,5 +1,5 @@
 import type { Constituent, Role } from './ir';
-import { lookup, type Lexicon } from './lexicon';
+import { lookup, type Lexicon, type LexiconEntry } from './lexicon';
 import { syllabify } from './phonology';
 
 /**
@@ -12,12 +12,29 @@ import { syllabify } from './phonology';
  * 문장이 들어온다.
  */
 
-/** 조사 → 역할. 긴 것부터 검사한다 (에서 가 에 보다 먼저). */
+/**
+ * 조사 → 역할. 긴 것부터 검사한다 (에서 가 에 보다 먼저).
+ *
+ * `이랑` 은 반드시 `랑` 보다 앞에 와야 한다 — `이랑` 으로 끝나는 말은 `랑` 으로도
+ * 끝나므로, `랑` 을 먼저 검사하면 `이` 한 글자가 어간에 눌어붙는다. 나머지
+ * 새 항목들은 서로 꼬리를 공유하지 않는다.
+ *
+ * `까지` 와 `부터` 는 시간이 아니라 방향으로 둔다 — 둘 다 범위의 끝/시작을
+ * 가리키는 경계 표지이지 특정 시점 자체가 아니고("여기서부터 저기까지" 처럼
+ * 공간에도 그대로 쓰인다), 6시 슬롯(시간)은 특정 시점에 남겨 둔다.
+ * `처럼` 과 `보다` 는 둘 다 비교 조사이므로 같은 역할(대상수식)을 준다.
+ */
 const PARTICLES: { suffix: string; role: Role | '에' }[] = [
   { suffix: '에서', role: '장소' },
   { suffix: '에게', role: '대상' },
   { suffix: '한테', role: '대상' },
   { suffix: '으로', role: '방향' },
+  { suffix: '이랑', role: '대상' },   // 공동격 (받침 있는 말 뒤)
+  { suffix: '까지', role: '방향' },
+  { suffix: '부터', role: '방향' },
+  { suffix: '처럼', role: '대상수식' },
+  { suffix: '보다', role: '대상수식' }, // 비교 — 동사 '보다' 와 표기가 같지만 조사 자리다
+  { suffix: '마다', role: '시간수식' },
   { suffix: '로', role: '방향' },
   { suffix: '는', role: '주체' },
   { suffix: '은', role: '주체' },
@@ -29,12 +46,29 @@ const PARTICLES: { suffix: string; role: Role | '에' }[] = [
   { suffix: '의', role: '주체수식' },
   { suffix: '도', role: '주체' },
   { suffix: '만', role: '대상' },
+  { suffix: '와', role: '대상' },   // 공동격 (받침 없는 말 뒤)
+  { suffix: '과', role: '대상' },   // 공동격 (받침 있는 말 뒤)
+  { suffix: '랑', role: '대상' },   // 공동격 캐주얼 (받침 없는 말 뒤) — '이랑' 다음에 검사
 ];
 
-/** 용언 어미. 긴 것부터 떼어 낸다. */
+/**
+ * 용언 어미. 긴 것부터 떼어 낸다.
+ *
+ * `았다/었다/였다` 계열은 어간에 직접 붙는 일반 과거형(보다→보았다, 웃다→웃었다)을
+ * 위한 것이다. `하다` 계열 용언의 축약형(했다·했습니다·했어요)은 원래 있던 항목이고,
+ * `했어` 는 그 계열에서 빠져 있던 것을 더한다 — '선택했어' 처럼 흔히 쓰이는 형태다.
+ */
 const ENDINGS = [
-  '합니다', '했습니다', '하겠습니다', '한다', '했다', '하다', '해요', '했어요',
-  '하고', '하며', '해서', '하면', '해', '했', '하', '이다', '입니다', '이야',
+  '하겠습니다', '았습니다', '었습니다',
+  '했습니다', '합니다',
+  '았어요', '었어요', '였어요', '했어요', '했다',
+  '하려고',
+  '한다', '았다', '었다', '였다', '하다',
+  '았어', '었어', '였어', '했어',
+  '해요', '하는', '하던', '해도', '해야', '하지', '하러',
+  '하고', '하며', '해서', '하면',
+  '이다', '입니다', '이야',
+  '해', '했', '하', '한', '할', '함',
 ];
 
 /**
@@ -57,6 +91,127 @@ const isHangul = (ch: string) => {
   const c = ch.codePointAt(0) ?? 0;
   return c >= 0xac00 && c <= 0xd7a3;
 };
+
+/**
+ * 축약형 되돌리기 (스펙 7.3의 나머지 절반).
+ *
+ * `보았다`, `기다려` 처럼 어미를 떼도 사전 표제어가 아닌 어간이 남는 경우가
+ * 있다 — 동사 원형이 아니라 활용형이기 때문이다. 이 표제어 문제를 풀기 위해
+ * 두 가지 되돌리기를 시도한다: 어간을 명사형으로 바꾸기(보다→봄, 기다리다→기다림)와
+ * `하` 를 마저 떼기(사랑하다→사랑). 이 되돌리기는 사전 조회에만 쓴다 — 결과
+ * lemma 는 찾아낸 표제어 그대로 쓰고, 원래 어간이 무엇이었는지는 버린다.
+ *
+ * 한글 음절 합성은 `phonology.ts` 의 분해를 거꾸로 한 것이다. 그 파일의
+ * ONSETS/NUCLEI/CODAS 테이블은 내보내지 않으므로(고치지 말라는 지시도 있고),
+ * 여기서는 색인 산수만으로 좁게 다시 구현한다 — 우리가 실제로 쓰는 자모
+ * 몇 개(ㅁ 받침, ㅡ 중성, 빈 초성, 축약모음 5개)만 색인 상수로 박아 둔다.
+ * 이 상수들은 `phonology.ts` 의 ONSETS/NUCLEI/CODAS 배열 순서와 반드시
+ * 같아야 한다 — 그 배열이 바뀌면 여기도 같이 바뀌어야 한다.
+ */
+const HANGUL_BASE = 0xac00;
+const HANGUL_LAST = 0xd7a3;
+const NUCLEUS_COUNT = 21;
+const CODA_COUNT = 28;
+
+const ONSET_EMPTY = 11;   // phonology.ts ONSETS 의 '' (빈 초성 ㅇ)
+const NUCLEUS_EU = 18;    // phonology.ts NUCLEI 의 'eu' (ㅡ) — '음' 합성용
+const CODA_M = 16;        // phonology.ts CODAS 의 'm' (홑받침 ㅁ)
+
+/** 한 음절을 초성·중성·종성 색인으로 분해한다. 한글 음절이 아니면 null. */
+function decomposeIndices(ch: string): { onset: number; nucleus: number; coda: number } | null {
+  const cp = ch.codePointAt(0);
+  if (cp === undefined || cp < HANGUL_BASE || cp > HANGUL_LAST) return null;
+  const code = cp - HANGUL_BASE;
+  return {
+    onset: Math.floor(code / (NUCLEUS_COUNT * CODA_COUNT)),
+    nucleus: Math.floor((code % (NUCLEUS_COUNT * CODA_COUNT)) / CODA_COUNT),
+    coda: code % CODA_COUNT,
+  };
+}
+
+/** 초성·중성·종성 색인을 한 음절로 합성한다 (분해의 역연산). */
+function composeHangul(onset: number, nucleus: number, coda: number): string {
+  return String.fromCodePoint(HANGUL_BASE + onset * NUCLEUS_COUNT * CODA_COUNT + nucleus * CODA_COUNT + coda);
+}
+
+/**
+ * 어간에 명사형(ㅁ/음)을 붙인 후보를 만든다 — 사전 조회 전용.
+ * 받침이 없으면 마지막 음절에 ㅁ 받침을 바로 붙인다 (기다리→기다림).
+ * 받침이 있으면 음절 '음' 을 새로 붙인다 (웃→웃음).
+ */
+function nominalize(stem: string): string | null {
+  const lastCh = stem.charAt(stem.length - 1);
+  const d = decomposeIndices(lastCh);
+  if (!d) return null;
+  const head = stem.slice(0, -1);
+  if (d.coda === 0) return head + composeHangul(d.onset, d.nucleus, CODA_M);
+  return stem + composeHangul(ONSET_EMPTY, NUCLEUS_EU, CODA_M);
+}
+
+/** `하다` 어근으로 되돌리는 후보를 만든다 — 사랑하→사랑, 약속하→약속. */
+function deHa(stem: string): string | null {
+  return stem.length > 1 && stem.endsWith('하') ? stem.slice(0, -1) : null;
+}
+
+/**
+ * 축약모음 되돌리기: 어절 마지막 음절의 중성이 여/워/와/애/에 면 각각
+ * 이/우/오/아/어 로 바꾼 후보를 만든다 (기다려→기다리, 그리워→그리우).
+ * 사전 조회에만 쓰고, 못 찾으면 원래 어절로 돌아간다 — 호출 쪽의 책임이다.
+ */
+const VOWEL_REVERSION: Record<number, number> = {
+  6: 20,  // 여 → 이
+  14: 13, // 워 → 우
+  9: 8,   // 와 → 오
+  1: 0,   // 애 → 아
+  5: 4,   // 에 → 어
+};
+
+function revertContractedVowel(stem: string): string | null {
+  const lastCh = stem.charAt(stem.length - 1);
+  const d = decomposeIndices(lastCh);
+  if (!d) return null;
+  const reverted = VOWEL_REVERSION[d.nucleus];
+  if (reverted === undefined) return null;
+  return stem.slice(0, -1) + composeHangul(d.onset, reverted, d.coda);
+}
+
+/** 한 후보 어간에 명사형 만들기 → 하 떼기 순서로 사전을 조회한다. */
+function resolveViaTricks(
+  candidate: string,
+  lex: Lexicon,
+): { lemma: string; entry: LexiconEntry } | null {
+  const nominalized = nominalize(candidate);
+  if (nominalized) {
+    const e = lookup(lex, nominalized);
+    if (e) return { lemma: nominalized, entry: e };
+  }
+  const rooted = deHa(candidate);
+  if (rooted) {
+    const e = lookup(lex, rooted);
+    if (e) return { lemma: rooted, entry: e };
+  }
+  return null;
+}
+
+/**
+ * 직접 조회가 실패한 어간을 축약형 되돌리기로 다시 찾는다.
+ * 1) 어간 그대로 명사형/하-제거 시도
+ * 2) 안 되면 축약모음을 되돌린 어간으로 직접 조회 + 같은 두 가지 시도
+ * 둘 다 실패하면 null — 호출 쪽은 원래 어간으로 음소 폴백을 그대로 쓴다.
+ */
+function resolveContractedStem(stem: string, lex: Lexicon): { lemma: string; entry: LexiconEntry } | null {
+  const direct = resolveViaTricks(stem, lex);
+  if (direct) return direct;
+
+  const reverted = revertContractedVowel(stem);
+  if (reverted && reverted !== stem) {
+    const e = lookup(lex, reverted);
+    if (e) return { lemma: reverted, entry: e };
+    const viaTricks = resolveViaTricks(reverted, lex);
+    if (viaTricks) return viaTricks;
+  }
+  return null;
+}
 
 /** 어절에서 조사를 떼어 낸다. 떼지 못하면 role 은 null. */
 function stripParticle(word: string): { stem: string; role: Role | '에' | null } {
@@ -93,7 +248,17 @@ export function parseKo(text: string, lex: Lexicon): Constituent[] {
     // 3) 조사 뒤에 남은 대명사 이형태를 기본형으로 되돌린다 (내→나, 네→너, 제→저)
     const stem = PRONOUN_VARIANTS[strippedStem] ?? strippedStem;
 
-    const entry = lookup(lex, stem);
+    let entry = lookup(lex, stem);
+    let lemma = stem;
+    if (!entry) {
+      // 4) 직접 조회가 실패하면 축약형을 되돌려 다시 찾는다 (보았다→봄, 기다려→기다림).
+      //    실패하면 entry 는 계속 undefined 고, 아래에서 음소 폴백으로 내려간다.
+      const resolved = resolveContractedStem(stem, lex);
+      if (resolved) {
+        entry = resolved.entry;
+        lemma = resolved.lemma;
+      }
+    }
 
     let role: Role;
     if (particleRole === '에') {
@@ -116,7 +281,7 @@ export function parseKo(text: string, lex: Lexicon): Constituent[] {
     if (role === '양상') role = '대상';
 
     if (entry) {
-      out.push({ kind: 'concept', lemma: stem, role });
+      out.push({ kind: 'concept', lemma, role });
       continue;
     }
     const syllables = syllabify(stem);
