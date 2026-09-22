@@ -225,6 +225,12 @@ function resolveViaTricks(
   const plainEntry = lookup(lex, plain);
   if (plainEntry && isVerbalGuess(plainEntry)) return { lemma: plain, entry: plainEntry };
 
+  // '하다' 붙이기 — '미워해 → 미워 → 미워하다', '선택했어 → 선택 → 선택하다'.
+  // 어미를 떼면 '하' 까지 같이 떨어지는 경우가 많아 기본형이 두 음절 모자란다.
+  const hada = `${candidate}하다`;
+  const hadaEntry = lookup(lex, hada);
+  if (hadaEntry && isVerbalGuess(hadaEntry)) return { lemma: hada, entry: hadaEntry };
+
   const nominalized = nominalize(candidate);
   if (nominalized) {
     const e = lookup(lex, nominalized);

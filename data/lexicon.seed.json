@@ -2430,5 +2430,81 @@
     "status": "confirmed",
     "source": "seed",
     "addedAt": "2026-09-21"
+  },
+  "기다리다": {
+    "lemma": "기다리다",
+    "gloss_en": "wait",
+    "features": {
+      "animacy": 0.12,
+      "agency": 0.4,
+      "concreteness": 0.15,
+      "valence": 0.55,
+      "intensity": 0.5,
+      "temporality": 0.85,
+      "boundedness": 0.13,
+      "sociality": 0.6
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-22"
+  },
+  "미워하다": {
+    "lemma": "미워하다",
+    "gloss_en": "hate",
+    "features": {
+      "animacy": 0.1,
+      "agency": 0.35,
+      "concreteness": 0.12,
+      "valence": 0.06,
+      "intensity": 0.84,
+      "temporality": 0.3,
+      "boundedness": 0.11,
+      "sociality": 0.92
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-22"
+  },
+  "선택하다": {
+    "lemma": "선택하다",
+    "gloss_en": "choose",
+    "features": {
+      "animacy": 0.1,
+      "agency": 1.0,
+      "concreteness": 0.2,
+      "valence": 0.55,
+      "intensity": 0.72,
+      "temporality": 0.55,
+      "boundedness": 0.73,
+      "sociality": 0.35
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-22"
+  },
+  "인사하다": {
+    "lemma": "인사하다",
+    "gloss_en": "greet",
+    "features": {
+      "animacy": 0.15,
+      "agency": 0.65,
+      "concreteness": 0.18,
+      "valence": 0.68,
+      "intensity": 0.35,
+      "temporality": 0.3,
+      "boundedness": 0.53,
+      "sociality": 0.9
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-22"
   }
 }

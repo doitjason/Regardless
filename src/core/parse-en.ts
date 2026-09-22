@@ -27,9 +27,23 @@ const PLACE_PREP = new Set(['in', 'at', 'on', 'under', 'over', 'inside']);
 /** 방향을 이끄는 전치사. */
 const DIR_PREP = new Set(['into', 'toward', 'towards', 'through']);
 
+/**
+ * 불규칙 과거형 → 기본형. 규칙 어미(-ed/-s/-ing)를 떼는 것으로는 닿지 못한다.
+ * 사전에 있는 동사만 적는다 — 없는 낱말을 적어 봐야 조회가 실패할 뿐이다.
+ */
+const IRREGULAR: Record<string, string> = {
+  met: 'meet', saw: 'see', seen: 'see', went: 'go', gone: 'go', came: 'come',
+  ate: 'eat', gave: 'give', given: 'give', took: 'take', heard: 'hear',
+  said: 'say', lost: 'lose', found: 'find', thought: 'think', knew: 'know',
+  known: 'know', forgot: 'forget', forgotten: 'forget', began: 'begin',
+  ran: 'run', wrote: 'write', slept: 'sleep', felt: 'feel', held: 'hold',
+  left: 'leave', kept: 'keep', died: 'die', born: 'born', was: 'be', were: 'be',
+};
+
 /** 영어 낱말을 한국어 표제어로. 못 찾으면 null. */
 function toLemma(word: string, lex: Lexicon, glossIndex: Map<string, string>): string | null {
-  const w = word.toLowerCase();
+  const w0 = word.toLowerCase();
+  const w = IRREGULAR[w0] ?? w0;
   if (PRONOUNS[w]) return PRONOUNS[w];
   const direct = glossIndex.get(w);
   if (direct) return direct;

@@ -82,7 +82,10 @@ describe('parseKo', () => {
   it('축약형을 되돌려 사전에서 찾는다', () => {
     // 기다려 = 기다리 + 어. 사전에는 명사형 '기다림' 이 있다.
     const cs = parseKo('너를 기다려', lex);
-    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '기다림'), JSON.stringify(cs)).toBe(true);
+    // 사전에 기본형(기다리다)과 명사형(기다림)이 둘 다 있다. 어느 쪽에 닿든
+    // 같은 개념이다 — 자질이 거의 같아 그림도 거의 같다.
+    expect(cs.some((c) => c.kind === 'concept' && (c.lemma === '기다리다' || c.lemma === '기다림')),
+      JSON.stringify(cs)).toBe(true);
   });
 
   it('하다형 용언은 어근으로 찾는다', () => {
@@ -113,7 +116,7 @@ describe('parseKo', () => {
   it('짐작으로 찾은 낱말은 용언만 받는다', () => {
     // 기다림(행위)은 받고, 봄(시간)은 받지 않는다
     const wait = parseKo('너를 기다려', lex);
-    expect(wait.some((c) => c.kind === 'concept' && c.lemma === '기다림')).toBe(true);
+    expect(wait.some((c) => c.kind === 'concept' && (c.lemma === '기다리다' || c.lemma === '기다림'))).toBe(true);
   });
 
   it('어간에 붙어 줄어든 과거형을 되돌린다', () => {
