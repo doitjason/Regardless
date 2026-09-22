@@ -118,12 +118,32 @@ describe('parseKo', () => {
 
   it('어간에 붙어 줄어든 과거형을 되돌린다', () => {
     const cs = parseKo('우리는 어제 만났다', lex);
-    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '만남'), JSON.stringify(cs)).toBe(true);
+    // 기본형(만나다)이든 명사형(만남)이든 '만나다' 라는 뜻에 닿으면 된다.
+    // 어느 쪽을 고르는지는 사전이 무엇을 싣고 있느냐의 문제다.
+    expect(cs.some((c) => c.kind === 'concept' && (c.lemma === '만나다' || c.lemma === '만남')),
+      JSON.stringify(cs)).toBe(true);
   });
 
   it('직접 찾은 낱말은 역할과 무관하게 그대로 쓴다', () => {
     // 짐작 가드가 평범한 명사 조회까지 막으면 안 된다
     expect(parseKo('봄이 왔다', lex).some((c) => c.kind === 'concept' && c.lemma === '봄')).toBe(true);
     expect(parseKo('오늘 하늘을 보았다', lex).some((c) => c.kind === 'concept' && c.lemma === '하늘')).toBe(true);
+  });
+});
+
+describe('기본형 되찾기', () => {
+  it('과거형이 계절이 아니라 동사로 잡힌다', () => {
+    const cs = parseKo('나는 바다를 보았다', lex);
+    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '보다'), JSON.stringify(cs)).toBe(true);
+    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '봄')).toBe(false);
+  });
+
+  it('어간에 녹아붙은 과거형도 기본형으로 돌아온다', () => {
+    expect(parseKo('봄이 왔다', lex).some((c) => c.kind === 'concept' && c.lemma === '오다')).toBe(true);
+  });
+
+  it('명사는 그대로 명사다 — 기본형 만들기가 명사를 삼키지 않는다', () => {
+    expect(parseKo('봄이 왔다', lex).some((c) => c.kind === 'concept' && c.lemma === '봄')).toBe(true);
+    expect(parseKo('바다를 보았다', lex).some((c) => c.kind === 'concept' && c.lemma === '바다')).toBe(true);
   });
 });

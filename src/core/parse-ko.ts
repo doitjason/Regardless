@@ -218,6 +218,13 @@ function resolveViaTricks(
   candidate: string,
   lex: Lexicon,
 ): { lemma: string; entry: LexiconEntry } | null {
+  // 기본형 만들기가 가장 먼저다. 사전은 용언을 기본형으로 싣고 있으므로
+  // (`보다` `오다` `만나다`), 어간에 `다` 를 붙이는 것이 가장 곧은 길이다.
+  // 명사형 만들기를 먼저 하면 `보 → 봄` 처럼 우연히 다른 낱말에 걸릴 수 있다.
+  const plain = `${candidate}다`;
+  const plainEntry = lookup(lex, plain);
+  if (plainEntry && isVerbalGuess(plainEntry)) return { lemma: plain, entry: plainEntry };
+
   const nominalized = nominalize(candidate);
   if (nominalized) {
     const e = lookup(lex, nominalized);
