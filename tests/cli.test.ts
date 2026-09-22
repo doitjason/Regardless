@@ -88,6 +88,34 @@ describe('runCli', () => {
   });
 });
 
+describe('--text', () => {
+  it('문장을 받아 SVG 를 쓴다', async () => {
+    const out = outPath('text.svg');
+    expect(await runCli(['--text', '나는 너를 사랑해', '--out', out])).toBe(0);
+    expect(readFileSync(out, 'utf8').startsWith('<svg')).toBe(true);
+  });
+
+  it('같은 뜻의 두 언어가 같은 파일을 낸다', async () => {
+    const a = outPath('text-ko.svg'), b = outPath('text-en.svg');
+    await runCli(['--text', '나는 너를 사랑해', '--out', a]);
+    await runCli(['--text', 'I love you', '--out', b]);
+    expect(readFileSync(b, 'utf8')).toBe(readFileSync(a, 'utf8'));
+  });
+
+  it('--ir 과 --text 를 함께 주면 던진다', () => {
+    expect(() => parseArgs(['--ir', 'a.json', '--text', '사랑', '--out', 'b.svg']))
+      .toThrow(/하나/);
+  });
+
+  it('둘 다 없으면 던진다', () => {
+    expect(() => parseArgs(['--out', 'b.svg'])).toThrow(/--ir|--text/);
+  });
+
+  it('그릴 것이 없는 문장은 종료 코드로 알린다', async () => {
+    expect(await runCli(['--text', '   ', '--out', outPath('empty.svg')])).not.toBe(0);
+  });
+});
+
 describe('--cut', () => {
   it('플래그를 읽는다', () => {
     expect(parseArgs(['--ir','a.json','--out','b.svg','--cut']).cut).toBe(true);

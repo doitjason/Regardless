@@ -3,10 +3,14 @@ import { render } from './render/compose';
 import { renderForNecklace, renderCutFile, validateNecklace, DEFAULT_NECKLACE } from './render/necklace';
 import { loadLook } from './render/look';
 import { loadSeedLexicon } from './core/lexicon';
+import { parse } from './core/parse';
 import type { IR } from './core/ir';
 
 export interface CliArgs {
-  input: string;
+  /** IR JSON 경로. `text` 와 정확히 하나만 준다. */
+  input?: string;
+  /** 문장. `input` 과 정확히 하나만 준다. */
+  text?: string;
   out: string;
   necklace: boolean;
   /** 잘라 낼 모양 그대로 내보낸다 (제작용 정리 거침) */
@@ -17,7 +21,7 @@ export interface CliArgs {
 }
 
 const USAGE = `
-사용법: npm run glyph -- --ir <IR.json> --out <out.svg> [옵션]
+사용법: npm run glyph -- (--text "문장" | --ir <IR.json>) --out <out.svg> [옵션]
 
 옵션:
   --necklace              목걸이 각인용으로 내보낸다 (최소 선폭 보정)
@@ -34,8 +38,14 @@ export function parseArgs(argv: string[]): CliArgs {
     return i >= 0 ? argv[i + 1] : undefined;
   };
   const input = get('--ir');
+  const text = get('--text');
   const out = get('--out');
-  if (!input) throw new Error(`--ir 이 필요하다\n\n${USAGE}`);
+  if (input !== undefined && text !== undefined) {
+    throw new Error(`--ir 과 --text 는 둘 중 하나만 준다\n\n${USAGE}`);
+  }
+  if (input === undefined && text === undefined) {
+    throw new Error(`--ir 또는 --text 가 필요하다\n\n${USAGE}`);
+  }
   if (!out) throw new Error(`--out 이 필요하다\n\n${USAGE}`);
   const sizeRaw = get('--size');
   const mmRaw = get('--min-stroke-mm');
@@ -62,7 +72,9 @@ export function parseArgs(argv: string[]): CliArgs {
     }
   }
   return {
-    input, out,
+    ...(input !== undefined ? { input } : {}),
+    ...(text !== undefined ? { text } : {}),
+    out,
     necklace: argv.includes('--necklace'),
     cut: argv.includes('--cut'),
     ...(size !== undefined ? { size } : {}),
@@ -76,14 +88,20 @@ export async function runCli(argv: string[]): Promise<number> {
   try { args = parseArgs(argv); }
   catch (e) { console.error((e as Error).message); return 2; }
 
+  const lex = loadSeedLexicon();
+
   let ir: IR;
-  try { ir = JSON.parse(readFileSync(args.input, 'utf8')) as IR; }
-  catch (e) {
-    console.error(`IR 파일을 읽을 수 없다: ${args.input}\n${(e as Error).message}`);
-    return 3;
+  if (args.text !== undefined) {
+    try { ir = parse(args.text, lex); }
+    catch (e) { console.error((e as Error).message); return 6; }
+  } else {
+    try { ir = JSON.parse(readFileSync(args.input!, 'utf8')) as IR; }
+    catch (e) {
+      console.error(`IR 파일을 읽을 수 없다: ${args.input}\n${(e as Error).message}`);
+      return 3;
+    }
   }
 
-  const lex = loadSeedLexicon();
   const look = loadLook();
   try {
     if (args.cut) {
