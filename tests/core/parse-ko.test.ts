@@ -102,4 +102,28 @@ describe('parseKo', () => {
     const cs = parseKo('루이즈를 기다려', lex);
     expect(cs.some((c) => c.kind === 'phonetic' && c.syllables.length === 3)).toBe(true);
   });
+
+  it('짐작한 어간이 엉뚱한 낱말에 걸리지 않는다', () => {
+    // 보았다 → 어간 보 → 명사형 봄. 사전의 '봄' 은 계절이다. 계절로 그리느니
+    // 모르는 말로 두는 편이 낫다.
+    const cs = parseKo('나는 바다를 보았다', lex);
+    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '봄'), JSON.stringify(cs)).toBe(false);
+  });
+
+  it('짐작으로 찾은 낱말은 용언만 받는다', () => {
+    // 기다림(행위)은 받고, 봄(시간)은 받지 않는다
+    const wait = parseKo('너를 기다려', lex);
+    expect(wait.some((c) => c.kind === 'concept' && c.lemma === '기다림')).toBe(true);
+  });
+
+  it('어간에 붙어 줄어든 과거형을 되돌린다', () => {
+    const cs = parseKo('우리는 어제 만났다', lex);
+    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '만남'), JSON.stringify(cs)).toBe(true);
+  });
+
+  it('직접 찾은 낱말은 역할과 무관하게 그대로 쓴다', () => {
+    // 짐작 가드가 평범한 명사 조회까지 막으면 안 된다
+    expect(parseKo('봄이 왔다', lex).some((c) => c.kind === 'concept' && c.lemma === '봄')).toBe(true);
+    expect(parseKo('오늘 하늘을 보았다', lex).some((c) => c.kind === 'concept' && c.lemma === '하늘')).toBe(true);
+  });
 });

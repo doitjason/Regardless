@@ -95,11 +95,14 @@ const isHangul = (ch: string) => {
 /**
  * 축약형 되돌리기 (스펙 7.3의 나머지 절반).
  *
- * `보았다`, `기다려` 처럼 어미를 떼도 사전 표제어가 아닌 어간이 남는 경우가
- * 있다 — 동사 원형이 아니라 활용형이기 때문이다. 이 표제어 문제를 풀기 위해
- * 두 가지 되돌리기를 시도한다: 어간을 명사형으로 바꾸기(보다→봄, 기다리다→기다림)와
- * `하` 를 마저 떼기(사랑하다→사랑). 이 되돌리기는 사전 조회에만 쓴다 — 결과
+ * `보았다`, `기다려`, `만났다` 처럼 어미를 떼도 사전 표제어가 아닌 어간이 남는
+ * 경우가 있다 — 동사 원형이 아니라 활용형이기 때문이다. 이 표제어 문제를 풀기
+ * 위해 세 가지 되돌리기를 시도한다: 어간을 명사형으로 바꾸기(보다→봄,
+ * 기다리다→기다림), `하` 를 마저 떼기(사랑하다→사랑), ㅆ받침 과거형을
+ * 되돌리기(만났다→만나, 왔다→오). 이 되돌리기는 사전 조회에만 쓴다 — 결과
  * lemma 는 찾아낸 표제어 그대로 쓰고, 원래 어간이 무엇이었는지는 버린다.
+ * 그리고 짐작으로 찾은 표제어는 용언성 명사일 때만 받아들인다 —
+ * `isVerbalGuess` 참고.
  *
  * 한글 음절 합성은 `phonology.ts` 의 분해를 거꾸로 한 것이다. 그 파일의
  * ONSETS/NUCLEI/CODAS 테이블은 내보내지 않으므로(고치지 말라는 지시도 있고),
@@ -116,6 +119,7 @@ const CODA_COUNT = 28;
 const ONSET_EMPTY = 11;   // phonology.ts ONSETS 의 '' (빈 초성 ㅇ)
 const NUCLEUS_EU = 18;    // phonology.ts NUCLEI 의 'eu' (ㅡ) — '음' 합성용
 const CODA_M = 16;        // phonology.ts CODAS 의 'm' (홑받침 ㅁ)
+const CODA_SS = 20;       // phonology.ts CODAS 의 'ss' (쌍시옷 받침) — 축약된 과거형에 남는 받침
 
 /** 한 음절을 초성·중성·종성 색인으로 분해한다. 한글 음절이 아니면 null. */
 function decomposeIndices(ch: string): { onset: number; nucleus: number; coda: number } | null {
@@ -175,7 +179,41 @@ function revertContractedVowel(stem: string): string | null {
   return stem.slice(0, -1) + composeHangul(d.onset, reverted, d.coda);
 }
 
-/** 한 후보 어간에 명사형 만들기 → 하 떼기 순서로 사전을 조회한다. */
+/**
+ * ㅆ받침으로 굳어붙은 과거형을 되돌린다 (스펙 7.3의 세 번째 되돌리기).
+ *
+ * `났다`, `왔다`, `했다` 처럼 과거 어미(았다/었다/였다)의 모음이 어간 마지막
+ * 음절에 녹아들어 ㅆ받침으로만 남는 경우가 있다 — `만나+았다→만났다` 처럼
+ * 어간과 어미의 모음이 같아 그대로 줄기도 하고, `오+았다→왔다` 처럼 모음이
+ * 합쳐지기도 한다. ENDINGS 표의 고정 문자열로는 잡을 수 없다 — 녹아든
+ * 음절의 초성이 어간마다 다르기 때문이다(났 은 ㄴ, 왔 은 초성 없음, 했 은 ㅎ).
+ * 그래서 어미 표 대신 구조로 판정한다: 어간이 '다' 로 끝나고 그 앞 음절이
+ * ㅆ받침이면 그 두 글자를 통째로 떼어 낸다. 중성이 축약모음표에 있으면
+ * 그것도 되돌리고(왔→오, 했→하), 없으면(났 의 ㅏ처럼 어간·어미 모음이
+ * 같아 그대로 줄어든 경우) 중성은 두고 받침만 지운다(났→나).
+ */
+function revertFusedPastCoda(stem: string): string | null {
+  if (stem.length < 2 || !stem.endsWith('다')) return null;
+  const fusedCh = stem.charAt(stem.length - 2);
+  const d = decomposeIndices(fusedCh);
+  if (!d || d.coda !== CODA_SS) return null;
+  const nucleus = VOWEL_REVERSION[d.nucleus] ?? d.nucleus;
+  return stem.slice(0, -2) + composeHangul(d.onset, nucleus, 0);
+}
+
+/**
+ * 짐작(명사형 만들기·축약모음 되돌리기·하 떼기)으로 찾은 표제어는 용언성
+ * 명사(defaultRole '행위')일 때만 받아들인다. 짐작은 형태만 보고 사전을
+ * 뒤지는 것이라 `보다→봄` 처럼 엉뚱한 명사(계절 '봄')에 우연히 걸릴 수
+ * 있는데, 확신에 찬 오답은 음소 폴백(모르는 말)보다 나쁘다 — 폴백은 적어도
+ * "모른다"고 말하지만 오답은 틀린 뜻을 진짜인 것처럼 그린다. 직접 조회로
+ * 찾은 표제어는 이 가드를 거치지 않는다.
+ */
+function isVerbalGuess(entry: LexiconEntry): boolean {
+  return entry.defaultRole === '행위';
+}
+
+/** 한 후보 어간에 명사형 만들기 → 하 떼기 순서로 사전을 조회한다. 짐작 가드를 거친다. */
 function resolveViaTricks(
   candidate: string,
   lex: Lexicon,
@@ -183,12 +221,12 @@ function resolveViaTricks(
   const nominalized = nominalize(candidate);
   if (nominalized) {
     const e = lookup(lex, nominalized);
-    if (e) return { lemma: nominalized, entry: e };
+    if (e && isVerbalGuess(e)) return { lemma: nominalized, entry: e };
   }
   const rooted = deHa(candidate);
   if (rooted) {
     const e = lookup(lex, rooted);
-    if (e) return { lemma: rooted, entry: e };
+    if (e && isVerbalGuess(e)) return { lemma: rooted, entry: e };
   }
   return null;
 }
@@ -196,17 +234,27 @@ function resolveViaTricks(
 /**
  * 직접 조회가 실패한 어간을 축약형 되돌리기로 다시 찾는다.
  * 1) 어간 그대로 명사형/하-제거 시도
- * 2) 안 되면 축약모음을 되돌린 어간으로 직접 조회 + 같은 두 가지 시도
- * 둘 다 실패하면 null — 호출 쪽은 원래 어간으로 음소 폴백을 그대로 쓴다.
+ * 2) 안 되면 ㅆ받침 과거형을 되돌린 어간으로 직접 조회 + 같은 두 가지 시도
+ * 3) 안 되면 축약모음을 되돌린 어간으로 직접 조회 + 같은 두 가지 시도
+ * 모두 실패하면 null — 호출 쪽은 원래 어간으로 음소 폴백을 그대로 쓴다.
+ * 여기서 나가는 모든 결과는 짐작이므로 `isVerbalGuess` 가드를 거친다.
  */
 function resolveContractedStem(stem: string, lex: Lexicon): { lemma: string; entry: LexiconEntry } | null {
   const direct = resolveViaTricks(stem, lex);
   if (direct) return direct;
 
+  const fusedPast = revertFusedPastCoda(stem);
+  if (fusedPast) {
+    const e = lookup(lex, fusedPast);
+    if (e && isVerbalGuess(e)) return { lemma: fusedPast, entry: e };
+    const viaTricks = resolveViaTricks(fusedPast, lex);
+    if (viaTricks) return viaTricks;
+  }
+
   const reverted = revertContractedVowel(stem);
   if (reverted && reverted !== stem) {
     const e = lookup(lex, reverted);
-    if (e) return { lemma: reverted, entry: e };
+    if (e && isVerbalGuess(e)) return { lemma: reverted, entry: e };
     const viaTricks = resolveViaTricks(reverted, lex);
     if (viaTricks) return viaTricks;
   }
