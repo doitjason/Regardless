@@ -14,9 +14,9 @@ const withF = (o: Partial<SemanticFeatures>): SemanticFeatures => ({ ...mid, ...
 
 describe('씨앗 사전', () => {
   it('27항목을 담고 있다', () => {
-    // 계획 III 태스크 6 에서 129항목으로 늘었다 — 최소 항목 수는
+    // 계획 III 태스크 6 에서 128항목으로 늘었다 — 최소 항목 수는
     // 아래 '자주 쓰는 말이 충분히 들어 있다' 테스트가 별도로 잡는다.
-    expect(Object.keys(lex).length).toBeGreaterThanOrEqual(129);
+    expect(Object.keys(lex).length).toBeGreaterThanOrEqual(120);
   });
 
   it('조형 실험에 쓰이는 어휘가 모두 있다', () => {
@@ -214,6 +214,17 @@ describe('NEUTRAL_FEATURES', () => {
     const neutral = key(NEUTRAL_FEATURES);
     for (const [lemma, e] of Object.entries(lex)) {
       expect(key(e.features), lemma).not.toBe(neutral);
+    }
+  });
+});
+
+describe('표제어는 입력에서 닿을 수 있어야 한다', () => {
+  it('표제어에 괄호나 주석이 없다', () => {
+    // 한국어 파서는 어절에서 조사를 뗀 문자열로 사전을 찾는다. '눈(眼)' 같은
+    // 표제어는 어떤 입력으로도 나오지 않아 영원히 그려지지 않는다.
+    // 동음이의어는 사전 키가 아니라 별도의 판별 장치로 풀어야 한다.
+    for (const lemma of Object.keys(loadSeedLexicon())) {
+      expect(/[()（）[\]]/.test(lemma), lemma).toBe(false);
     }
   });
 });

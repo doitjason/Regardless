@@ -3,8 +3,14 @@
     "lemma": "사랑",
     "gloss_en": "love",
     "features": {
-      "animacy": 0.10, "agency": 0.25, "concreteness": 0.12, "valence": 0.94,
-      "intensity": 0.86, "temporality": 0.30, "boundedness": 0.18, "sociality": 0.95
+      "animacy": 0.1,
+      "agency": 0.25,
+      "concreteness": 0.12,
+      "valence": 0.94,
+      "intensity": 0.86,
+      "temporality": 0.3,
+      "boundedness": 0.18,
+      "sociality": 0.95
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -16,8 +22,14 @@
     "lemma": "미움",
     "gloss_en": "hatred",
     "features": {
-      "animacy": 0.10, "agency": 0.25, "concreteness": 0.12, "valence": 0.06,
-      "intensity": 0.84, "temporality": 0.30, "boundedness": 0.18, "sociality": 0.92
+      "animacy": 0.1,
+      "agency": 0.25,
+      "concreteness": 0.12,
+      "valence": 0.06,
+      "intensity": 0.84,
+      "temporality": 0.3,
+      "boundedness": 0.18,
+      "sociality": 0.92
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -29,8 +41,14 @@
     "lemma": "기다림",
     "gloss_en": "waiting",
     "features": {
-      "animacy": 0.12, "agency": 0.30, "concreteness": 0.15, "valence": 0.55,
-      "intensity": 0.50, "temporality": 0.85, "boundedness": 0.20, "sociality": 0.60
+      "animacy": 0.12,
+      "agency": 0.3,
+      "concreteness": 0.15,
+      "valence": 0.55,
+      "intensity": 0.5,
+      "temporality": 0.85,
+      "boundedness": 0.2,
+      "sociality": 0.6
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -42,8 +60,14 @@
     "lemma": "그리움",
     "gloss_en": "longing",
     "features": {
-      "animacy": 0.12, "agency": 0.22, "concreteness": 0.10, "valence": 0.40,
-      "intensity": 0.72, "temporality": 0.80, "boundedness": 0.14, "sociality": 0.70
+      "animacy": 0.12,
+      "agency": 0.22,
+      "concreteness": 0.1,
+      "valence": 0.4,
+      "intensity": 0.72,
+      "temporality": 0.8,
+      "boundedness": 0.14,
+      "sociality": 0.7
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -55,8 +79,14 @@
     "lemma": "기쁨",
     "gloss_en": "joy",
     "features": {
-      "animacy": 0.14, "agency": 0.28, "concreteness": 0.14, "valence": 0.96,
-      "intensity": 0.78, "temporality": 0.25, "boundedness": 0.30, "sociality": 0.55
+      "animacy": 0.14,
+      "agency": 0.28,
+      "concreteness": 0.14,
+      "valence": 0.96,
+      "intensity": 0.78,
+      "temporality": 0.25,
+      "boundedness": 0.3,
+      "sociality": 0.55
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -68,8 +98,14 @@
     "lemma": "슬픔",
     "gloss_en": "sorrow",
     "features": {
-      "animacy": 0.14, "agency": 0.20, "concreteness": 0.12, "valence": 0.08,
-      "intensity": 0.70, "temporality": 0.45, "boundedness": 0.24, "sociality": 0.50
+      "animacy": 0.14,
+      "agency": 0.2,
+      "concreteness": 0.12,
+      "valence": 0.08,
+      "intensity": 0.7,
+      "temporality": 0.45,
+      "boundedness": 0.24,
+      "sociality": 0.5
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -81,8 +117,14 @@
     "lemma": "두려움",
     "gloss_en": "fear",
     "features": {
-      "animacy": 0.16, "agency": 0.18, "concreteness": 0.14, "valence": 0.10,
-      "intensity": 0.80, "temporality": 0.40, "boundedness": 0.20, "sociality": 0.45
+      "animacy": 0.16,
+      "agency": 0.18,
+      "concreteness": 0.14,
+      "valence": 0.1,
+      "intensity": 0.8,
+      "temporality": 0.4,
+      "boundedness": 0.2,
+      "sociality": 0.45
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -94,8 +136,14 @@
     "lemma": "용기",
     "gloss_en": "courage",
     "features": {
-      "animacy": 0.18, "agency": 0.85, "concreteness": 0.16, "valence": 0.88,
-      "intensity": 0.82, "temporality": 0.22, "boundedness": 0.28, "sociality": 0.40
+      "animacy": 0.18,
+      "agency": 0.85,
+      "concreteness": 0.16,
+      "valence": 0.88,
+      "intensity": 0.82,
+      "temporality": 0.22,
+      "boundedness": 0.28,
+      "sociality": 0.4
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -107,8 +155,14 @@
     "lemma": "약속",
     "gloss_en": "promise",
     "features": {
-      "animacy": 0.08, "agency": 0.55, "concreteness": 0.22, "valence": 0.80,
-      "intensity": 0.60, "temporality": 0.75, "boundedness": 0.70, "sociality": 0.90
+      "animacy": 0.08,
+      "agency": 0.55,
+      "concreteness": 0.22,
+      "valence": 0.8,
+      "intensity": 0.6,
+      "temporality": 0.75,
+      "boundedness": 0.7,
+      "sociality": 0.9
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -120,8 +174,14 @@
     "lemma": "선택",
     "gloss_en": "choice",
     "features": {
-      "animacy": 0.10, "agency": 0.90, "concreteness": 0.20, "valence": 0.55,
-      "intensity": 0.72, "temporality": 0.55, "boundedness": 0.80, "sociality": 0.35
+      "animacy": 0.1,
+      "agency": 0.9,
+      "concreteness": 0.2,
+      "valence": 0.55,
+      "intensity": 0.72,
+      "temporality": 0.55,
+      "boundedness": 0.8,
+      "sociality": 0.35
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -133,8 +193,14 @@
     "lemma": "나",
     "gloss_en": "I",
     "features": {
-      "animacy": 0.95, "agency": 0.90, "concreteness": 0.80, "valence": 0.55,
-      "intensity": 0.40, "temporality": 0.20, "boundedness": 0.95, "sociality": 0.35
+      "animacy": 0.95,
+      "agency": 0.9,
+      "concreteness": 0.8,
+      "valence": 0.55,
+      "intensity": 0.4,
+      "temporality": 0.2,
+      "boundedness": 0.95,
+      "sociality": 0.35
     },
     "defaultRole": "주체",
     "seedGlyph": null,
@@ -146,8 +212,14 @@
     "lemma": "너",
     "gloss_en": "you",
     "features": {
-      "animacy": 0.95, "agency": 0.88, "concreteness": 0.80, "valence": 0.60,
-      "intensity": 0.42, "temporality": 0.20, "boundedness": 0.95, "sociality": 0.65
+      "animacy": 0.95,
+      "agency": 0.88,
+      "concreteness": 0.8,
+      "valence": 0.6,
+      "intensity": 0.42,
+      "temporality": 0.2,
+      "boundedness": 0.95,
+      "sociality": 0.65
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -159,8 +231,14 @@
     "lemma": "우리",
     "gloss_en": "we",
     "features": {
-      "animacy": 0.95, "agency": 0.86, "concreteness": 0.72, "valence": 0.72,
-      "intensity": 0.50, "temporality": 0.22, "boundedness": 0.60, "sociality": 0.98
+      "animacy": 0.95,
+      "agency": 0.86,
+      "concreteness": 0.72,
+      "valence": 0.72,
+      "intensity": 0.5,
+      "temporality": 0.22,
+      "boundedness": 0.6,
+      "sociality": 0.98
     },
     "defaultRole": "주체",
     "seedGlyph": null,
@@ -172,8 +250,14 @@
     "lemma": "아이",
     "gloss_en": "child",
     "features": {
-      "animacy": 0.96, "agency": 0.45, "concreteness": 0.88, "valence": 0.86,
-      "intensity": 0.45, "temporality": 0.35, "boundedness": 0.92, "sociality": 0.70
+      "animacy": 0.96,
+      "agency": 0.45,
+      "concreteness": 0.88,
+      "valence": 0.86,
+      "intensity": 0.45,
+      "temporality": 0.35,
+      "boundedness": 0.92,
+      "sociality": 0.7
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -185,8 +269,14 @@
     "lemma": "고양이",
     "gloss_en": "cat",
     "features": {
-      "animacy": 0.92, "agency": 0.55, "concreteness": 0.90, "valence": 0.70,
-      "intensity": 0.35, "temporality": 0.10, "boundedness": 0.92, "sociality": 0.25
+      "animacy": 0.92,
+      "agency": 0.55,
+      "concreteness": 0.9,
+      "valence": 0.7,
+      "intensity": 0.35,
+      "temporality": 0.1,
+      "boundedness": 0.92,
+      "sociality": 0.25
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -198,8 +288,14 @@
     "lemma": "개",
     "gloss_en": "dog",
     "features": {
-      "animacy": 0.92, "agency": 0.58, "concreteness": 0.90, "valence": 0.72,
-      "intensity": 0.38, "temporality": 0.10, "boundedness": 0.92, "sociality": 0.32
+      "animacy": 0.92,
+      "agency": 0.58,
+      "concreteness": 0.9,
+      "valence": 0.72,
+      "intensity": 0.38,
+      "temporality": 0.1,
+      "boundedness": 0.92,
+      "sociality": 0.32
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -211,8 +307,14 @@
     "lemma": "새",
     "gloss_en": "bird",
     "features": {
-      "animacy": 0.90, "agency": 0.62, "concreteness": 0.86, "valence": 0.68,
-      "intensity": 0.42, "temporality": 0.12, "boundedness": 0.90, "sociality": 0.20
+      "animacy": 0.9,
+      "agency": 0.62,
+      "concreteness": 0.86,
+      "valence": 0.68,
+      "intensity": 0.42,
+      "temporality": 0.12,
+      "boundedness": 0.9,
+      "sociality": 0.2
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -224,8 +326,14 @@
     "lemma": "시간",
     "gloss_en": "time",
     "features": {
-      "animacy": 0.05, "agency": 0.15, "concreteness": 0.10, "valence": 0.50,
-      "intensity": 0.45, "temporality": 0.98, "boundedness": 0.10, "sociality": 0.10
+      "animacy": 0.05,
+      "agency": 0.15,
+      "concreteness": 0.1,
+      "valence": 0.5,
+      "intensity": 0.45,
+      "temporality": 0.98,
+      "boundedness": 0.1,
+      "sociality": 0.1
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -237,8 +345,14 @@
     "lemma": "영원",
     "gloss_en": "forever",
     "features": {
-      "animacy": 0.05, "agency": 0.08, "concreteness": 0.05, "valence": 0.60,
-      "intensity": 0.75, "temporality": 0.96, "boundedness": 0.02, "sociality": 0.10
+      "animacy": 0.05,
+      "agency": 0.08,
+      "concreteness": 0.05,
+      "valence": 0.6,
+      "intensity": 0.75,
+      "temporality": 0.96,
+      "boundedness": 0.02,
+      "sociality": 0.1
     },
     "defaultRole": "시간수식",
     "seedGlyph": null,
@@ -250,8 +364,14 @@
     "lemma": "어제",
     "gloss_en": "yesterday",
     "features": {
-      "animacy": 0.05, "agency": 0.08, "concreteness": 0.25, "valence": 0.50,
-      "intensity": 0.30, "temporality": 0.92, "boundedness": 0.85, "sociality": 0.10
+      "animacy": 0.05,
+      "agency": 0.08,
+      "concreteness": 0.25,
+      "valence": 0.5,
+      "intensity": 0.3,
+      "temporality": 0.92,
+      "boundedness": 0.85,
+      "sociality": 0.1
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -263,8 +383,14 @@
     "lemma": "오늘",
     "gloss_en": "today",
     "features": {
-      "animacy": 0.05, "agency": 0.08, "concreteness": 0.28, "valence": 0.58,
-      "intensity": 0.35, "temporality": 0.90, "boundedness": 0.88, "sociality": 0.12
+      "animacy": 0.05,
+      "agency": 0.08,
+      "concreteness": 0.28,
+      "valence": 0.58,
+      "intensity": 0.35,
+      "temporality": 0.9,
+      "boundedness": 0.88,
+      "sociality": 0.12
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -276,8 +402,14 @@
     "lemma": "여기",
     "gloss_en": "here",
     "features": {
-      "animacy": 0.05, "agency": 0.05, "concreteness": 0.55, "valence": 0.50,
-      "intensity": 0.28, "temporality": 0.08, "boundedness": 0.80, "sociality": 0.15
+      "animacy": 0.05,
+      "agency": 0.05,
+      "concreteness": 0.55,
+      "valence": 0.5,
+      "intensity": 0.28,
+      "temporality": 0.08,
+      "boundedness": 0.8,
+      "sociality": 0.15
     },
     "defaultRole": "장소",
     "seedGlyph": null,
@@ -289,8 +421,14 @@
     "lemma": "하늘",
     "gloss_en": "sky",
     "features": {
-      "animacy": 0.08, "agency": 0.10, "concreteness": 0.70, "valence": 0.72,
-      "intensity": 0.45, "temporality": 0.15, "boundedness": 0.25, "sociality": 0.10
+      "animacy": 0.08,
+      "agency": 0.1,
+      "concreteness": 0.7,
+      "valence": 0.72,
+      "intensity": 0.45,
+      "temporality": 0.15,
+      "boundedness": 0.25,
+      "sociality": 0.1
     },
     "defaultRole": "장소",
     "seedGlyph": null,
@@ -302,8 +440,14 @@
     "lemma": "물",
     "gloss_en": "water",
     "features": {
-      "animacy": 0.10, "agency": 0.20, "concreteness": 0.82, "valence": 0.60,
-      "intensity": 0.40, "temporality": 0.18, "boundedness": 0.12, "sociality": 0.15
+      "animacy": 0.1,
+      "agency": 0.2,
+      "concreteness": 0.82,
+      "valence": 0.6,
+      "intensity": 0.4,
+      "temporality": 0.18,
+      "boundedness": 0.12,
+      "sociality": 0.15
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -315,8 +459,14 @@
     "lemma": "빛",
     "gloss_en": "light",
     "features": {
-      "animacy": 0.06, "agency": 0.30, "concreteness": 0.45, "valence": 0.88,
-      "intensity": 0.70, "temporality": 0.25, "boundedness": 0.18, "sociality": 0.20
+      "animacy": 0.06,
+      "agency": 0.3,
+      "concreteness": 0.45,
+      "valence": 0.88,
+      "intensity": 0.7,
+      "temporality": 0.25,
+      "boundedness": 0.18,
+      "sociality": 0.2
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -328,8 +478,14 @@
     "lemma": "깊이",
     "gloss_en": "deeply",
     "features": {
-      "animacy": 0.05, "agency": 0.05, "concreteness": 0.08, "valence": 0.60,
-      "intensity": 0.92, "temporality": 0.15, "boundedness": 0.10, "sociality": 0.20
+      "animacy": 0.05,
+      "agency": 0.05,
+      "concreteness": 0.08,
+      "valence": 0.6,
+      "intensity": 0.92,
+      "temporality": 0.15,
+      "boundedness": 0.1,
+      "sociality": 0.2
     },
     "defaultRole": "행위수식",
     "seedGlyph": null,
@@ -341,8 +497,14 @@
     "lemma": "의문",
     "gloss_en": "question",
     "features": {
-      "animacy": 0.05, "agency": 0.35, "concreteness": 0.08, "valence": 0.50,
-      "intensity": 0.55, "temporality": 0.20, "boundedness": 0.35, "sociality": 0.75
+      "animacy": 0.05,
+      "agency": 0.35,
+      "concreteness": 0.08,
+      "valence": 0.5,
+      "intensity": 0.55,
+      "temporality": 0.2,
+      "boundedness": 0.35,
+      "sociality": 0.75
     },
     "defaultRole": "양상",
     "seedGlyph": null,
@@ -354,8 +516,14 @@
     "lemma": "마음",
     "gloss_en": "heart",
     "features": {
-      "animacy": 0.15, "agency": 0.20, "concreteness": 0.10, "valence": 0.60,
-      "intensity": 0.55, "temporality": 0.20, "boundedness": 0.15, "sociality": 0.35
+      "animacy": 0.15,
+      "agency": 0.2,
+      "concreteness": 0.1,
+      "valence": 0.6,
+      "intensity": 0.55,
+      "temporality": 0.2,
+      "boundedness": 0.15,
+      "sociality": 0.35
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -367,8 +535,14 @@
     "lemma": "생각",
     "gloss_en": "thought",
     "features": {
-      "animacy": 0.08, "agency": 0.35, "concreteness": 0.08, "valence": 0.52,
-      "intensity": 0.40, "temporality": 0.25, "boundedness": 0.20, "sociality": 0.20
+      "animacy": 0.08,
+      "agency": 0.35,
+      "concreteness": 0.08,
+      "valence": 0.52,
+      "intensity": 0.4,
+      "temporality": 0.25,
+      "boundedness": 0.2,
+      "sociality": 0.2
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -380,8 +554,14 @@
     "lemma": "말",
     "gloss_en": "speech",
     "features": {
-      "animacy": 0.06, "agency": 0.30, "concreteness": 0.15, "valence": 0.52,
-      "intensity": 0.45, "temporality": 0.30, "boundedness": 0.35, "sociality": 0.75
+      "animacy": 0.06,
+      "agency": 0.3,
+      "concreteness": 0.15,
+      "valence": 0.52,
+      "intensity": 0.45,
+      "temporality": 0.3,
+      "boundedness": 0.35,
+      "sociality": 0.75
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -393,8 +573,14 @@
     "lemma": "사람",
     "gloss_en": "person",
     "features": {
-      "animacy": 0.90, "agency": 0.70, "concreteness": 0.85, "valence": 0.55,
-      "intensity": 0.35, "temporality": 0.15, "boundedness": 0.90, "sociality": 0.45
+      "animacy": 0.9,
+      "agency": 0.7,
+      "concreteness": 0.85,
+      "valence": 0.55,
+      "intensity": 0.35,
+      "temporality": 0.15,
+      "boundedness": 0.9,
+      "sociality": 0.45
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -406,8 +592,14 @@
     "lemma": "사랑하는사람",
     "gloss_en": "beloved",
     "features": {
-      "animacy": 0.90, "agency": 0.65, "concreteness": 0.80, "valence": 0.90,
-      "intensity": 0.75, "temporality": 0.20, "boundedness": 0.88, "sociality": 0.92
+      "animacy": 0.9,
+      "agency": 0.65,
+      "concreteness": 0.8,
+      "valence": 0.9,
+      "intensity": 0.75,
+      "temporality": 0.2,
+      "boundedness": 0.88,
+      "sociality": 0.92
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -419,8 +611,14 @@
     "lemma": "집",
     "gloss_en": "house",
     "features": {
-      "animacy": 0.02, "agency": 0.02, "concreteness": 0.90, "valence": 0.68,
-      "intensity": 0.30, "temporality": 0.10, "boundedness": 0.85, "sociality": 0.45
+      "animacy": 0.02,
+      "agency": 0.02,
+      "concreteness": 0.9,
+      "valence": 0.68,
+      "intensity": 0.3,
+      "temporality": 0.1,
+      "boundedness": 0.85,
+      "sociality": 0.45
     },
     "defaultRole": "장소",
     "seedGlyph": null,
@@ -432,8 +630,14 @@
     "lemma": "길",
     "gloss_en": "road",
     "features": {
-      "animacy": 0.02, "agency": 0.04, "concreteness": 0.78, "valence": 0.52,
-      "intensity": 0.30, "temporality": 0.12, "boundedness": 0.40, "sociality": 0.15
+      "animacy": 0.02,
+      "agency": 0.04,
+      "concreteness": 0.78,
+      "valence": 0.52,
+      "intensity": 0.3,
+      "temporality": 0.12,
+      "boundedness": 0.4,
+      "sociality": 0.15
     },
     "defaultRole": "장소",
     "seedGlyph": null,
@@ -445,8 +649,14 @@
     "lemma": "밤",
     "gloss_en": "night",
     "features": {
-      "animacy": 0.03, "agency": 0.05, "concreteness": 0.30, "valence": 0.42,
-      "intensity": 0.45, "temporality": 0.90, "boundedness": 0.55, "sociality": 0.10
+      "animacy": 0.03,
+      "agency": 0.05,
+      "concreteness": 0.3,
+      "valence": 0.42,
+      "intensity": 0.45,
+      "temporality": 0.9,
+      "boundedness": 0.55,
+      "sociality": 0.1
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -458,8 +668,14 @@
     "lemma": "아침",
     "gloss_en": "morning",
     "features": {
-      "animacy": 0.03, "agency": 0.05, "concreteness": 0.30, "valence": 0.65,
-      "intensity": 0.35, "temporality": 0.90, "boundedness": 0.55, "sociality": 0.12
+      "animacy": 0.03,
+      "agency": 0.05,
+      "concreteness": 0.3,
+      "valence": 0.65,
+      "intensity": 0.35,
+      "temporality": 0.9,
+      "boundedness": 0.55,
+      "sociality": 0.12
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -471,8 +687,14 @@
     "lemma": "저녁",
     "gloss_en": "evening",
     "features": {
-      "animacy": 0.03, "agency": 0.05, "concreteness": 0.30, "valence": 0.58,
-      "intensity": 0.38, "temporality": 0.90, "boundedness": 0.55, "sociality": 0.18
+      "animacy": 0.03,
+      "agency": 0.05,
+      "concreteness": 0.3,
+      "valence": 0.58,
+      "intensity": 0.38,
+      "temporality": 0.9,
+      "boundedness": 0.55,
+      "sociality": 0.18
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -484,8 +706,14 @@
     "lemma": "낮",
     "gloss_en": "daytime",
     "features": {
-      "animacy": 0.03, "agency": 0.05, "concreteness": 0.30, "valence": 0.62,
-      "intensity": 0.30, "temporality": 0.88, "boundedness": 0.52, "sociality": 0.14
+      "animacy": 0.03,
+      "agency": 0.05,
+      "concreteness": 0.3,
+      "valence": 0.62,
+      "intensity": 0.3,
+      "temporality": 0.88,
+      "boundedness": 0.52,
+      "sociality": 0.14
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -497,8 +725,14 @@
     "lemma": "바다",
     "gloss_en": "sea",
     "features": {
-      "animacy": 0.08, "agency": 0.15, "concreteness": 0.85, "valence": 0.70,
-      "intensity": 0.55, "temporality": 0.10, "boundedness": 0.20, "sociality": 0.10
+      "animacy": 0.08,
+      "agency": 0.15,
+      "concreteness": 0.85,
+      "valence": 0.7,
+      "intensity": 0.55,
+      "temporality": 0.1,
+      "boundedness": 0.2,
+      "sociality": 0.1
     },
     "defaultRole": "장소",
     "seedGlyph": null,
@@ -510,8 +744,14 @@
     "lemma": "산",
     "gloss_en": "mountain",
     "features": {
-      "animacy": 0.04, "agency": 0.05, "concreteness": 0.88, "valence": 0.62,
-      "intensity": 0.45, "temporality": 0.05, "boundedness": 0.65, "sociality": 0.08
+      "animacy": 0.04,
+      "agency": 0.05,
+      "concreteness": 0.88,
+      "valence": 0.62,
+      "intensity": 0.45,
+      "temporality": 0.05,
+      "boundedness": 0.65,
+      "sociality": 0.08
     },
     "defaultRole": "장소",
     "seedGlyph": null,
@@ -523,8 +763,14 @@
     "lemma": "강",
     "gloss_en": "river",
     "features": {
-      "animacy": 0.10, "agency": 0.25, "concreteness": 0.82, "valence": 0.60,
-      "intensity": 0.40, "temporality": 0.15, "boundedness": 0.30, "sociality": 0.10
+      "animacy": 0.1,
+      "agency": 0.25,
+      "concreteness": 0.82,
+      "valence": 0.6,
+      "intensity": 0.4,
+      "temporality": 0.15,
+      "boundedness": 0.3,
+      "sociality": 0.1
     },
     "defaultRole": "장소",
     "seedGlyph": null,
@@ -536,8 +782,14 @@
     "lemma": "바람",
     "gloss_en": "wind",
     "features": {
-      "animacy": 0.12, "agency": 0.35, "concreteness": 0.60, "valence": 0.55,
-      "intensity": 0.55, "temporality": 0.20, "boundedness": 0.12, "sociality": 0.08
+      "animacy": 0.12,
+      "agency": 0.35,
+      "concreteness": 0.6,
+      "valence": 0.55,
+      "intensity": 0.55,
+      "temporality": 0.2,
+      "boundedness": 0.12,
+      "sociality": 0.08
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -549,8 +801,14 @@
     "lemma": "구름",
     "gloss_en": "cloud",
     "features": {
-      "animacy": 0.05, "agency": 0.10, "concreteness": 0.65, "valence": 0.55,
-      "intensity": 0.30, "temporality": 0.15, "boundedness": 0.25, "sociality": 0.05
+      "animacy": 0.05,
+      "agency": 0.1,
+      "concreteness": 0.65,
+      "valence": 0.55,
+      "intensity": 0.3,
+      "temporality": 0.15,
+      "boundedness": 0.25,
+      "sociality": 0.05
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -562,8 +820,14 @@
     "lemma": "비",
     "gloss_en": "rain",
     "features": {
-      "animacy": 0.04, "agency": 0.15, "concreteness": 0.70, "valence": 0.42,
-      "intensity": 0.55, "temporality": 0.25, "boundedness": 0.10, "sociality": 0.06
+      "animacy": 0.04,
+      "agency": 0.15,
+      "concreteness": 0.7,
+      "valence": 0.42,
+      "intensity": 0.55,
+      "temporality": 0.25,
+      "boundedness": 0.1,
+      "sociality": 0.06
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -575,8 +839,14 @@
     "lemma": "눈",
     "gloss_en": "snow",
     "features": {
-      "animacy": 0.04, "agency": 0.10, "concreteness": 0.72, "valence": 0.62,
-      "intensity": 0.45, "temporality": 0.22, "boundedness": 0.14, "sociality": 0.06
+      "animacy": 0.04,
+      "agency": 0.1,
+      "concreteness": 0.72,
+      "valence": 0.62,
+      "intensity": 0.45,
+      "temporality": 0.22,
+      "boundedness": 0.14,
+      "sociality": 0.06
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -588,8 +858,14 @@
     "lemma": "꽃",
     "gloss_en": "flower",
     "features": {
-      "animacy": 0.22, "agency": 0.08, "concreteness": 0.90, "valence": 0.88,
-      "intensity": 0.40, "temporality": 0.20, "boundedness": 0.85, "sociality": 0.15
+      "animacy": 0.22,
+      "agency": 0.08,
+      "concreteness": 0.9,
+      "valence": 0.88,
+      "intensity": 0.4,
+      "temporality": 0.2,
+      "boundedness": 0.85,
+      "sociality": 0.15
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -601,8 +877,14 @@
     "lemma": "나무",
     "gloss_en": "tree",
     "features": {
-      "animacy": 0.25, "agency": 0.06, "concreteness": 0.90, "valence": 0.65,
-      "intensity": 0.25, "temporality": 0.08, "boundedness": 0.85, "sociality": 0.05
+      "animacy": 0.25,
+      "agency": 0.06,
+      "concreteness": 0.9,
+      "valence": 0.65,
+      "intensity": 0.25,
+      "temporality": 0.08,
+      "boundedness": 0.85,
+      "sociality": 0.05
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -614,8 +896,14 @@
     "lemma": "별",
     "gloss_en": "star",
     "features": {
-      "animacy": 0.06, "agency": 0.05, "concreteness": 0.55, "valence": 0.78,
-      "intensity": 0.50, "temporality": 0.10, "boundedness": 0.80, "sociality": 0.10
+      "animacy": 0.06,
+      "agency": 0.05,
+      "concreteness": 0.55,
+      "valence": 0.78,
+      "intensity": 0.5,
+      "temporality": 0.1,
+      "boundedness": 0.8,
+      "sociality": 0.1
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -627,8 +915,14 @@
     "lemma": "달",
     "gloss_en": "moon",
     "features": {
-      "animacy": 0.06, "agency": 0.06, "concreteness": 0.60, "valence": 0.68,
-      "intensity": 0.42, "temporality": 0.15, "boundedness": 0.75, "sociality": 0.12
+      "animacy": 0.06,
+      "agency": 0.06,
+      "concreteness": 0.6,
+      "valence": 0.68,
+      "intensity": 0.42,
+      "temporality": 0.15,
+      "boundedness": 0.75,
+      "sociality": 0.12
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -640,8 +934,14 @@
     "lemma": "해",
     "gloss_en": "sun",
     "features": {
-      "animacy": 0.06, "agency": 0.10, "concreteness": 0.62, "valence": 0.80,
-      "intensity": 0.55, "temporality": 0.15, "boundedness": 0.75, "sociality": 0.08
+      "animacy": 0.06,
+      "agency": 0.1,
+      "concreteness": 0.62,
+      "valence": 0.8,
+      "intensity": 0.55,
+      "temporality": 0.15,
+      "boundedness": 0.75,
+      "sociality": 0.08
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -653,8 +953,14 @@
     "lemma": "불",
     "gloss_en": "fire",
     "features": {
-      "animacy": 0.10, "agency": 0.45, "concreteness": 0.75, "valence": 0.40,
-      "intensity": 0.80, "temporality": 0.20, "boundedness": 0.18, "sociality": 0.06
+      "animacy": 0.1,
+      "agency": 0.45,
+      "concreteness": 0.75,
+      "valence": 0.4,
+      "intensity": 0.8,
+      "temporality": 0.2,
+      "boundedness": 0.18,
+      "sociality": 0.06
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -666,8 +972,14 @@
     "lemma": "돌",
     "gloss_en": "stone",
     "features": {
-      "animacy": 0.02, "agency": 0.02, "concreteness": 0.92, "valence": 0.48,
-      "intensity": 0.15, "temporality": 0.03, "boundedness": 0.90, "sociality": 0.02
+      "animacy": 0.02,
+      "agency": 0.02,
+      "concreteness": 0.92,
+      "valence": 0.48,
+      "intensity": 0.15,
+      "temporality": 0.03,
+      "boundedness": 0.9,
+      "sociality": 0.02
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -679,8 +991,14 @@
     "lemma": "흙",
     "gloss_en": "soil",
     "features": {
-      "animacy": 0.05, "agency": 0.03, "concreteness": 0.80, "valence": 0.48,
-      "intensity": 0.15, "temporality": 0.05, "boundedness": 0.10, "sociality": 0.03
+      "animacy": 0.05,
+      "agency": 0.03,
+      "concreteness": 0.8,
+      "valence": 0.48,
+      "intensity": 0.15,
+      "temporality": 0.05,
+      "boundedness": 0.1,
+      "sociality": 0.03
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -692,21 +1010,14 @@
     "lemma": "손",
     "gloss_en": "hand",
     "features": {
-      "animacy": 0.35, "agency": 0.55, "concreteness": 0.92, "valence": 0.58,
-      "intensity": 0.35, "temporality": 0.10, "boundedness": 0.85, "sociality": 0.30
-    },
-    "defaultRole": "대상",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-21"
-  },
-  "눈(眼)": {
-    "lemma": "눈(眼)",
-    "gloss_en": "eye",
-    "features": {
-      "animacy": 0.35, "agency": 0.30, "concreteness": 0.90, "valence": 0.55,
-      "intensity": 0.40, "temporality": 0.10, "boundedness": 0.85, "sociality": 0.35
+      "animacy": 0.35,
+      "agency": 0.55,
+      "concreteness": 0.92,
+      "valence": 0.58,
+      "intensity": 0.35,
+      "temporality": 0.1,
+      "boundedness": 0.85,
+      "sociality": 0.3
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -718,8 +1029,14 @@
     "lemma": "목소리",
     "gloss_en": "voice",
     "features": {
-      "animacy": 0.30, "agency": 0.35, "concreteness": 0.55, "valence": 0.58,
-      "intensity": 0.45, "temporality": 0.20, "boundedness": 0.40, "sociality": 0.60
+      "animacy": 0.3,
+      "agency": 0.35,
+      "concreteness": 0.55,
+      "valence": 0.58,
+      "intensity": 0.45,
+      "temporality": 0.2,
+      "boundedness": 0.4,
+      "sociality": 0.6
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -731,8 +1048,14 @@
     "lemma": "이름",
     "gloss_en": "name",
     "features": {
-      "animacy": 0.15, "agency": 0.10, "concreteness": 0.30, "valence": 0.60,
-      "intensity": 0.35, "temporality": 0.10, "boundedness": 0.75, "sociality": 0.55
+      "animacy": 0.15,
+      "agency": 0.1,
+      "concreteness": 0.3,
+      "valence": 0.6,
+      "intensity": 0.35,
+      "temporality": 0.1,
+      "boundedness": 0.75,
+      "sociality": 0.55
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -744,8 +1067,14 @@
     "lemma": "노래",
     "gloss_en": "song",
     "features": {
-      "animacy": 0.10, "agency": 0.25, "concreteness": 0.35, "valence": 0.75,
-      "intensity": 0.55, "temporality": 0.30, "boundedness": 0.55, "sociality": 0.55
+      "animacy": 0.1,
+      "agency": 0.25,
+      "concreteness": 0.35,
+      "valence": 0.75,
+      "intensity": 0.55,
+      "temporality": 0.3,
+      "boundedness": 0.55,
+      "sociality": 0.55
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -757,8 +1086,14 @@
     "lemma": "이야기",
     "gloss_en": "story",
     "features": {
-      "animacy": 0.10, "agency": 0.20, "concreteness": 0.20, "valence": 0.60,
-      "intensity": 0.45, "temporality": 0.35, "boundedness": 0.45, "sociality": 0.65
+      "animacy": 0.1,
+      "agency": 0.2,
+      "concreteness": 0.2,
+      "valence": 0.6,
+      "intensity": 0.45,
+      "temporality": 0.35,
+      "boundedness": 0.45,
+      "sociality": 0.65
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -770,8 +1105,14 @@
     "lemma": "웃음",
     "gloss_en": "laughter",
     "features": {
-      "animacy": 0.20, "agency": 0.30, "concreteness": 0.18, "valence": 0.92,
-      "intensity": 0.65, "temporality": 0.25, "boundedness": 0.25, "sociality": 0.60
+      "animacy": 0.2,
+      "agency": 0.3,
+      "concreteness": 0.18,
+      "valence": 0.92,
+      "intensity": 0.65,
+      "temporality": 0.25,
+      "boundedness": 0.25,
+      "sociality": 0.6
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -783,8 +1124,14 @@
     "lemma": "눈물",
     "gloss_en": "tears",
     "features": {
-      "animacy": 0.18, "agency": 0.15, "concreteness": 0.55, "valence": 0.20,
-      "intensity": 0.65, "temporality": 0.25, "boundedness": 0.30, "sociality": 0.35
+      "animacy": 0.18,
+      "agency": 0.15,
+      "concreteness": 0.55,
+      "valence": 0.2,
+      "intensity": 0.65,
+      "temporality": 0.25,
+      "boundedness": 0.3,
+      "sociality": 0.35
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -796,8 +1143,14 @@
     "lemma": "꿈",
     "gloss_en": "dream",
     "features": {
-      "animacy": 0.15, "agency": 0.30, "concreteness": 0.10, "valence": 0.68,
-      "intensity": 0.55, "temporality": 0.35, "boundedness": 0.20, "sociality": 0.20
+      "animacy": 0.15,
+      "agency": 0.3,
+      "concreteness": 0.1,
+      "valence": 0.68,
+      "intensity": 0.55,
+      "temporality": 0.35,
+      "boundedness": 0.2,
+      "sociality": 0.2
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -809,8 +1162,14 @@
     "lemma": "기억",
     "gloss_en": "memory",
     "features": {
-      "animacy": 0.10, "agency": 0.20, "concreteness": 0.10, "valence": 0.55,
-      "intensity": 0.50, "temporality": 0.75, "boundedness": 0.25, "sociality": 0.30
+      "animacy": 0.1,
+      "agency": 0.2,
+      "concreteness": 0.1,
+      "valence": 0.55,
+      "intensity": 0.5,
+      "temporality": 0.75,
+      "boundedness": 0.25,
+      "sociality": 0.3
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -822,8 +1181,14 @@
     "lemma": "추억",
     "gloss_en": "reminiscence",
     "features": {
-      "animacy": 0.10, "agency": 0.15, "concreteness": 0.12, "valence": 0.72,
-      "intensity": 0.55, "temporality": 0.80, "boundedness": 0.22, "sociality": 0.45
+      "animacy": 0.1,
+      "agency": 0.15,
+      "concreteness": 0.12,
+      "valence": 0.72,
+      "intensity": 0.55,
+      "temporality": 0.8,
+      "boundedness": 0.22,
+      "sociality": 0.45
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -835,8 +1200,14 @@
     "lemma": "이별",
     "gloss_en": "parting",
     "features": {
-      "animacy": 0.12, "agency": 0.30, "concreteness": 0.12, "valence": 0.10,
-      "intensity": 0.80, "temporality": 0.55, "boundedness": 0.55, "sociality": 0.88
+      "animacy": 0.12,
+      "agency": 0.3,
+      "concreteness": 0.12,
+      "valence": 0.1,
+      "intensity": 0.8,
+      "temporality": 0.55,
+      "boundedness": 0.55,
+      "sociality": 0.88
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -848,8 +1219,14 @@
     "lemma": "만남",
     "gloss_en": "meeting",
     "features": {
-      "animacy": 0.14, "agency": 0.40, "concreteness": 0.15, "valence": 0.82,
-      "intensity": 0.65, "temporality": 0.55, "boundedness": 0.55, "sociality": 0.95
+      "animacy": 0.14,
+      "agency": 0.4,
+      "concreteness": 0.15,
+      "valence": 0.82,
+      "intensity": 0.65,
+      "temporality": 0.55,
+      "boundedness": 0.55,
+      "sociality": 0.95
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -861,8 +1238,14 @@
     "lemma": "인사",
     "gloss_en": "greeting",
     "features": {
-      "animacy": 0.15, "agency": 0.55, "concreteness": 0.18, "valence": 0.68,
-      "intensity": 0.35, "temporality": 0.30, "boundedness": 0.60, "sociality": 0.90
+      "animacy": 0.15,
+      "agency": 0.55,
+      "concreteness": 0.18,
+      "valence": 0.68,
+      "intensity": 0.35,
+      "temporality": 0.3,
+      "boundedness": 0.6,
+      "sociality": 0.9
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -874,8 +1257,14 @@
     "lemma": "편지",
     "gloss_en": "letter",
     "features": {
-      "animacy": 0.05, "agency": 0.10, "concreteness": 0.70, "valence": 0.68,
-      "intensity": 0.40, "temporality": 0.30, "boundedness": 0.75, "sociality": 0.75
+      "animacy": 0.05,
+      "agency": 0.1,
+      "concreteness": 0.7,
+      "valence": 0.68,
+      "intensity": 0.4,
+      "temporality": 0.3,
+      "boundedness": 0.75,
+      "sociality": 0.75
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -887,8 +1276,14 @@
     "lemma": "선물",
     "gloss_en": "gift",
     "features": {
-      "animacy": 0.05, "agency": 0.10, "concreteness": 0.75, "valence": 0.85,
-      "intensity": 0.50, "temporality": 0.25, "boundedness": 0.80, "sociality": 0.80
+      "animacy": 0.05,
+      "agency": 0.1,
+      "concreteness": 0.75,
+      "valence": 0.85,
+      "intensity": 0.5,
+      "temporality": 0.25,
+      "boundedness": 0.8,
+      "sociality": 0.8
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -900,8 +1295,14 @@
     "lemma": "생일",
     "gloss_en": "birthday",
     "features": {
-      "animacy": 0.05, "agency": 0.05, "concreteness": 0.25, "valence": 0.85,
-      "intensity": 0.55, "temporality": 0.80, "boundedness": 0.70, "sociality": 0.65
+      "animacy": 0.05,
+      "agency": 0.05,
+      "concreteness": 0.25,
+      "valence": 0.85,
+      "intensity": 0.55,
+      "temporality": 0.8,
+      "boundedness": 0.7,
+      "sociality": 0.65
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -913,8 +1314,14 @@
     "lemma": "계절",
     "gloss_en": "season",
     "features": {
-      "animacy": 0.03, "agency": 0.04, "concreteness": 0.30, "valence": 0.55,
-      "intensity": 0.30, "temporality": 0.85, "boundedness": 0.45, "sociality": 0.05
+      "animacy": 0.03,
+      "agency": 0.04,
+      "concreteness": 0.3,
+      "valence": 0.55,
+      "intensity": 0.3,
+      "temporality": 0.85,
+      "boundedness": 0.45,
+      "sociality": 0.05
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -926,8 +1333,14 @@
     "lemma": "봄",
     "gloss_en": "spring",
     "features": {
-      "animacy": 0.05, "agency": 0.06, "concreteness": 0.35, "valence": 0.82,
-      "intensity": 0.35, "temporality": 0.85, "boundedness": 0.50, "sociality": 0.08
+      "animacy": 0.05,
+      "agency": 0.06,
+      "concreteness": 0.35,
+      "valence": 0.82,
+      "intensity": 0.35,
+      "temporality": 0.85,
+      "boundedness": 0.5,
+      "sociality": 0.08
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -939,8 +1352,14 @@
     "lemma": "여름",
     "gloss_en": "summer",
     "features": {
-      "animacy": 0.05, "agency": 0.06, "concreteness": 0.35, "valence": 0.68,
-      "intensity": 0.55, "temporality": 0.85, "boundedness": 0.50, "sociality": 0.08
+      "animacy": 0.05,
+      "agency": 0.06,
+      "concreteness": 0.35,
+      "valence": 0.68,
+      "intensity": 0.55,
+      "temporality": 0.85,
+      "boundedness": 0.5,
+      "sociality": 0.08
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -952,8 +1371,14 @@
     "lemma": "가을",
     "gloss_en": "autumn",
     "features": {
-      "animacy": 0.05, "agency": 0.06, "concreteness": 0.35, "valence": 0.60,
-      "intensity": 0.40, "temporality": 0.85, "boundedness": 0.50, "sociality": 0.08
+      "animacy": 0.05,
+      "agency": 0.06,
+      "concreteness": 0.35,
+      "valence": 0.6,
+      "intensity": 0.4,
+      "temporality": 0.85,
+      "boundedness": 0.5,
+      "sociality": 0.08
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -965,8 +1390,14 @@
     "lemma": "겨울",
     "gloss_en": "winter",
     "features": {
-      "animacy": 0.05, "agency": 0.06, "concreteness": 0.35, "valence": 0.35,
-      "intensity": 0.45, "temporality": 0.85, "boundedness": 0.50, "sociality": 0.08
+      "animacy": 0.05,
+      "agency": 0.06,
+      "concreteness": 0.35,
+      "valence": 0.35,
+      "intensity": 0.45,
+      "temporality": 0.85,
+      "boundedness": 0.5,
+      "sociality": 0.08
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -978,8 +1409,14 @@
     "lemma": "하루",
     "gloss_en": "one-day",
     "features": {
-      "animacy": 0.04, "agency": 0.06, "concreteness": 0.25, "valence": 0.55,
-      "intensity": 0.30, "temporality": 0.95, "boundedness": 0.82, "sociality": 0.10
+      "animacy": 0.04,
+      "agency": 0.06,
+      "concreteness": 0.25,
+      "valence": 0.55,
+      "intensity": 0.3,
+      "temporality": 0.95,
+      "boundedness": 0.82,
+      "sociality": 0.1
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -991,8 +1428,14 @@
     "lemma": "평생",
     "gloss_en": "lifetime",
     "features": {
-      "animacy": 0.10, "agency": 0.10, "concreteness": 0.15, "valence": 0.60,
-      "intensity": 0.55, "temporality": 0.94, "boundedness": 0.40, "sociality": 0.20
+      "animacy": 0.1,
+      "agency": 0.1,
+      "concreteness": 0.15,
+      "valence": 0.6,
+      "intensity": 0.55,
+      "temporality": 0.94,
+      "boundedness": 0.4,
+      "sociality": 0.2
     },
     "defaultRole": "시간",
     "seedGlyph": null,
@@ -1004,8 +1447,14 @@
     "lemma": "가다",
     "gloss_en": "go",
     "features": {
-      "animacy": 0.30, "agency": 0.75, "concreteness": 0.20, "valence": 0.52,
-      "intensity": 0.45, "temporality": 0.55, "boundedness": 0.40, "sociality": 0.15
+      "animacy": 0.3,
+      "agency": 0.75,
+      "concreteness": 0.2,
+      "valence": 0.52,
+      "intensity": 0.45,
+      "temporality": 0.55,
+      "boundedness": 0.4,
+      "sociality": 0.15
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1017,8 +1466,14 @@
     "lemma": "오다",
     "gloss_en": "come",
     "features": {
-      "animacy": 0.30, "agency": 0.72, "concreteness": 0.20, "valence": 0.58,
-      "intensity": 0.45, "temporality": 0.55, "boundedness": 0.40, "sociality": 0.25
+      "animacy": 0.3,
+      "agency": 0.72,
+      "concreteness": 0.2,
+      "valence": 0.58,
+      "intensity": 0.45,
+      "temporality": 0.55,
+      "boundedness": 0.4,
+      "sociality": 0.25
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1030,8 +1485,14 @@
     "lemma": "보다",
     "gloss_en": "see",
     "features": {
-      "animacy": 0.30, "agency": 0.55, "concreteness": 0.18, "valence": 0.55,
-      "intensity": 0.35, "temporality": 0.30, "boundedness": 0.30, "sociality": 0.20
+      "animacy": 0.3,
+      "agency": 0.55,
+      "concreteness": 0.18,
+      "valence": 0.55,
+      "intensity": 0.35,
+      "temporality": 0.3,
+      "boundedness": 0.3,
+      "sociality": 0.2
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1043,8 +1504,14 @@
     "lemma": "듣다",
     "gloss_en": "hear",
     "features": {
-      "animacy": 0.30, "agency": 0.45, "concreteness": 0.16, "valence": 0.55,
-      "intensity": 0.35, "temporality": 0.30, "boundedness": 0.28, "sociality": 0.35
+      "animacy": 0.3,
+      "agency": 0.45,
+      "concreteness": 0.16,
+      "valence": 0.55,
+      "intensity": 0.35,
+      "temporality": 0.3,
+      "boundedness": 0.28,
+      "sociality": 0.35
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1056,8 +1523,14 @@
     "lemma": "말하다",
     "gloss_en": "speak",
     "features": {
-      "animacy": 0.30, "agency": 0.70, "concreteness": 0.15, "valence": 0.55,
-      "intensity": 0.45, "temporality": 0.35, "boundedness": 0.35, "sociality": 0.70
+      "animacy": 0.3,
+      "agency": 0.7,
+      "concreteness": 0.15,
+      "valence": 0.55,
+      "intensity": 0.45,
+      "temporality": 0.35,
+      "boundedness": 0.35,
+      "sociality": 0.7
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1069,8 +1542,14 @@
     "lemma": "웃다",
     "gloss_en": "laugh",
     "features": {
-      "animacy": 0.35, "agency": 0.55, "concreteness": 0.18, "valence": 0.90,
-      "intensity": 0.60, "temporality": 0.30, "boundedness": 0.30, "sociality": 0.55
+      "animacy": 0.35,
+      "agency": 0.55,
+      "concreteness": 0.18,
+      "valence": 0.9,
+      "intensity": 0.6,
+      "temporality": 0.3,
+      "boundedness": 0.3,
+      "sociality": 0.55
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1082,8 +1561,14 @@
     "lemma": "울다",
     "gloss_en": "cry",
     "features": {
-      "animacy": 0.35, "agency": 0.35, "concreteness": 0.20, "valence": 0.15,
-      "intensity": 0.65, "temporality": 0.30, "boundedness": 0.30, "sociality": 0.30
+      "animacy": 0.35,
+      "agency": 0.35,
+      "concreteness": 0.2,
+      "valence": 0.15,
+      "intensity": 0.65,
+      "temporality": 0.3,
+      "boundedness": 0.3,
+      "sociality": 0.3
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1095,8 +1580,14 @@
     "lemma": "자다",
     "gloss_en": "sleep",
     "features": {
-      "animacy": 0.35, "agency": 0.30, "concreteness": 0.22, "valence": 0.55,
-      "intensity": 0.25, "temporality": 0.60, "boundedness": 0.45, "sociality": 0.10
+      "animacy": 0.35,
+      "agency": 0.3,
+      "concreteness": 0.22,
+      "valence": 0.55,
+      "intensity": 0.25,
+      "temporality": 0.6,
+      "boundedness": 0.45,
+      "sociality": 0.1
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1108,8 +1599,14 @@
     "lemma": "먹다",
     "gloss_en": "eat",
     "features": {
-      "animacy": 0.35, "agency": 0.65, "concreteness": 0.45, "valence": 0.62,
-      "intensity": 0.35, "temporality": 0.35, "boundedness": 0.45, "sociality": 0.20
+      "animacy": 0.35,
+      "agency": 0.65,
+      "concreteness": 0.45,
+      "valence": 0.62,
+      "intensity": 0.35,
+      "temporality": 0.35,
+      "boundedness": 0.45,
+      "sociality": 0.2
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1121,8 +1618,14 @@
     "lemma": "걷다",
     "gloss_en": "walk",
     "features": {
-      "animacy": 0.35, "agency": 0.68, "concreteness": 0.35, "valence": 0.55,
-      "intensity": 0.30, "temporality": 0.35, "boundedness": 0.35, "sociality": 0.12
+      "animacy": 0.35,
+      "agency": 0.68,
+      "concreteness": 0.35,
+      "valence": 0.55,
+      "intensity": 0.3,
+      "temporality": 0.35,
+      "boundedness": 0.35,
+      "sociality": 0.12
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1134,8 +1637,14 @@
     "lemma": "뛰다",
     "gloss_en": "run",
     "features": {
-      "animacy": 0.35, "agency": 0.75, "concreteness": 0.35, "valence": 0.58,
-      "intensity": 0.60, "temporality": 0.35, "boundedness": 0.35, "sociality": 0.10
+      "animacy": 0.35,
+      "agency": 0.75,
+      "concreteness": 0.35,
+      "valence": 0.58,
+      "intensity": 0.6,
+      "temporality": 0.35,
+      "boundedness": 0.35,
+      "sociality": 0.1
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1147,8 +1656,14 @@
     "lemma": "만나다",
     "gloss_en": "meet",
     "features": {
-      "animacy": 0.35, "agency": 0.60, "concreteness": 0.18, "valence": 0.78,
-      "intensity": 0.55, "temporality": 0.45, "boundedness": 0.50, "sociality": 0.92
+      "animacy": 0.35,
+      "agency": 0.6,
+      "concreteness": 0.18,
+      "valence": 0.78,
+      "intensity": 0.55,
+      "temporality": 0.45,
+      "boundedness": 0.5,
+      "sociality": 0.92
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1160,8 +1675,14 @@
     "lemma": "헤어지다",
     "gloss_en": "separate",
     "features": {
-      "animacy": 0.30, "agency": 0.40, "concreteness": 0.15, "valence": 0.15,
-      "intensity": 0.75, "temporality": 0.50, "boundedness": 0.55, "sociality": 0.90
+      "animacy": 0.3,
+      "agency": 0.4,
+      "concreteness": 0.15,
+      "valence": 0.15,
+      "intensity": 0.75,
+      "temporality": 0.5,
+      "boundedness": 0.55,
+      "sociality": 0.9
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1173,8 +1694,14 @@
     "lemma": "기억하다",
     "gloss_en": "remember",
     "features": {
-      "animacy": 0.25, "agency": 0.45, "concreteness": 0.10, "valence": 0.60,
-      "intensity": 0.45, "temporality": 0.75, "boundedness": 0.25, "sociality": 0.30
+      "animacy": 0.25,
+      "agency": 0.45,
+      "concreteness": 0.1,
+      "valence": 0.6,
+      "intensity": 0.45,
+      "temporality": 0.75,
+      "boundedness": 0.25,
+      "sociality": 0.3
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1186,8 +1713,14 @@
     "lemma": "잊다",
     "gloss_en": "forget",
     "features": {
-      "animacy": 0.25, "agency": 0.35, "concreteness": 0.10, "valence": 0.30,
-      "intensity": 0.45, "temporality": 0.70, "boundedness": 0.30, "sociality": 0.25
+      "animacy": 0.25,
+      "agency": 0.35,
+      "concreteness": 0.1,
+      "valence": 0.3,
+      "intensity": 0.45,
+      "temporality": 0.7,
+      "boundedness": 0.3,
+      "sociality": 0.25
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1199,8 +1732,14 @@
     "lemma": "믿다",
     "gloss_en": "trust",
     "features": {
-      "animacy": 0.25, "agency": 0.50, "concreteness": 0.08, "valence": 0.72,
-      "intensity": 0.55, "temporality": 0.25, "boundedness": 0.25, "sociality": 0.70
+      "animacy": 0.25,
+      "agency": 0.5,
+      "concreteness": 0.08,
+      "valence": 0.72,
+      "intensity": 0.55,
+      "temporality": 0.25,
+      "boundedness": 0.25,
+      "sociality": 0.7
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1212,8 +1751,14 @@
     "lemma": "바라다",
     "gloss_en": "wish",
     "features": {
-      "animacy": 0.25, "agency": 0.35, "concreteness": 0.08, "valence": 0.68,
-      "intensity": 0.55, "temporality": 0.40, "boundedness": 0.18, "sociality": 0.35
+      "animacy": 0.25,
+      "agency": 0.35,
+      "concreteness": 0.08,
+      "valence": 0.68,
+      "intensity": 0.55,
+      "temporality": 0.4,
+      "boundedness": 0.18,
+      "sociality": 0.35
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1225,8 +1770,14 @@
     "lemma": "원하다",
     "gloss_en": "want",
     "features": {
-      "animacy": 0.25, "agency": 0.55, "concreteness": 0.10, "valence": 0.60,
-      "intensity": 0.60, "temporality": 0.30, "boundedness": 0.20, "sociality": 0.25
+      "animacy": 0.25,
+      "agency": 0.55,
+      "concreteness": 0.1,
+      "valence": 0.6,
+      "intensity": 0.6,
+      "temporality": 0.3,
+      "boundedness": 0.2,
+      "sociality": 0.25
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1238,8 +1789,14 @@
     "lemma": "주다",
     "gloss_en": "give",
     "features": {
-      "animacy": 0.30, "agency": 0.70, "concreteness": 0.35, "valence": 0.72,
-      "intensity": 0.45, "temporality": 0.30, "boundedness": 0.55, "sociality": 0.80
+      "animacy": 0.3,
+      "agency": 0.7,
+      "concreteness": 0.35,
+      "valence": 0.72,
+      "intensity": 0.45,
+      "temporality": 0.3,
+      "boundedness": 0.55,
+      "sociality": 0.8
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1251,8 +1808,14 @@
     "lemma": "받다",
     "gloss_en": "receive",
     "features": {
-      "animacy": 0.30, "agency": 0.40, "concreteness": 0.35, "valence": 0.68,
-      "intensity": 0.40, "temporality": 0.30, "boundedness": 0.55, "sociality": 0.75
+      "animacy": 0.3,
+      "agency": 0.4,
+      "concreteness": 0.35,
+      "valence": 0.68,
+      "intensity": 0.4,
+      "temporality": 0.3,
+      "boundedness": 0.55,
+      "sociality": 0.75
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1264,8 +1827,14 @@
     "lemma": "안다",
     "gloss_en": "embrace",
     "features": {
-      "animacy": 0.35, "agency": 0.60, "concreteness": 0.40, "valence": 0.85,
-      "intensity": 0.60, "temporality": 0.20, "boundedness": 0.45, "sociality": 0.92
+      "animacy": 0.35,
+      "agency": 0.6,
+      "concreteness": 0.4,
+      "valence": 0.85,
+      "intensity": 0.6,
+      "temporality": 0.2,
+      "boundedness": 0.45,
+      "sociality": 0.92
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1277,8 +1846,14 @@
     "lemma": "잡다",
     "gloss_en": "grab",
     "features": {
-      "animacy": 0.30, "agency": 0.65, "concreteness": 0.45, "valence": 0.52,
-      "intensity": 0.50, "temporality": 0.15, "boundedness": 0.55, "sociality": 0.15
+      "animacy": 0.3,
+      "agency": 0.65,
+      "concreteness": 0.45,
+      "valence": 0.52,
+      "intensity": 0.5,
+      "temporality": 0.15,
+      "boundedness": 0.55,
+      "sociality": 0.15
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1290,8 +1865,14 @@
     "lemma": "놓다",
     "gloss_en": "release",
     "features": {
-      "animacy": 0.25, "agency": 0.55, "concreteness": 0.40, "valence": 0.45,
-      "intensity": 0.40, "temporality": 0.15, "boundedness": 0.50, "sociality": 0.10
+      "animacy": 0.25,
+      "agency": 0.55,
+      "concreteness": 0.4,
+      "valence": 0.45,
+      "intensity": 0.4,
+      "temporality": 0.15,
+      "boundedness": 0.5,
+      "sociality": 0.1
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1303,8 +1884,14 @@
     "lemma": "열다",
     "gloss_en": "open",
     "features": {
-      "animacy": 0.20, "agency": 0.60, "concreteness": 0.45, "valence": 0.55,
-      "intensity": 0.35, "temporality": 0.15, "boundedness": 0.60, "sociality": 0.08
+      "animacy": 0.2,
+      "agency": 0.6,
+      "concreteness": 0.45,
+      "valence": 0.55,
+      "intensity": 0.35,
+      "temporality": 0.15,
+      "boundedness": 0.6,
+      "sociality": 0.08
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1316,8 +1903,14 @@
     "lemma": "닫다",
     "gloss_en": "close",
     "features": {
-      "animacy": 0.20, "agency": 0.58, "concreteness": 0.45, "valence": 0.42,
-      "intensity": 0.35, "temporality": 0.15, "boundedness": 0.60, "sociality": 0.06
+      "animacy": 0.2,
+      "agency": 0.58,
+      "concreteness": 0.45,
+      "valence": 0.42,
+      "intensity": 0.35,
+      "temporality": 0.15,
+      "boundedness": 0.6,
+      "sociality": 0.06
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1329,8 +1922,14 @@
     "lemma": "시작하다",
     "gloss_en": "begin",
     "features": {
-      "animacy": 0.20, "agency": 0.60, "concreteness": 0.15, "valence": 0.65,
-      "intensity": 0.50, "temporality": 0.85, "boundedness": 0.65, "sociality": 0.15
+      "animacy": 0.2,
+      "agency": 0.6,
+      "concreteness": 0.15,
+      "valence": 0.65,
+      "intensity": 0.5,
+      "temporality": 0.85,
+      "boundedness": 0.65,
+      "sociality": 0.15
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1342,8 +1941,14 @@
     "lemma": "끝나다",
     "gloss_en": "end",
     "features": {
-      "animacy": 0.15, "agency": 0.25, "concreteness": 0.15, "valence": 0.35,
-      "intensity": 0.50, "temporality": 0.85, "boundedness": 0.68, "sociality": 0.12
+      "animacy": 0.15,
+      "agency": 0.25,
+      "concreteness": 0.15,
+      "valence": 0.35,
+      "intensity": 0.5,
+      "temporality": 0.85,
+      "boundedness": 0.68,
+      "sociality": 0.12
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1355,8 +1960,14 @@
     "lemma": "살다",
     "gloss_en": "live",
     "features": {
-      "animacy": 0.40, "agency": 0.55, "concreteness": 0.25, "valence": 0.68,
-      "intensity": 0.40, "temporality": 0.65, "boundedness": 0.35, "sociality": 0.25
+      "animacy": 0.4,
+      "agency": 0.55,
+      "concreteness": 0.25,
+      "valence": 0.68,
+      "intensity": 0.4,
+      "temporality": 0.65,
+      "boundedness": 0.35,
+      "sociality": 0.25
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1368,8 +1979,14 @@
     "lemma": "죽다",
     "gloss_en": "die",
     "features": {
-      "animacy": 0.40, "agency": 0.10, "concreteness": 0.28, "valence": 0.04,
-      "intensity": 0.85, "temporality": 0.60, "boundedness": 0.75, "sociality": 0.30
+      "animacy": 0.4,
+      "agency": 0.1,
+      "concreteness": 0.28,
+      "valence": 0.04,
+      "intensity": 0.85,
+      "temporality": 0.6,
+      "boundedness": 0.75,
+      "sociality": 0.3
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1381,8 +1998,14 @@
     "lemma": "태어나다",
     "gloss_en": "born",
     "features": {
-      "animacy": 0.45, "agency": 0.06, "concreteness": 0.30, "valence": 0.85,
-      "intensity": 0.65, "temporality": 0.65, "boundedness": 0.78, "sociality": 0.40
+      "animacy": 0.45,
+      "agency": 0.06,
+      "concreteness": 0.3,
+      "valence": 0.85,
+      "intensity": 0.65,
+      "temporality": 0.65,
+      "boundedness": 0.78,
+      "sociality": 0.4
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -1394,8 +2017,14 @@
     "lemma": "아주",
     "gloss_en": "very",
     "features": {
-      "animacy": 0.02, "agency": 0.02, "concreteness": 0.05, "valence": 0.50,
-      "intensity": 0.90, "temporality": 0.10, "boundedness": 0.10, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.02,
+      "concreteness": 0.05,
+      "valence": 0.5,
+      "intensity": 0.9,
+      "temporality": 0.1,
+      "boundedness": 0.1,
+      "sociality": 0.05
     },
     "defaultRole": "정도",
     "seedGlyph": null,
@@ -1407,8 +2036,14 @@
     "lemma": "매우",
     "gloss_en": "extremely",
     "features": {
-      "animacy": 0.02, "agency": 0.02, "concreteness": 0.05, "valence": 0.50,
-      "intensity": 0.94, "temporality": 0.12, "boundedness": 0.10, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.02,
+      "concreteness": 0.05,
+      "valence": 0.5,
+      "intensity": 0.94,
+      "temporality": 0.12,
+      "boundedness": 0.1,
+      "sociality": 0.05
     },
     "defaultRole": "정도",
     "seedGlyph": null,
@@ -1420,8 +2055,14 @@
     "lemma": "조금",
     "gloss_en": "little",
     "features": {
-      "animacy": 0.02, "agency": 0.02, "concreteness": 0.05, "valence": 0.50,
-      "intensity": 0.15, "temporality": 0.10, "boundedness": 0.15, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.02,
+      "concreteness": 0.05,
+      "valence": 0.5,
+      "intensity": 0.15,
+      "temporality": 0.1,
+      "boundedness": 0.15,
+      "sociality": 0.05
     },
     "defaultRole": "정도",
     "seedGlyph": null,
@@ -1433,8 +2074,14 @@
     "lemma": "많이",
     "gloss_en": "much",
     "features": {
-      "animacy": 0.02, "agency": 0.02, "concreteness": 0.05, "valence": 0.55,
-      "intensity": 0.75, "temporality": 0.10, "boundedness": 0.20, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.02,
+      "concreteness": 0.05,
+      "valence": 0.55,
+      "intensity": 0.75,
+      "temporality": 0.1,
+      "boundedness": 0.2,
+      "sociality": 0.05
     },
     "defaultRole": "정도",
     "seedGlyph": null,
@@ -1446,8 +2093,14 @@
     "lemma": "천천히",
     "gloss_en": "slowly",
     "features": {
-      "animacy": 0.02, "agency": 0.10, "concreteness": 0.08, "valence": 0.55,
-      "intensity": 0.30, "temporality": 0.65, "boundedness": 0.15, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.1,
+      "concreteness": 0.08,
+      "valence": 0.55,
+      "intensity": 0.3,
+      "temporality": 0.65,
+      "boundedness": 0.15,
+      "sociality": 0.05
     },
     "defaultRole": "행위수식",
     "seedGlyph": null,
@@ -1459,8 +2112,14 @@
     "lemma": "빨리",
     "gloss_en": "quickly",
     "features": {
-      "animacy": 0.02, "agency": 0.15, "concreteness": 0.08, "valence": 0.55,
-      "intensity": 0.65, "temporality": 0.65, "boundedness": 0.15, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.15,
+      "concreteness": 0.08,
+      "valence": 0.55,
+      "intensity": 0.65,
+      "temporality": 0.65,
+      "boundedness": 0.15,
+      "sociality": 0.05
     },
     "defaultRole": "행위수식",
     "seedGlyph": null,
@@ -1472,8 +2131,14 @@
     "lemma": "함께",
     "gloss_en": "together",
     "features": {
-      "animacy": 0.05, "agency": 0.10, "concreteness": 0.05, "valence": 0.75,
-      "intensity": 0.45, "temporality": 0.20, "boundedness": 0.15, "sociality": 0.92
+      "animacy": 0.05,
+      "agency": 0.1,
+      "concreteness": 0.05,
+      "valence": 0.75,
+      "intensity": 0.45,
+      "temporality": 0.2,
+      "boundedness": 0.15,
+      "sociality": 0.92
     },
     "defaultRole": "행위수식",
     "seedGlyph": null,
@@ -1485,8 +2150,14 @@
     "lemma": "혼자",
     "gloss_en": "alone",
     "features": {
-      "animacy": 0.05, "agency": 0.15, "concreteness": 0.05, "valence": 0.35,
-      "intensity": 0.40, "temporality": 0.20, "boundedness": 0.20, "sociality": 0.03
+      "animacy": 0.05,
+      "agency": 0.15,
+      "concreteness": 0.05,
+      "valence": 0.35,
+      "intensity": 0.4,
+      "temporality": 0.2,
+      "boundedness": 0.2,
+      "sociality": 0.03
     },
     "defaultRole": "행위수식",
     "seedGlyph": null,
@@ -1498,8 +2169,14 @@
     "lemma": "다시",
     "gloss_en": "again",
     "features": {
-      "animacy": 0.02, "agency": 0.05, "concreteness": 0.04, "valence": 0.52,
-      "intensity": 0.35, "temporality": 0.88, "boundedness": 0.25, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.05,
+      "concreteness": 0.04,
+      "valence": 0.52,
+      "intensity": 0.35,
+      "temporality": 0.88,
+      "boundedness": 0.25,
+      "sociality": 0.05
     },
     "defaultRole": "시간수식",
     "seedGlyph": null,
@@ -1511,8 +2188,14 @@
     "lemma": "아직",
     "gloss_en": "not-yet",
     "features": {
-      "animacy": 0.02, "agency": 0.03, "concreteness": 0.04, "valence": 0.45,
-      "intensity": 0.35, "temporality": 0.90, "boundedness": 0.15, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.03,
+      "concreteness": 0.04,
+      "valence": 0.45,
+      "intensity": 0.35,
+      "temporality": 0.9,
+      "boundedness": 0.15,
+      "sociality": 0.05
     },
     "defaultRole": "시간수식",
     "seedGlyph": null,
@@ -1524,8 +2207,14 @@
     "lemma": "이미",
     "gloss_en": "already",
     "features": {
-      "animacy": 0.02, "agency": 0.03, "concreteness": 0.04, "valence": 0.50,
-      "intensity": 0.35, "temporality": 0.92, "boundedness": 0.30, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.03,
+      "concreteness": 0.04,
+      "valence": 0.5,
+      "intensity": 0.35,
+      "temporality": 0.92,
+      "boundedness": 0.3,
+      "sociality": 0.05
     },
     "defaultRole": "시간수식",
     "seedGlyph": null,
@@ -1537,8 +2226,14 @@
     "lemma": "항상",
     "gloss_en": "always",
     "features": {
-      "animacy": 0.02, "agency": 0.03, "concreteness": 0.04, "valence": 0.55,
-      "intensity": 0.45, "temporality": 0.95, "boundedness": 0.10, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.03,
+      "concreteness": 0.04,
+      "valence": 0.55,
+      "intensity": 0.45,
+      "temporality": 0.95,
+      "boundedness": 0.1,
+      "sociality": 0.05
     },
     "defaultRole": "시간수식",
     "seedGlyph": null,
@@ -1550,8 +2245,14 @@
     "lemma": "가끔",
     "gloss_en": "sometimes",
     "features": {
-      "animacy": 0.02, "agency": 0.03, "concreteness": 0.04, "valence": 0.50,
-      "intensity": 0.30, "temporality": 0.85, "boundedness": 0.35, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.03,
+      "concreteness": 0.04,
+      "valence": 0.5,
+      "intensity": 0.3,
+      "temporality": 0.85,
+      "boundedness": 0.35,
+      "sociality": 0.05
     },
     "defaultRole": "시간수식",
     "seedGlyph": null,
@@ -1563,8 +2264,14 @@
     "lemma": "영원히",
     "gloss_en": "eternally",
     "features": {
-      "animacy": 0.04, "agency": 0.06, "concreteness": 0.06, "valence": 0.62,
-      "intensity": 0.78, "temporality": 0.97, "boundedness": 0.04, "sociality": 0.12
+      "animacy": 0.04,
+      "agency": 0.06,
+      "concreteness": 0.06,
+      "valence": 0.62,
+      "intensity": 0.78,
+      "temporality": 0.97,
+      "boundedness": 0.04,
+      "sociality": 0.12
     },
     "defaultRole": "시간수식",
     "seedGlyph": null,
@@ -1576,8 +2283,14 @@
     "lemma": "잠깐",
     "gloss_en": "briefly",
     "features": {
-      "animacy": 0.02, "agency": 0.05, "concreteness": 0.06, "valence": 0.52,
-      "intensity": 0.35, "temporality": 0.75, "boundedness": 0.60, "sociality": 0.05
+      "animacy": 0.02,
+      "agency": 0.05,
+      "concreteness": 0.06,
+      "valence": 0.52,
+      "intensity": 0.35,
+      "temporality": 0.75,
+      "boundedness": 0.6,
+      "sociality": 0.05
     },
     "defaultRole": "시간수식",
     "seedGlyph": null,
@@ -1589,8 +2302,14 @@
     "lemma": "엄마",
     "gloss_en": "mom",
     "features": {
-      "animacy": 0.92, "agency": 0.65, "concreteness": 0.85, "valence": 0.85,
-      "intensity": 0.55, "temporality": 0.15, "boundedness": 0.92, "sociality": 0.70
+      "animacy": 0.92,
+      "agency": 0.65,
+      "concreteness": 0.85,
+      "valence": 0.85,
+      "intensity": 0.55,
+      "temporality": 0.15,
+      "boundedness": 0.92,
+      "sociality": 0.7
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -1602,8 +2321,14 @@
     "lemma": "아빠",
     "gloss_en": "dad",
     "features": {
-      "animacy": 0.92, "agency": 0.65, "concreteness": 0.85, "valence": 0.80,
-      "intensity": 0.50, "temporality": 0.15, "boundedness": 0.92, "sociality": 0.68
+      "animacy": 0.92,
+      "agency": 0.65,
+      "concreteness": 0.85,
+      "valence": 0.8,
+      "intensity": 0.5,
+      "temporality": 0.15,
+      "boundedness": 0.92,
+      "sociality": 0.68
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -1615,8 +2340,14 @@
     "lemma": "가족",
     "gloss_en": "family",
     "features": {
-      "animacy": 0.75, "agency": 0.45, "concreteness": 0.55, "valence": 0.82,
-      "intensity": 0.50, "temporality": 0.20, "boundedness": 0.60, "sociality": 0.95
+      "animacy": 0.75,
+      "agency": 0.45,
+      "concreteness": 0.55,
+      "valence": 0.82,
+      "intensity": 0.5,
+      "temporality": 0.2,
+      "boundedness": 0.6,
+      "sociality": 0.95
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -1628,8 +2359,14 @@
     "lemma": "친구",
     "gloss_en": "friend",
     "features": {
-      "animacy": 0.90, "agency": 0.60, "concreteness": 0.80, "valence": 0.80,
-      "intensity": 0.45, "temporality": 0.15, "boundedness": 0.88, "sociality": 0.85
+      "animacy": 0.9,
+      "agency": 0.6,
+      "concreteness": 0.8,
+      "valence": 0.8,
+      "intensity": 0.45,
+      "temporality": 0.15,
+      "boundedness": 0.88,
+      "sociality": 0.85
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -1641,8 +2378,14 @@
     "lemma": "당신",
     "gloss_en": "dear",
     "features": {
-      "animacy": 0.93, "agency": 0.80, "concreteness": 0.75, "valence": 0.58,
-      "intensity": 0.40, "temporality": 0.18, "boundedness": 0.90, "sociality": 0.55
+      "animacy": 0.93,
+      "agency": 0.8,
+      "concreteness": 0.75,
+      "valence": 0.58,
+      "intensity": 0.4,
+      "temporality": 0.18,
+      "boundedness": 0.9,
+      "sociality": 0.55
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -1654,8 +2397,14 @@
     "lemma": "그대",
     "gloss_en": "thou",
     "features": {
-      "animacy": 0.93, "agency": 0.78, "concreteness": 0.70, "valence": 0.72,
-      "intensity": 0.55, "temporality": 0.20, "boundedness": 0.88, "sociality": 0.60
+      "animacy": 0.93,
+      "agency": 0.78,
+      "concreteness": 0.7,
+      "valence": 0.72,
+      "intensity": 0.55,
+      "temporality": 0.2,
+      "boundedness": 0.88,
+      "sociality": 0.6
     },
     "defaultRole": "대상",
     "seedGlyph": null,
@@ -1667,8 +2416,14 @@
     "lemma": "서로",
     "gloss_en": "mutually",
     "features": {
-      "animacy": 0.10, "agency": 0.15, "concreteness": 0.05, "valence": 0.65,
-      "intensity": 0.45, "temporality": 0.15, "boundedness": 0.10, "sociality": 0.97
+      "animacy": 0.1,
+      "agency": 0.15,
+      "concreteness": 0.05,
+      "valence": 0.65,
+      "intensity": 0.45,
+      "temporality": 0.15,
+      "boundedness": 0.1,
+      "sociality": 0.97
     },
     "defaultRole": "행위수식",
     "seedGlyph": null,
