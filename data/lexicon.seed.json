@@ -349,5 +349,1331 @@
     "status": "confirmed",
     "source": "seed",
     "addedAt": "2026-09-11"
+  },
+  "마음": {
+    "lemma": "마음",
+    "gloss_en": "heart",
+    "features": {
+      "animacy": 0.15, "agency": 0.20, "concreteness": 0.10, "valence": 0.60,
+      "intensity": 0.55, "temporality": 0.20, "boundedness": 0.15, "sociality": 0.35
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "생각": {
+    "lemma": "생각",
+    "gloss_en": "thought",
+    "features": {
+      "animacy": 0.08, "agency": 0.35, "concreteness": 0.08, "valence": 0.52,
+      "intensity": 0.40, "temporality": 0.25, "boundedness": 0.20, "sociality": 0.20
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "말": {
+    "lemma": "말",
+    "gloss_en": "speech",
+    "features": {
+      "animacy": 0.06, "agency": 0.30, "concreteness": 0.15, "valence": 0.52,
+      "intensity": 0.45, "temporality": 0.30, "boundedness": 0.35, "sociality": 0.75
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "사람": {
+    "lemma": "사람",
+    "gloss_en": "person",
+    "features": {
+      "animacy": 0.90, "agency": 0.70, "concreteness": 0.85, "valence": 0.55,
+      "intensity": 0.35, "temporality": 0.15, "boundedness": 0.90, "sociality": 0.45
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "사랑하는사람": {
+    "lemma": "사랑하는사람",
+    "gloss_en": "beloved",
+    "features": {
+      "animacy": 0.90, "agency": 0.65, "concreteness": 0.80, "valence": 0.90,
+      "intensity": 0.75, "temporality": 0.20, "boundedness": 0.88, "sociality": 0.92
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "집": {
+    "lemma": "집",
+    "gloss_en": "house",
+    "features": {
+      "animacy": 0.02, "agency": 0.02, "concreteness": 0.90, "valence": 0.68,
+      "intensity": 0.30, "temporality": 0.10, "boundedness": 0.85, "sociality": 0.45
+    },
+    "defaultRole": "장소",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "길": {
+    "lemma": "길",
+    "gloss_en": "road",
+    "features": {
+      "animacy": 0.02, "agency": 0.04, "concreteness": 0.78, "valence": 0.52,
+      "intensity": 0.30, "temporality": 0.12, "boundedness": 0.40, "sociality": 0.15
+    },
+    "defaultRole": "장소",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "밤": {
+    "lemma": "밤",
+    "gloss_en": "night",
+    "features": {
+      "animacy": 0.03, "agency": 0.05, "concreteness": 0.30, "valence": 0.42,
+      "intensity": 0.45, "temporality": 0.90, "boundedness": 0.55, "sociality": 0.10
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "아침": {
+    "lemma": "아침",
+    "gloss_en": "morning",
+    "features": {
+      "animacy": 0.03, "agency": 0.05, "concreteness": 0.30, "valence": 0.65,
+      "intensity": 0.35, "temporality": 0.90, "boundedness": 0.55, "sociality": 0.12
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "저녁": {
+    "lemma": "저녁",
+    "gloss_en": "evening",
+    "features": {
+      "animacy": 0.03, "agency": 0.05, "concreteness": 0.30, "valence": 0.58,
+      "intensity": 0.38, "temporality": 0.90, "boundedness": 0.55, "sociality": 0.18
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "낮": {
+    "lemma": "낮",
+    "gloss_en": "daytime",
+    "features": {
+      "animacy": 0.03, "agency": 0.05, "concreteness": 0.30, "valence": 0.62,
+      "intensity": 0.30, "temporality": 0.88, "boundedness": 0.52, "sociality": 0.14
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "바다": {
+    "lemma": "바다",
+    "gloss_en": "sea",
+    "features": {
+      "animacy": 0.08, "agency": 0.15, "concreteness": 0.85, "valence": 0.70,
+      "intensity": 0.55, "temporality": 0.10, "boundedness": 0.20, "sociality": 0.10
+    },
+    "defaultRole": "장소",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "산": {
+    "lemma": "산",
+    "gloss_en": "mountain",
+    "features": {
+      "animacy": 0.04, "agency": 0.05, "concreteness": 0.88, "valence": 0.62,
+      "intensity": 0.45, "temporality": 0.05, "boundedness": 0.65, "sociality": 0.08
+    },
+    "defaultRole": "장소",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "강": {
+    "lemma": "강",
+    "gloss_en": "river",
+    "features": {
+      "animacy": 0.10, "agency": 0.25, "concreteness": 0.82, "valence": 0.60,
+      "intensity": 0.40, "temporality": 0.15, "boundedness": 0.30, "sociality": 0.10
+    },
+    "defaultRole": "장소",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "바람": {
+    "lemma": "바람",
+    "gloss_en": "wind",
+    "features": {
+      "animacy": 0.12, "agency": 0.35, "concreteness": 0.60, "valence": 0.55,
+      "intensity": 0.55, "temporality": 0.20, "boundedness": 0.12, "sociality": 0.08
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "구름": {
+    "lemma": "구름",
+    "gloss_en": "cloud",
+    "features": {
+      "animacy": 0.05, "agency": 0.10, "concreteness": 0.65, "valence": 0.55,
+      "intensity": 0.30, "temporality": 0.15, "boundedness": 0.25, "sociality": 0.05
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "비": {
+    "lemma": "비",
+    "gloss_en": "rain",
+    "features": {
+      "animacy": 0.04, "agency": 0.15, "concreteness": 0.70, "valence": 0.42,
+      "intensity": 0.55, "temporality": 0.25, "boundedness": 0.10, "sociality": 0.06
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "눈": {
+    "lemma": "눈",
+    "gloss_en": "snow",
+    "features": {
+      "animacy": 0.04, "agency": 0.10, "concreteness": 0.72, "valence": 0.62,
+      "intensity": 0.45, "temporality": 0.22, "boundedness": 0.14, "sociality": 0.06
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "꽃": {
+    "lemma": "꽃",
+    "gloss_en": "flower",
+    "features": {
+      "animacy": 0.22, "agency": 0.08, "concreteness": 0.90, "valence": 0.88,
+      "intensity": 0.40, "temporality": 0.20, "boundedness": 0.85, "sociality": 0.15
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "나무": {
+    "lemma": "나무",
+    "gloss_en": "tree",
+    "features": {
+      "animacy": 0.25, "agency": 0.06, "concreteness": 0.90, "valence": 0.65,
+      "intensity": 0.25, "temporality": 0.08, "boundedness": 0.85, "sociality": 0.05
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "별": {
+    "lemma": "별",
+    "gloss_en": "star",
+    "features": {
+      "animacy": 0.06, "agency": 0.05, "concreteness": 0.55, "valence": 0.78,
+      "intensity": 0.50, "temporality": 0.10, "boundedness": 0.80, "sociality": 0.10
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "달": {
+    "lemma": "달",
+    "gloss_en": "moon",
+    "features": {
+      "animacy": 0.06, "agency": 0.06, "concreteness": 0.60, "valence": 0.68,
+      "intensity": 0.42, "temporality": 0.15, "boundedness": 0.75, "sociality": 0.12
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "해": {
+    "lemma": "해",
+    "gloss_en": "sun",
+    "features": {
+      "animacy": 0.06, "agency": 0.10, "concreteness": 0.62, "valence": 0.80,
+      "intensity": 0.55, "temporality": 0.15, "boundedness": 0.75, "sociality": 0.08
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "불": {
+    "lemma": "불",
+    "gloss_en": "fire",
+    "features": {
+      "animacy": 0.10, "agency": 0.45, "concreteness": 0.75, "valence": 0.40,
+      "intensity": 0.80, "temporality": 0.20, "boundedness": 0.18, "sociality": 0.06
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "돌": {
+    "lemma": "돌",
+    "gloss_en": "stone",
+    "features": {
+      "animacy": 0.02, "agency": 0.02, "concreteness": 0.92, "valence": 0.48,
+      "intensity": 0.15, "temporality": 0.03, "boundedness": 0.90, "sociality": 0.02
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "흙": {
+    "lemma": "흙",
+    "gloss_en": "soil",
+    "features": {
+      "animacy": 0.05, "agency": 0.03, "concreteness": 0.80, "valence": 0.48,
+      "intensity": 0.15, "temporality": 0.05, "boundedness": 0.10, "sociality": 0.03
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "손": {
+    "lemma": "손",
+    "gloss_en": "hand",
+    "features": {
+      "animacy": 0.35, "agency": 0.55, "concreteness": 0.92, "valence": 0.58,
+      "intensity": 0.35, "temporality": 0.10, "boundedness": 0.85, "sociality": 0.30
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "눈(眼)": {
+    "lemma": "눈(眼)",
+    "gloss_en": "eye",
+    "features": {
+      "animacy": 0.35, "agency": 0.30, "concreteness": 0.90, "valence": 0.55,
+      "intensity": 0.40, "temporality": 0.10, "boundedness": 0.85, "sociality": 0.35
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "목소리": {
+    "lemma": "목소리",
+    "gloss_en": "voice",
+    "features": {
+      "animacy": 0.30, "agency": 0.35, "concreteness": 0.55, "valence": 0.58,
+      "intensity": 0.45, "temporality": 0.20, "boundedness": 0.40, "sociality": 0.60
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "이름": {
+    "lemma": "이름",
+    "gloss_en": "name",
+    "features": {
+      "animacy": 0.15, "agency": 0.10, "concreteness": 0.30, "valence": 0.60,
+      "intensity": 0.35, "temporality": 0.10, "boundedness": 0.75, "sociality": 0.55
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "노래": {
+    "lemma": "노래",
+    "gloss_en": "song",
+    "features": {
+      "animacy": 0.10, "agency": 0.25, "concreteness": 0.35, "valence": 0.75,
+      "intensity": 0.55, "temporality": 0.30, "boundedness": 0.55, "sociality": 0.55
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "이야기": {
+    "lemma": "이야기",
+    "gloss_en": "story",
+    "features": {
+      "animacy": 0.10, "agency": 0.20, "concreteness": 0.20, "valence": 0.60,
+      "intensity": 0.45, "temporality": 0.35, "boundedness": 0.45, "sociality": 0.65
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "웃음": {
+    "lemma": "웃음",
+    "gloss_en": "laughter",
+    "features": {
+      "animacy": 0.20, "agency": 0.30, "concreteness": 0.18, "valence": 0.92,
+      "intensity": 0.65, "temporality": 0.25, "boundedness": 0.25, "sociality": 0.60
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "눈물": {
+    "lemma": "눈물",
+    "gloss_en": "tears",
+    "features": {
+      "animacy": 0.18, "agency": 0.15, "concreteness": 0.55, "valence": 0.20,
+      "intensity": 0.65, "temporality": 0.25, "boundedness": 0.30, "sociality": 0.35
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "꿈": {
+    "lemma": "꿈",
+    "gloss_en": "dream",
+    "features": {
+      "animacy": 0.15, "agency": 0.30, "concreteness": 0.10, "valence": 0.68,
+      "intensity": 0.55, "temporality": 0.35, "boundedness": 0.20, "sociality": 0.20
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "기억": {
+    "lemma": "기억",
+    "gloss_en": "memory",
+    "features": {
+      "animacy": 0.10, "agency": 0.20, "concreteness": 0.10, "valence": 0.55,
+      "intensity": 0.50, "temporality": 0.75, "boundedness": 0.25, "sociality": 0.30
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "추억": {
+    "lemma": "추억",
+    "gloss_en": "reminiscence",
+    "features": {
+      "animacy": 0.10, "agency": 0.15, "concreteness": 0.12, "valence": 0.72,
+      "intensity": 0.55, "temporality": 0.80, "boundedness": 0.22, "sociality": 0.45
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "이별": {
+    "lemma": "이별",
+    "gloss_en": "parting",
+    "features": {
+      "animacy": 0.12, "agency": 0.30, "concreteness": 0.12, "valence": 0.10,
+      "intensity": 0.80, "temporality": 0.55, "boundedness": 0.55, "sociality": 0.88
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "만남": {
+    "lemma": "만남",
+    "gloss_en": "meeting",
+    "features": {
+      "animacy": 0.14, "agency": 0.40, "concreteness": 0.15, "valence": 0.82,
+      "intensity": 0.65, "temporality": 0.55, "boundedness": 0.55, "sociality": 0.95
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "인사": {
+    "lemma": "인사",
+    "gloss_en": "greeting",
+    "features": {
+      "animacy": 0.15, "agency": 0.55, "concreteness": 0.18, "valence": 0.68,
+      "intensity": 0.35, "temporality": 0.30, "boundedness": 0.60, "sociality": 0.90
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "편지": {
+    "lemma": "편지",
+    "gloss_en": "letter",
+    "features": {
+      "animacy": 0.05, "agency": 0.10, "concreteness": 0.70, "valence": 0.68,
+      "intensity": 0.40, "temporality": 0.30, "boundedness": 0.75, "sociality": 0.75
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "선물": {
+    "lemma": "선물",
+    "gloss_en": "gift",
+    "features": {
+      "animacy": 0.05, "agency": 0.10, "concreteness": 0.75, "valence": 0.85,
+      "intensity": 0.50, "temporality": 0.25, "boundedness": 0.80, "sociality": 0.80
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "생일": {
+    "lemma": "생일",
+    "gloss_en": "birthday",
+    "features": {
+      "animacy": 0.05, "agency": 0.05, "concreteness": 0.25, "valence": 0.85,
+      "intensity": 0.55, "temporality": 0.80, "boundedness": 0.70, "sociality": 0.65
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "계절": {
+    "lemma": "계절",
+    "gloss_en": "season",
+    "features": {
+      "animacy": 0.03, "agency": 0.04, "concreteness": 0.30, "valence": 0.55,
+      "intensity": 0.30, "temporality": 0.85, "boundedness": 0.45, "sociality": 0.05
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "봄": {
+    "lemma": "봄",
+    "gloss_en": "spring",
+    "features": {
+      "animacy": 0.05, "agency": 0.06, "concreteness": 0.35, "valence": 0.82,
+      "intensity": 0.35, "temporality": 0.85, "boundedness": 0.50, "sociality": 0.08
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "여름": {
+    "lemma": "여름",
+    "gloss_en": "summer",
+    "features": {
+      "animacy": 0.05, "agency": 0.06, "concreteness": 0.35, "valence": 0.68,
+      "intensity": 0.55, "temporality": 0.85, "boundedness": 0.50, "sociality": 0.08
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "가을": {
+    "lemma": "가을",
+    "gloss_en": "autumn",
+    "features": {
+      "animacy": 0.05, "agency": 0.06, "concreteness": 0.35, "valence": 0.60,
+      "intensity": 0.40, "temporality": 0.85, "boundedness": 0.50, "sociality": 0.08
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "겨울": {
+    "lemma": "겨울",
+    "gloss_en": "winter",
+    "features": {
+      "animacy": 0.05, "agency": 0.06, "concreteness": 0.35, "valence": 0.35,
+      "intensity": 0.45, "temporality": 0.85, "boundedness": 0.50, "sociality": 0.08
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "하루": {
+    "lemma": "하루",
+    "gloss_en": "one-day",
+    "features": {
+      "animacy": 0.04, "agency": 0.06, "concreteness": 0.25, "valence": 0.55,
+      "intensity": 0.30, "temporality": 0.95, "boundedness": 0.82, "sociality": 0.10
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "평생": {
+    "lemma": "평생",
+    "gloss_en": "lifetime",
+    "features": {
+      "animacy": 0.10, "agency": 0.10, "concreteness": 0.15, "valence": 0.60,
+      "intensity": 0.55, "temporality": 0.94, "boundedness": 0.40, "sociality": 0.20
+    },
+    "defaultRole": "시간",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "가다": {
+    "lemma": "가다",
+    "gloss_en": "go",
+    "features": {
+      "animacy": 0.30, "agency": 0.75, "concreteness": 0.20, "valence": 0.52,
+      "intensity": 0.45, "temporality": 0.55, "boundedness": 0.40, "sociality": 0.15
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "오다": {
+    "lemma": "오다",
+    "gloss_en": "come",
+    "features": {
+      "animacy": 0.30, "agency": 0.72, "concreteness": 0.20, "valence": 0.58,
+      "intensity": 0.45, "temporality": 0.55, "boundedness": 0.40, "sociality": 0.25
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "보다": {
+    "lemma": "보다",
+    "gloss_en": "see",
+    "features": {
+      "animacy": 0.30, "agency": 0.55, "concreteness": 0.18, "valence": 0.55,
+      "intensity": 0.35, "temporality": 0.30, "boundedness": 0.30, "sociality": 0.20
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "듣다": {
+    "lemma": "듣다",
+    "gloss_en": "hear",
+    "features": {
+      "animacy": 0.30, "agency": 0.45, "concreteness": 0.16, "valence": 0.55,
+      "intensity": 0.35, "temporality": 0.30, "boundedness": 0.28, "sociality": 0.35
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "말하다": {
+    "lemma": "말하다",
+    "gloss_en": "speak",
+    "features": {
+      "animacy": 0.30, "agency": 0.70, "concreteness": 0.15, "valence": 0.55,
+      "intensity": 0.45, "temporality": 0.35, "boundedness": 0.35, "sociality": 0.70
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "웃다": {
+    "lemma": "웃다",
+    "gloss_en": "laugh",
+    "features": {
+      "animacy": 0.35, "agency": 0.55, "concreteness": 0.18, "valence": 0.90,
+      "intensity": 0.60, "temporality": 0.30, "boundedness": 0.30, "sociality": 0.55
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "울다": {
+    "lemma": "울다",
+    "gloss_en": "cry",
+    "features": {
+      "animacy": 0.35, "agency": 0.35, "concreteness": 0.20, "valence": 0.15,
+      "intensity": 0.65, "temporality": 0.30, "boundedness": 0.30, "sociality": 0.30
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "자다": {
+    "lemma": "자다",
+    "gloss_en": "sleep",
+    "features": {
+      "animacy": 0.35, "agency": 0.30, "concreteness": 0.22, "valence": 0.55,
+      "intensity": 0.25, "temporality": 0.60, "boundedness": 0.45, "sociality": 0.10
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "먹다": {
+    "lemma": "먹다",
+    "gloss_en": "eat",
+    "features": {
+      "animacy": 0.35, "agency": 0.65, "concreteness": 0.45, "valence": 0.62,
+      "intensity": 0.35, "temporality": 0.35, "boundedness": 0.45, "sociality": 0.20
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "걷다": {
+    "lemma": "걷다",
+    "gloss_en": "walk",
+    "features": {
+      "animacy": 0.35, "agency": 0.68, "concreteness": 0.35, "valence": 0.55,
+      "intensity": 0.30, "temporality": 0.35, "boundedness": 0.35, "sociality": 0.12
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "뛰다": {
+    "lemma": "뛰다",
+    "gloss_en": "run",
+    "features": {
+      "animacy": 0.35, "agency": 0.75, "concreteness": 0.35, "valence": 0.58,
+      "intensity": 0.60, "temporality": 0.35, "boundedness": 0.35, "sociality": 0.10
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "만나다": {
+    "lemma": "만나다",
+    "gloss_en": "meet",
+    "features": {
+      "animacy": 0.35, "agency": 0.60, "concreteness": 0.18, "valence": 0.78,
+      "intensity": 0.55, "temporality": 0.45, "boundedness": 0.50, "sociality": 0.92
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "헤어지다": {
+    "lemma": "헤어지다",
+    "gloss_en": "separate",
+    "features": {
+      "animacy": 0.30, "agency": 0.40, "concreteness": 0.15, "valence": 0.15,
+      "intensity": 0.75, "temporality": 0.50, "boundedness": 0.55, "sociality": 0.90
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "기억하다": {
+    "lemma": "기억하다",
+    "gloss_en": "remember",
+    "features": {
+      "animacy": 0.25, "agency": 0.45, "concreteness": 0.10, "valence": 0.60,
+      "intensity": 0.45, "temporality": 0.75, "boundedness": 0.25, "sociality": 0.30
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "잊다": {
+    "lemma": "잊다",
+    "gloss_en": "forget",
+    "features": {
+      "animacy": 0.25, "agency": 0.35, "concreteness": 0.10, "valence": 0.30,
+      "intensity": 0.45, "temporality": 0.70, "boundedness": 0.30, "sociality": 0.25
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "믿다": {
+    "lemma": "믿다",
+    "gloss_en": "trust",
+    "features": {
+      "animacy": 0.25, "agency": 0.50, "concreteness": 0.08, "valence": 0.72,
+      "intensity": 0.55, "temporality": 0.25, "boundedness": 0.25, "sociality": 0.70
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "바라다": {
+    "lemma": "바라다",
+    "gloss_en": "wish",
+    "features": {
+      "animacy": 0.25, "agency": 0.35, "concreteness": 0.08, "valence": 0.68,
+      "intensity": 0.55, "temporality": 0.40, "boundedness": 0.18, "sociality": 0.35
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "원하다": {
+    "lemma": "원하다",
+    "gloss_en": "want",
+    "features": {
+      "animacy": 0.25, "agency": 0.55, "concreteness": 0.10, "valence": 0.60,
+      "intensity": 0.60, "temporality": 0.30, "boundedness": 0.20, "sociality": 0.25
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "주다": {
+    "lemma": "주다",
+    "gloss_en": "give",
+    "features": {
+      "animacy": 0.30, "agency": 0.70, "concreteness": 0.35, "valence": 0.72,
+      "intensity": 0.45, "temporality": 0.30, "boundedness": 0.55, "sociality": 0.80
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "받다": {
+    "lemma": "받다",
+    "gloss_en": "receive",
+    "features": {
+      "animacy": 0.30, "agency": 0.40, "concreteness": 0.35, "valence": 0.68,
+      "intensity": 0.40, "temporality": 0.30, "boundedness": 0.55, "sociality": 0.75
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "안다": {
+    "lemma": "안다",
+    "gloss_en": "embrace",
+    "features": {
+      "animacy": 0.35, "agency": 0.60, "concreteness": 0.40, "valence": 0.85,
+      "intensity": 0.60, "temporality": 0.20, "boundedness": 0.45, "sociality": 0.92
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "잡다": {
+    "lemma": "잡다",
+    "gloss_en": "grab",
+    "features": {
+      "animacy": 0.30, "agency": 0.65, "concreteness": 0.45, "valence": 0.52,
+      "intensity": 0.50, "temporality": 0.15, "boundedness": 0.55, "sociality": 0.15
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "놓다": {
+    "lemma": "놓다",
+    "gloss_en": "release",
+    "features": {
+      "animacy": 0.25, "agency": 0.55, "concreteness": 0.40, "valence": 0.45,
+      "intensity": 0.40, "temporality": 0.15, "boundedness": 0.50, "sociality": 0.10
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "열다": {
+    "lemma": "열다",
+    "gloss_en": "open",
+    "features": {
+      "animacy": 0.20, "agency": 0.60, "concreteness": 0.45, "valence": 0.55,
+      "intensity": 0.35, "temporality": 0.15, "boundedness": 0.60, "sociality": 0.08
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "닫다": {
+    "lemma": "닫다",
+    "gloss_en": "close",
+    "features": {
+      "animacy": 0.20, "agency": 0.58, "concreteness": 0.45, "valence": 0.42,
+      "intensity": 0.35, "temporality": 0.15, "boundedness": 0.60, "sociality": 0.06
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "시작하다": {
+    "lemma": "시작하다",
+    "gloss_en": "begin",
+    "features": {
+      "animacy": 0.20, "agency": 0.60, "concreteness": 0.15, "valence": 0.65,
+      "intensity": 0.50, "temporality": 0.85, "boundedness": 0.65, "sociality": 0.15
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "끝나다": {
+    "lemma": "끝나다",
+    "gloss_en": "end",
+    "features": {
+      "animacy": 0.15, "agency": 0.25, "concreteness": 0.15, "valence": 0.35,
+      "intensity": 0.50, "temporality": 0.85, "boundedness": 0.68, "sociality": 0.12
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "살다": {
+    "lemma": "살다",
+    "gloss_en": "live",
+    "features": {
+      "animacy": 0.40, "agency": 0.55, "concreteness": 0.25, "valence": 0.68,
+      "intensity": 0.40, "temporality": 0.65, "boundedness": 0.35, "sociality": 0.25
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "죽다": {
+    "lemma": "죽다",
+    "gloss_en": "die",
+    "features": {
+      "animacy": 0.40, "agency": 0.10, "concreteness": 0.28, "valence": 0.04,
+      "intensity": 0.85, "temporality": 0.60, "boundedness": 0.75, "sociality": 0.30
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "태어나다": {
+    "lemma": "태어나다",
+    "gloss_en": "born",
+    "features": {
+      "animacy": 0.45, "agency": 0.06, "concreteness": 0.30, "valence": 0.85,
+      "intensity": 0.65, "temporality": 0.65, "boundedness": 0.78, "sociality": 0.40
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "아주": {
+    "lemma": "아주",
+    "gloss_en": "very",
+    "features": {
+      "animacy": 0.02, "agency": 0.02, "concreteness": 0.05, "valence": 0.50,
+      "intensity": 0.90, "temporality": 0.10, "boundedness": 0.10, "sociality": 0.05
+    },
+    "defaultRole": "정도",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "매우": {
+    "lemma": "매우",
+    "gloss_en": "extremely",
+    "features": {
+      "animacy": 0.02, "agency": 0.02, "concreteness": 0.05, "valence": 0.50,
+      "intensity": 0.94, "temporality": 0.12, "boundedness": 0.10, "sociality": 0.05
+    },
+    "defaultRole": "정도",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "조금": {
+    "lemma": "조금",
+    "gloss_en": "little",
+    "features": {
+      "animacy": 0.02, "agency": 0.02, "concreteness": 0.05, "valence": 0.50,
+      "intensity": 0.15, "temporality": 0.10, "boundedness": 0.15, "sociality": 0.05
+    },
+    "defaultRole": "정도",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "많이": {
+    "lemma": "많이",
+    "gloss_en": "much",
+    "features": {
+      "animacy": 0.02, "agency": 0.02, "concreteness": 0.05, "valence": 0.55,
+      "intensity": 0.75, "temporality": 0.10, "boundedness": 0.20, "sociality": 0.05
+    },
+    "defaultRole": "정도",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "천천히": {
+    "lemma": "천천히",
+    "gloss_en": "slowly",
+    "features": {
+      "animacy": 0.02, "agency": 0.10, "concreteness": 0.08, "valence": 0.55,
+      "intensity": 0.30, "temporality": 0.65, "boundedness": 0.15, "sociality": 0.05
+    },
+    "defaultRole": "행위수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "빨리": {
+    "lemma": "빨리",
+    "gloss_en": "quickly",
+    "features": {
+      "animacy": 0.02, "agency": 0.15, "concreteness": 0.08, "valence": 0.55,
+      "intensity": 0.65, "temporality": 0.65, "boundedness": 0.15, "sociality": 0.05
+    },
+    "defaultRole": "행위수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "함께": {
+    "lemma": "함께",
+    "gloss_en": "together",
+    "features": {
+      "animacy": 0.05, "agency": 0.10, "concreteness": 0.05, "valence": 0.75,
+      "intensity": 0.45, "temporality": 0.20, "boundedness": 0.15, "sociality": 0.92
+    },
+    "defaultRole": "행위수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "혼자": {
+    "lemma": "혼자",
+    "gloss_en": "alone",
+    "features": {
+      "animacy": 0.05, "agency": 0.15, "concreteness": 0.05, "valence": 0.35,
+      "intensity": 0.40, "temporality": 0.20, "boundedness": 0.20, "sociality": 0.03
+    },
+    "defaultRole": "행위수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "다시": {
+    "lemma": "다시",
+    "gloss_en": "again",
+    "features": {
+      "animacy": 0.02, "agency": 0.05, "concreteness": 0.04, "valence": 0.52,
+      "intensity": 0.35, "temporality": 0.88, "boundedness": 0.25, "sociality": 0.05
+    },
+    "defaultRole": "시간수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "아직": {
+    "lemma": "아직",
+    "gloss_en": "not-yet",
+    "features": {
+      "animacy": 0.02, "agency": 0.03, "concreteness": 0.04, "valence": 0.45,
+      "intensity": 0.35, "temporality": 0.90, "boundedness": 0.15, "sociality": 0.05
+    },
+    "defaultRole": "시간수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "이미": {
+    "lemma": "이미",
+    "gloss_en": "already",
+    "features": {
+      "animacy": 0.02, "agency": 0.03, "concreteness": 0.04, "valence": 0.50,
+      "intensity": 0.35, "temporality": 0.92, "boundedness": 0.30, "sociality": 0.05
+    },
+    "defaultRole": "시간수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "항상": {
+    "lemma": "항상",
+    "gloss_en": "always",
+    "features": {
+      "animacy": 0.02, "agency": 0.03, "concreteness": 0.04, "valence": 0.55,
+      "intensity": 0.45, "temporality": 0.95, "boundedness": 0.10, "sociality": 0.05
+    },
+    "defaultRole": "시간수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "가끔": {
+    "lemma": "가끔",
+    "gloss_en": "sometimes",
+    "features": {
+      "animacy": 0.02, "agency": 0.03, "concreteness": 0.04, "valence": 0.50,
+      "intensity": 0.30, "temporality": 0.85, "boundedness": 0.35, "sociality": 0.05
+    },
+    "defaultRole": "시간수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "영원히": {
+    "lemma": "영원히",
+    "gloss_en": "eternally",
+    "features": {
+      "animacy": 0.04, "agency": 0.06, "concreteness": 0.06, "valence": 0.62,
+      "intensity": 0.78, "temporality": 0.97, "boundedness": 0.04, "sociality": 0.12
+    },
+    "defaultRole": "시간수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "잠깐": {
+    "lemma": "잠깐",
+    "gloss_en": "briefly",
+    "features": {
+      "animacy": 0.02, "agency": 0.05, "concreteness": 0.06, "valence": 0.52,
+      "intensity": 0.35, "temporality": 0.75, "boundedness": 0.60, "sociality": 0.05
+    },
+    "defaultRole": "시간수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "엄마": {
+    "lemma": "엄마",
+    "gloss_en": "mom",
+    "features": {
+      "animacy": 0.92, "agency": 0.65, "concreteness": 0.85, "valence": 0.85,
+      "intensity": 0.55, "temporality": 0.15, "boundedness": 0.92, "sociality": 0.70
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "아빠": {
+    "lemma": "아빠",
+    "gloss_en": "dad",
+    "features": {
+      "animacy": 0.92, "agency": 0.65, "concreteness": 0.85, "valence": 0.80,
+      "intensity": 0.50, "temporality": 0.15, "boundedness": 0.92, "sociality": 0.68
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "가족": {
+    "lemma": "가족",
+    "gloss_en": "family",
+    "features": {
+      "animacy": 0.75, "agency": 0.45, "concreteness": 0.55, "valence": 0.82,
+      "intensity": 0.50, "temporality": 0.20, "boundedness": 0.60, "sociality": 0.95
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "친구": {
+    "lemma": "친구",
+    "gloss_en": "friend",
+    "features": {
+      "animacy": 0.90, "agency": 0.60, "concreteness": 0.80, "valence": 0.80,
+      "intensity": 0.45, "temporality": 0.15, "boundedness": 0.88, "sociality": 0.85
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "당신": {
+    "lemma": "당신",
+    "gloss_en": "dear",
+    "features": {
+      "animacy": 0.93, "agency": 0.80, "concreteness": 0.75, "valence": 0.58,
+      "intensity": 0.40, "temporality": 0.18, "boundedness": 0.90, "sociality": 0.55
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "그대": {
+    "lemma": "그대",
+    "gloss_en": "thou",
+    "features": {
+      "animacy": 0.93, "agency": 0.78, "concreteness": 0.70, "valence": 0.72,
+      "intensity": 0.55, "temporality": 0.20, "boundedness": 0.88, "sociality": 0.60
+    },
+    "defaultRole": "대상",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
+  },
+  "서로": {
+    "lemma": "서로",
+    "gloss_en": "mutually",
+    "features": {
+      "animacy": 0.10, "agency": 0.15, "concreteness": 0.05, "valence": 0.65,
+      "intensity": 0.45, "temporality": 0.15, "boundedness": 0.10, "sociality": 0.97
+    },
+    "defaultRole": "행위수식",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-21"
   }
 }

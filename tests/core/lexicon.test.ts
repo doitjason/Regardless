@@ -14,7 +14,9 @@ const withF = (o: Partial<SemanticFeatures>): SemanticFeatures => ({ ...mid, ...
 
 describe('씨앗 사전', () => {
   it('27항목을 담고 있다', () => {
-    expect(Object.keys(lex)).toHaveLength(27);
+    // 계획 III 태스크 6 에서 129항목으로 늘었다 — 최소 항목 수는
+    // 아래 '자주 쓰는 말이 충분히 들어 있다' 테스트가 별도로 잡는다.
+    expect(Object.keys(lex).length).toBeGreaterThanOrEqual(129);
   });
 
   it('조형 실험에 쓰이는 어휘가 모두 있다', () => {
@@ -89,6 +91,41 @@ describe('씨앗 사전', () => {
   it('얼려도 기존 조회는 그대로 된다', () => {
     const l = loadSeedLexicon();
     expect(lookup(l, '사랑')?.gloss_en).toBeTruthy();
+  });
+
+  it('자주 쓰는 말이 충분히 들어 있다', () => {
+    const lex = loadSeedLexicon();
+    expect(Object.keys(lex).length).toBeGreaterThanOrEqual(120);
+  });
+
+  it('일상 문장의 낱말이 사전에 있다', () => {
+    const lex = loadSeedLexicon();
+    for (const w of ['마음', '생각', '말', '사람', '집', '길', '밤', '아침',
+                     '바다', '바람', '꽃', '나무', '별', '눈', '비', '노래',
+                     '이야기', '웃음', '눈물', '꿈']) {
+      expect(lookup(lex, w), w).toBeDefined();
+    }
+  });
+
+  it('모든 항목이 여덟 자질을 0..1 로 갖는다', () => {
+    const lex = loadSeedLexicon();
+    for (const [lemma, e] of Object.entries(lex)) {
+      for (const k of FEATURE_KEYS) {
+        const v = e.features[k];
+        expect(Number.isFinite(v), `${lemma}.${k}`).toBe(true);
+        expect(v, `${lemma}.${k}`).toBeGreaterThanOrEqual(0);
+        expect(v, `${lemma}.${k}`).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it('gloss_en 이 겹치지 않는다 — 영어 파서가 한 낱말을 두 표제어로 잇는다', () => {
+    const seen = new Map<string, string>();
+    for (const e of Object.values(loadSeedLexicon())) {
+      const g = e.gloss_en.toLowerCase();
+      expect(seen.get(g), `${e.lemma} 와 ${seen.get(g)} 의 gloss 가 같다: ${g}`).toBeUndefined();
+      seen.set(g, e.lemma);
+    }
   });
 });
 
