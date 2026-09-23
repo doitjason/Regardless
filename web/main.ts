@@ -3,6 +3,7 @@ import { loadSeedLexicon } from '../src/core/lexicon';
 import { render } from '../src/render/compose';
 import { loadLook } from '../src/render/look';
 import { encodeShare, decodeShare } from './share';
+import { downloadSvg, downloadPng, fileNameFor } from './download';
 
 const lex = loadSeedLexicon();
 const look = loadLook();
@@ -99,8 +100,6 @@ copyBtn.addEventListener('click', async () => {
   }
   setTimeout(() => { copyBtn.textContent = old; }, 1500);
 });
-
-import { downloadSvg, downloadPng, fileNameFor } from './download';
 
 const svgBtn = document.getElementById('saveSvg') as HTMLButtonElement;
 const pngBtn = document.getElementById('savePng') as HTMLButtonElement;
