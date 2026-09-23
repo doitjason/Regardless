@@ -48,3 +48,18 @@ group('partsOf', () => {
     expect(describePart(ring)).toContain('링');
   });
 });
+
+group('링 묶음', () => {
+  it('링의 획은 라벨이 달라도 한 줄로 나온다', () => {
+    // 겹선·양보의 지나침이 따로 나오면 링이 둘인 것처럼 읽힌다
+    for (const s of ['나는 너를 사랑해', '그럼에도 불구하고 나는 너를 사랑해']) {
+      expect(partsOf(resultOf(s)).filter((p) => p.role === 'ring'), s).toHaveLength(1);
+    }
+  });
+
+  it('링 묶음이 링의 획을 전부 센다', () => {
+    const r = resultOf('나는 너를 사랑해');
+    const ring = partsOf(r).find((p) => p.role === 'ring')!;
+    expect(ring.count).toBe(r.strokes.filter((s) => String(s.role) === 'ring').length);
+  });
+});

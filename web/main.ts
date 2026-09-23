@@ -4,7 +4,7 @@ import { render } from '../src/render/compose';
 import { loadLook } from '../src/render/look';
 import { encodeShare, decodeShare } from './share';
 import { downloadSvg, downloadPng, fileNameFor } from './download';
-import { partsOf, describe as describePart } from './breakdown';
+import { partsOf, partKeyOf, describe as describePart } from './breakdown';
 
 const lex = loadSeedLexicon();
 const look = loadLook();
@@ -60,7 +60,7 @@ export function renderInto(root: HTMLElement, text: string): void {
       const mark = (on: boolean) => {
         li.classList.toggle('on', on);
         result.strokes.forEach((s, i) => {
-          if (`${String(s.role)}|${s.label}` !== part.key) return;
+          if (partKeyOf(s) !== part.key) return;
           paths[i]?.setAttribute('fill', on ? '#c0563f' : '#16120e');
         });
       };
