@@ -87,8 +87,14 @@ describe('불규칙 과거형', () => {
     expect(cs.find((c) => c.kind === 'concept' && c.lemma === '너')?.role).not.toBe('행위');
   });
 
-  it('사전에 없는 lose 는 나선 없이 조용히 버려진다 (I3) — "잃다" 항목이 없다', () => {
+  it('불규칙 과거형 lost 는 잃다 에 닿는다 (잃다 항목 추가 후)', () => {
     const cs = parseEn('I lost you', lex);
+    expect(roleOf(cs, '잃다')).toBe('행위');
+  });
+
+  it('사전에 없는 동사는 나선 없이 조용히 버려진다 (I3) — "keep" 항목이 없다', () => {
+    // 이전에는 lose 로 시험했다. 잃다 가 사전에 들어와 kept → keep 으로 옮겼다.
+    const cs = parseEn('I kept you', lex);
     expect(cs.every((c) => c.kind !== 'phonetic')).toBe(true);
     expect(cs.some((c) => c.kind === 'concept' && c.role === '행위')).toBe(false);
     // 주체·대상은 살아 있다 — 동사 하나가 빠졌을 뿐 문장 전체가 무너지지 않는다.

@@ -77,7 +77,28 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-11"
+    "addedAt": "2026-09-11",
+    "glossAliases": ["miss"]
+  },
+  "좋아함": {
+    "lemma": "좋아함",
+    "gloss_en": "like",
+    "features": {
+      "animacy": 0.12,
+      "agency": 0.3,
+      "concreteness": 0.12,
+      "valence": 0.86,
+      "intensity": 0.55,
+      "temporality": 0.3,
+      "boundedness": 0.24,
+      "sociality": 0.7
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-23",
+    "aliases": ["좋아하다"]
   },
   "기쁨": {
     "lemma": "기쁨",
@@ -1669,6 +1690,44 @@
     "status": "confirmed",
     "source": "seed",
     "addedAt": "2026-09-21"
+  },
+  "알다": {
+    "lemma": "알다",
+    "gloss_en": "know",
+    "features": {
+      "animacy": 0.2,
+      "agency": 0.4,
+      "concreteness": 0.1,
+      "valence": 0.62,
+      "intensity": 0.4,
+      "temporality": 0.35,
+      "boundedness": 0.4,
+      "sociality": 0.45
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-23"
+  },
+  "잃다": {
+    "lemma": "잃다",
+    "gloss_en": "lose",
+    "features": {
+      "animacy": 0.2,
+      "agency": 0.3,
+      "concreteness": 0.3,
+      "valence": 0.12,
+      "intensity": 0.68,
+      "temporality": 0.6,
+      "boundedness": 0.4,
+      "sociality": 0.4
+    },
+    "defaultRole": "행위",
+    "seedGlyph": null,
+    "status": "confirmed",
+    "source": "seed",
+    "addedAt": "2026-09-23"
   },
   "믿다": {
     "lemma": "믿다",

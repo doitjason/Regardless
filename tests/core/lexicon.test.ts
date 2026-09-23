@@ -255,6 +255,18 @@ describe('한 개념 한 표제어 (계획 III 최종 리뷰 C6)', () => {
     const lex = loadSeedLexicon();
     expect(lookup(lex, '선택하다')?.lemma).toBe('선택');
     expect(lookup(lex, '기다리다')?.lemma).toBe('기다림');
+    expect(lookup(lex, '좋아하다')?.lemma).toBe('좋아함');
+  });
+
+  it('연인 문장의 동사가 사전에 있다 — 알다·잃다·좋아함, miss → 그리움', () => {
+    const lex = loadSeedLexicon();
+    for (const [lemma, gloss] of [['알다', 'know'], ['잃다', 'lose'], ['좋아함', 'like']] as const) {
+      expect(lookup(lex, lemma)?.gloss_en, lemma).toBe(gloss);
+      expect(lookup(lex, lemma)?.defaultRole, lemma).toBe('행위');
+    }
+    expect(lookup(lex, '그리움')?.glossAliases).toContain('miss');
+    // 좋다 는 "좋다(good)" 와 뜻이 겹치므로 별칭으로 두지 않는다 — 파서가 문맥으로 가른다
+    expect(lookup(lex, '좋다')).toBeUndefined();
   });
 
   it('사실상 같은 개념이 두 항목으로 남아 있지 않다', () => {

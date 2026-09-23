@@ -337,6 +337,80 @@ describe('3인칭 대명사와 지시 관형사 — 영어 she/he/they 와 같�
   });
 });
 
+describe('ㄹ 탈락 현재형 — 안다 는 알다', () => {
+  it('Xㄴ다 의 Xㄹ다 가 사전의 용언이면 그것이다', () => {
+    expect(brief(parseKo('나는 너를 안다', lex))).toBe('주체:나 대상:너 행위:알다');
+    expect(roleOf(parseKo('나는 여기 산다', lex), '살다')).toBe('행위');
+    expect(roleOf(parseKo('아이가 운다', lex), '울다')).toBe('행위');
+    expect(roleOf(parseKo('나는 너를 알아', lex), '알다')).toBe('행위');
+    expect(roleOf(parseKo('너를 아는 사람', lex), '알다')).toBe('행위');
+  });
+
+  it('안는다·안아·안았다·안고 는 여전히 안다(포옹)다', () => {
+    for (const s of ['엄마가 나를 안는다', '엄마가 나를 안아', '엄마가 나를 안았다', '너를 안고']) {
+      const cs = parseKo(s, lex);
+      expect(roleOf(cs, '안다'), `${s}: ${brief(cs)}`).toBe('행위');
+      expect(hasLemma(cs, '알다'), `${s}: ${brief(cs)}`).toBe(false);
+    }
+  });
+
+  it('잃다 의 활용형', () => {
+    for (const s of ['나는 너를 잃었다', '나는 너를 잃어', '나는 길을 잃었어']) {
+      expect(roleOf(parseKo(s, lex), '잃다'), s).toBe('행위');
+    }
+  });
+});
+
+describe('-고 싶다 — 원하다 + 대상', () => {
+  it('V고 싶다 는 V 가 대상, 원하다 가 행위다', () => {
+    for (const s of ['나는 먹고 싶어', '나는 먹고 싶다', '나는 먹고 싶었다', '나는 먹고 싶어요', '나는 먹고 싶습니다']) {
+      expect(brief(parseKo(s, lex)), s).toBe('주체:나 대상:먹다 행위:원하다');
+    }
+    expect(brief(parseKo('나는 너를 만나고 싶어', lex))).toBe('주체:나 대상:너 대상:만남 행위:원하다');
+  });
+
+  it('보고 싶다 는 그리움이다', () => {
+    expect(brief(parseKo('나는 너를 보고 싶어', lex))).toBe('주체:나 대상:너 행위:그리움');
+    expect(brief(parseKo('보고 싶었다', lex))).toBe('행위:그리움');
+  });
+
+  it('싶 이 없으면 -고 는 그냥 연결 어미다', () => {
+    expect(brief(parseKo('너를 보고 웃었다', lex))).toBe('대상:너 행위:보다 행위:웃다');
+  });
+});
+
+describe('심리 서술어 — 이/가 가 대상이 된다', () => {
+  it('보고 싶다·그리워·좋아·미워·두려워 앞의 이/가 는 대상, 은/는 은 주체', () => {
+    expect(brief(parseKo('나는 네가 보고 싶어', lex))).toBe('주체:나 대상:너 행위:그리움');
+    expect(brief(parseKo('나는 네가 그리워', lex))).toBe('주체:나 대상:너 행위:그리움');
+    expect(brief(parseKo('나는 네가 좋아', lex))).toBe('주체:나 대상:너 행위:좋아함');
+    expect(brief(parseKo('나는 네가 미워', lex))).toBe('주체:나 대상:너 행위:미움');
+    expect(brief(parseKo('나는 그가 두려워', lex))).toBe('주체:나 대상:사람 행위:두려움');
+    expect(brief(parseKo('네가 좋아', lex))).toBe('대상:너 행위:좋아함');
+  });
+
+  it('-어하다 꼴은 타동사다 — 이/가 는 주체로 남는다', () => {
+    expect(brief(parseKo('그녀가 너를 좋아해', lex))).toBe('주체:사람 대상:너 행위:좋아함');
+    expect(brief(parseKo('네가 나를 그리워해', lex))).toBe('주체:너 대상:나 행위:그리움');
+    expect(brief(parseKo('그가 너를 보고 싶어해', lex))).toBe('주체:사람 대상:너 행위:그리움');
+  });
+
+  it('좋다 는 좋아함 으로 읽을 근거가 있을 때만 좋아함 이다', () => {
+    // 경험자(은/는) 가 있거나 이/가 앞말이 사람일 때만. 날씨가 좋다 는 "좋아한다" 가 아니다
+    for (const s of ['날씨가 좋다', '오늘 하늘이 좋아', '꽃이 좋아']) {
+      const cs = parseKo(s, lex);
+      expect(hasLemma(cs, '좋아함'), `${s}: ${brief(cs)}`).toBe(false);
+    }
+    expect(brief(parseKo('나는 꽃이 좋아', lex))).toBe('주체:나 대상:꽃 행위:좋아함');
+  });
+
+  it('심리 서술어가 아니면 이/가 는 주체 그대로다', () => {
+    expect(brief(parseKo('그녀가 나를 사랑해', lex))).toBe('주체:사람 대상:나 행위:사랑');
+    expect(brief(parseKo('고양이가 잔다', lex))).toBe('주체:고양이 행위:자다');
+    expect(brief(parseKo('그리움이 깊다', lex))).toMatch(/^주체:그리움 /);
+  });
+});
+
 describe('목걸이 문장', () => {
   it('그럼에도 불구하고 나는 너를 사랑해 — 모든 획이 그대로다', () => {
     const ir = parse('그럼에도 불구하고 나는 너를 사랑해', lex);

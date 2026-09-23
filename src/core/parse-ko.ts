@@ -568,10 +568,32 @@ function readThirdPerson(word: string, lex: Lexicon): Constituent | undefined {
   return person ? concept(person, particleRole(p.role, person)) : undefined;
 }
 
+/**
+ * ㄹ 탈락 현재형: `Xㄴ다` 의 `Xㄹ다` 가 사전의 용언이면 그것이다 —
+ * `안다 → 알다`, `산다 → 살다`, `운다 → 울다`.
+ *
+ * 어절 전체 조회보다 **먼저** 본다. `안다` 는 사전에 포옹(`안다`) 표제어로도
+ * 있지만, 문장 속의 `안다` 는 거의 언제나 `알다` 의 현재형이다 — 포옹의 현재형은
+ * `안는다` 이고, 포옹의 활용형(`안아`, `안았다`, `안고`, `안는다`)은 이 규칙에
+ * 걸리지 않고 어미 떼기로 `안다` 에 그대로 닿는다.
+ */
+function readLDropPresent(word: string, lex: Lexicon): LexiconEntry | undefined {
+  if (word.length < 2 || !word.endsWith('다')) return undefined;
+  const rem = word.slice(0, -1);
+  if (lastCoda(rem) !== CODA.N) return undefined;
+  const withL = withLastCoda(rem, CODA.L);
+  const e = withL ? lookup(lex, `${withL}다`) : undefined;
+  return e && e.defaultRole === '행위' ? e : undefined;
+}
+
 function readWord(word: string, lex: Lexicon): Constituent | null {
   // 0) 3인칭 `그` — 조사로 대명사인지 가린다
   const third = readThirdPerson(word, lex);
   if (third) return third;
+
+  // 0') ㄹ 탈락 현재형 (안다 → 알다) — 어절 전체 조회보다 먼저
+  const lDrop = readLDropPresent(word, lex);
+  if (lDrop) return concept(lDrop, '행위');
 
   // 1) 어절 전체 (C2)
   const whole = lookupNoun(word, lex);
@@ -637,14 +659,118 @@ function clean(word: string): string {
   return word.replace(/[^\p{L}\p{N}]/gu, '');
 }
 
+// ─── 두 어절에 걸친 구문과 심리 서술어 ──────────────────────────────────────
+
+/**
+ * 심리·희망 서술어 (형용사 꼴). 한국어에서 이들은 느끼는 사람을 은/는 으로,
+ * 느낌의 **대상** 을 이/가 로 표시한다 — `나는 네가 그리워` 의 `네가` 는
+ * 주어가 아니라 그리움의 대상이다. 영어 `I miss you` 의 `you` 와 같은 자리다.
+ *
+ * 명시적인 목록으로 둔다. 이/가 를 대상으로 바꾸는 규칙은 넓게 걸면
+ * `그녀가 나를 사랑해` 의 주어를 뒤집는다 — 그래서 여기 적힌 서술어일 때만 쓴다.
+ * - 그리움 (그리워), 미움 (미워), 두려움 (두려워), 좋아함 (좋아 — `LIKE_FORM`)
+ * - `-고 싶다` 구문 (`readGoSipda`)
+ *
+ * `-어하다` 꼴(`그리워해`, `좋아해`, `싶어해`)은 타동사다 — 이/가 가 주어이고
+ * 대상은 을/를 로 온다 (`그녀가 너를 좋아해`). 그래서 서술어 어절에 하-형
+ * 음절이 있으면 심리 서술어로 보지 않는다.
+ */
+const PSYCH_LEMMAS = new Set(['그리움', '미움', '두려움', '좋아함']);
+const HADA_SYLLABLE = /[하해했한할합함]/;
+
+/**
+ * 형용사 `좋다` 의 꼴. `좋다` 는 "좋아하다(like)" 와 "좋다(good)" 둘 다라서
+ * 사전에서 `좋아함` 의 별칭으로 두지 않는다 — `날씨가 좋다` 가 "날씨를
+ * 좋아한다" 로 그려지면 확신에 찬 오답이다. 느끼는 사람이 문장에 있을 때만
+ * `좋아함` 으로 읽는다: 은/는 이 붙은 사람(`나는 꽃이 좋아`)이 있거나, 이/가 가
+ * 붙은 말이 사람(`네가 좋아`)일 때. 아니면 보통 규칙대로 읽는다.
+ */
+const LIKE_FORM = /^좋(다|아|아요|았다|았어|았어요|습니다|네|지)$/;
+
+/** 사람으로 볼 만큼 생물성이 높은가 — 느끼는 사람의 근거. */
+const ANIMATE = 0.5;
+
+interface Slot {
+  c: Constituent;
+  /** 이/가 가 붙어 주체가 된 성분 — 심리 서술어 앞이면 대상으로 바꾼다. */
+  subjectMarked: boolean;
+  /** 은/는 이 붙어 주체가 된 성분. */
+  topicMarked: boolean;
+  /** 이 성분이 심리 서술어다. */
+  psych: boolean;
+  /** `좋다` 꼴 — 근거가 있으면 좋아함 으로 바꾼다. */
+  like: boolean;
+}
+
+/**
+ * `V고` + `싶다/싶어/싶었다/싶어요…` → V 는 **대상**, `원하다` 는 **행위**.
+ * 영어 `I want to eat` 이 `행위:원하다 대상:먹다` 이므로 같은 그림이 된다.
+ * 관용구 `보고 싶다` 는 "보기를 원한다" 가 아니라 "그립다(miss)" 이므로
+ * `그리움` 하나로 그린다 (`I miss you`).
+ *
+ * 두 어절에 걸친 구문이라 어절 하나씩 읽는 `readWord` 로는 잡을 수 없다 —
+ * `parseKo` 의 루프가 이웃한 두 어절을 함께 넘긴다.
+ */
+function readGoSipda(goWord: string, sipWord: string, lex: Lexicon): Slot[] {
+  const transitive = HADA_SYLLABLE.test(sipWord.slice(1)); // 싶어해 — 3인칭 욕구, 타동사
+  const verb = readAsVerb(goWord, lex, [{ e: '고' }], false).entry;
+  const slot = (c: Constituent | null, psych: boolean): Slot[] =>
+    c ? [{ c, subjectMarked: false, topicMarked: false, psych, like: false }] : [];
+
+  const miss = lookup(lex, '그리움');
+  if (verb?.lemma === '보다' && miss) return slot(concept(miss, '행위'), !transitive);
+
+  const want = lookup(lex, '원하다');
+  const object = verb ? concept(verb, '대상') : phonetic(hadaRootOf(goWord.slice(0, -1)), '대상');
+  return [
+    ...slot(object, false),
+    ...slot(want ? concept(want, '행위') : phonetic(sipWord, '행위'), !transitive),
+  ];
+}
+
+function animate(c: Constituent, lex: Lexicon): boolean {
+  return c.kind === 'concept' && (lookup(lex, c.lemma)?.features.animacy ?? 0) >= ANIMATE;
+}
+
 export function parseKo(text: string, lex: Lexicon): Constituent[] {
-  const out: Constituent[] = [];
+  const slots: Slot[] = [];
   const words = text.trim().split(/\s+/).map(clean).filter((w) => w.length > 0);
   for (let i = 0; i < words.length; i++) {
     const word = words[i] ?? '';
-    if (DETERMINERS.has(word) && i + 1 < words.length) continue;
+    const next = words[i + 1];
+    if (DETERMINERS.has(word) && next !== undefined) continue;
+
+    // 두 어절 구문: V고 싶다
+    if (next !== undefined && word.length >= 2 && word.endsWith('고') && next.startsWith('싶')) {
+      slots.push(...readGoSipda(word, next, lex));
+      i++;
+      continue;
+    }
+
     const c = readWord(word, lex);
-    if (c) out.push(c);
+    if (!c) continue;
+    const suffix = stripParticle(word)?.suffix;
+    const isSubject = c.role === '주체';
+    slots.push({
+      c,
+      subjectMarked: isSubject && (suffix === '이' || suffix === '가'),
+      topicMarked: isSubject && (suffix === '은' || suffix === '는'),
+      psych: c.kind === 'concept' && c.role === '행위' && PSYCH_LEMMAS.has(c.lemma)
+        && suffix === undefined && !HADA_SYLLABLE.test(word),
+      like: LIKE_FORM.test(word),
+    });
   }
-  return out;
+
+  // 좋다 → 좋아함: 느끼는 사람이 있을 때만
+  const liking = lookup(lex, '좋아함');
+  const hasExperiencer = slots.some((s) => (s.topicMarked || s.subjectMarked) && animate(s.c, lex));
+  if (liking && hasExperiencer) {
+    for (const s of slots) if (s.like) { s.c = concept(liking, '행위'); s.psych = true; }
+  }
+
+  // 심리 서술어 앞의 이/가 는 대상이다
+  if (slots.some((s) => s.psych)) {
+    for (const s of slots) if (s.subjectMarked) s.c = { ...s.c, role: '대상' };
+  }
+  return slots.map((s) => s.c);
 }

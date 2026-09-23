@@ -51,6 +51,7 @@ function isPredicateStem(stem: string, lex: Lexicon): boolean {
   if (stem.length === 0) return false;
   if (endsInPredicateCoda(stem)) return true;
   if (stem.length >= 2 && stem.endsWith('하')) return true;
+  if (stem.endsWith('싶')) return true; // 보조 형용사 싶다 (보고 싶니)
   return verbEntry(stem, lex) !== undefined;
 }
 
