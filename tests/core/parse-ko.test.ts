@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { parseKo } from '../../src/core/parse-ko';
-import { loadSeedLexicon } from '../../src/core/lexicon';
+import { parse } from '../../src/core/parse';
+import { loadSeedLexicon, lookup } from '../../src/core/lexicon';
 import type { Constituent } from '../../src/core/ir';
 
 const lex = loadSeedLexicon();
+const lookupRole = (w: string) => lookup(lex, w)?.defaultRole;
 const roleOf = (cs: Constituent[], lemma: string) =>
   cs.find((c) => c.kind === 'concept' && c.lemma === lemma)?.role;
 
@@ -23,8 +25,8 @@ describe('parseKo', () => {
     }
   });
 
-  it('에/에서 는 시간성 자질로 시간과 장소를 가른다', () => {
-    // 시간(temporality 높음) vs 하늘(낮음)
+  it('에/에서 는 시간 낱말이면 시간, 아니면 장소다', () => {
+    // 오늘(기본 역할 시간) vs 하늘(장소). 시간성 자질이 아니라 기본 역할로 가른다 (I5)
     expect(roleOf(parseKo('오늘에 사랑해', lex), '오늘')).toBe('시간');
     expect(roleOf(parseKo('하늘에서 기다림', lex), '하늘')).toBe('장소');
   });
@@ -44,6 +46,8 @@ describe('parseKo', () => {
   it('조사가 없으면 사전의 기본 역할을 쓴다', () => {
     expect(roleOf(parseKo('사랑 나 너', lex), '나')).toBe('주체');
     expect(roleOf(parseKo('사랑 나 너', lex), '너')).toBe('대상');
+    // 이 테스트는 '사랑' 이 나선이 되어도 통과했다 (리뷰 I7). 사랑도 잠근다.
+    expect(roleOf(parseKo('사랑 나 너', lex), '사랑')).toBe('행위');
   });
 
   it('양상 역할을 만들지 않는다 — 6시는 mood 의 자리다', () => {
@@ -117,6 +121,9 @@ describe('parseKo', () => {
     // 기다림(행위)은 받고, 봄(시간)은 받지 않는다
     const wait = parseKo('너를 기다려', lex);
     expect(wait.some((c) => c.kind === 'concept' && c.lemma === '기다림')).toBe(true);
+    // 음성 사례: 꾸 → 꿈(대상) 은 짐작으로 받지 않는다 (리뷰 I7 — 가드를 지우면 여기서 깨진다)
+    const dream = parseKo('나는 꾸었다', lex);
+    expect(dream.some((c) => c.kind === 'concept' && c.lemma === '꿈'), JSON.stringify(dream)).toBe(false);
   });
 
   it('어간에 붙어 줄어든 과거형을 되돌린다', () => {
@@ -131,6 +138,182 @@ describe('parseKo', () => {
     // 짐작 가드가 평범한 명사 조회까지 막으면 안 된다
     expect(parseKo('봄이 왔다', lex).some((c) => c.kind === 'concept' && c.lemma === '봄')).toBe(true);
     expect(parseKo('오늘 하늘을 보았다', lex).some((c) => c.kind === 'concept' && c.lemma === '하늘')).toBe(true);
+  });
+});
+
+/** 성분을 `역할:표제어` 로 줄인다. 음소 폴백은 `역할:음소(음절 수)`. */
+const brief = (cs: Constituent[]) => cs.map((c) =>
+  c.kind === 'concept' ? `${c.role}:${c.lemma}` : `${c.role}:음소(${c.syllables.length})`).join(' ');
+const hasLemma = (cs: Constituent[], lemma: string) =>
+  cs.some((c) => c.kind === 'concept' && c.lemma === lemma);
+const noPhonetic = (cs: Constituent[]) => !cs.some((c) => c.kind === 'phonetic');
+
+describe('계획 III 최종 리뷰 C1 — 자음 어간 뒤의 -ㄴ다/-는다, -아/-어', () => {
+  it('받침 ㄴ 으로 녹아붙은 -ㄴ다 를 되돌린다 (본다 → 보다)', () => {
+    const cs = parseKo('나는 너를 본다', lex);
+    expect(brief(cs)).toBe('주체:나 대상:너 행위:보다');
+  });
+
+  it('자음 어간 뒤의 -는다 를 뗀다 (걷는다 → 걷다)', () => {
+    const cs = parseKo('우리는 함께 걷는다', lex);
+    expect(roleOf(cs, '걷다'), brief(cs)).toBe('행위');
+    expect(noPhonetic(cs), brief(cs)).toBe(true);
+  });
+
+  it('자음 어간 뒤의 -어 를 뗀다 (먹어 → 먹다)', () => {
+    const cs = parseKo('나는 밥을 먹어', lex);
+    expect(roleOf(cs, '먹다'), brief(cs)).toBe('행위');
+  });
+
+  it('흔한 활용형이 모두 기본형에 닿는다', () => {
+    const cases: [string, string][] = [
+      ['너를 기다린다', '기다림'], ['고양이가 잔다', '자다'], ['엄마가 나를 안아', '안다'],
+      ['나는 집에 간다', '가다'], ['나는 여기 산다', '살다'], ['아이가 운다', '울다'],
+      ['나는 너를 믿어', '믿다'], ['나는 너를 잊었다', '잊다'], ['우리는 걸었다', '걷다'],
+      ['나는 노래를 들어', '듣다'], ['너를 기다렸어', '기다림'], ['너를 봐요', '보다'],
+      ['너를 사랑합니다', '사랑'], ['너를 사랑했어요', '사랑'], ['나는 태어났다', '태어나다'],
+      ['너를 만나고', '만남'], ['나는 너를 생각해', '생각'],
+    ];
+    for (const [s, lemma] of cases) {
+      const cs = parseKo(s, lex);
+      expect(roleOf(cs, lemma), `${s}: ${brief(cs)}`).toBe('행위');
+    }
+  });
+
+  it('형용사 어간 + -어하다 도 명사형 표제어에 닿는다', () => {
+    expect(roleOf(parseKo('나는 너를 그리워한다', lex), '그리움')).toBe('행위');
+    expect(roleOf(parseKo('나는 어둠을 두려워해', lex), '두려움')).toBe('행위');
+  });
+
+  it('사전에 없는 하다 용언은 어근을 행위 자리의 나선으로 둔다', () => {
+    for (const s of ['나는 행복해', '나는 행복했다', '나는 행복해요']) {
+      const cs = parseKo(s, lex);
+      const p = cs.find((c) => c.kind === 'phonetic');
+      expect(p?.role, `${s}: ${brief(cs)}`).toBe('행위');
+      expect(p?.kind === 'phonetic' && p.syllables.length, `${s}: ${brief(cs)}`).toBe(2);
+    }
+    // 두 음절 명사는 하다 용언으로 읽지 않는다
+    expect(parseKo('새해', lex)[0]?.role).toBe('대상');
+  });
+
+  it('사전에 없는 동사라도 어미가 분명하면 행위 자리에 둔다', () => {
+    // 바라보다 는 사전에 없다. 조사 '보다' 로 쪼개어 '바라다' 에 닿으면 안 된다.
+    const cs = parseKo('나는 너를 바라보다', lex);
+    expect(hasLemma(cs, '바라다'), brief(cs)).toBe(false);
+    expect(cs.find((c) => c.kind === 'phonetic')?.role, brief(cs)).toBe('행위');
+    for (const s of ['달이 밝다', '안개가 꼈다', '눈이 내린다']) {
+      const c = parseKo(s, lex);
+      expect(c[1]?.kind === 'phonetic' && c[1].role, `${s}: ${brief(c)}`).toBe('행위');
+    }
+  });
+});
+
+describe('계획 III 최종 리뷰 C2 — 어절 전체를 먼저 사전에서 찾는다', () => {
+  it('가을이 왔다 — 가을 의 을 은 조사가 아니다', () => {
+    const cs = parseKo('가을이 왔다', lex);
+    expect(roleOf(cs, '가을'), brief(cs)).toBe('주체');
+    expect(hasLemma(cs, '가다'), brief(cs)).toBe(false);
+    expect(roleOf(cs, '오다'), brief(cs)).toBe('행위');
+  });
+
+  it('사랑 한 낱말은 사랑이다', () => {
+    expect(brief(parseKo('사랑', lex))).toBe('행위:사랑');
+    expect(brief(parseKo('나의 사랑', lex))).toBe('주체수식:나 행위:사랑');
+  });
+
+  it('끝 글자가 조사와 같은 표제어가 스스로를 잃지 않는다', () => {
+    for (const w of ['가을', '고양이', '아이', '깊이', '많이', '서로']) {
+      const cs = parseKo(w, lex);
+      expect(brief(cs), w).toBe(`${lookupRole(w)}:${w}`);
+    }
+  });
+
+  it('조사가 없으면 사전의 기본 역할을 쓴다 — 사랑 도 나선이 아니다', () => {
+    expect(brief(parseKo('사랑 나 너', lex))).toBe('행위:사랑 주체:나 대상:너');
+  });
+});
+
+describe('계획 III 최종 리뷰 C3 — 조사를 뗀 어간에서 동사를 짐작하지 않는다', () => {
+  it('살이 쪘다 — 살 은 살다 가 아니다', () => {
+    const cs = parseKo('살이 쪘다', lex);
+    expect(hasLemma(cs, '살다'), brief(cs)).toBe(false);
+    expect(cs[0]?.role, brief(cs)).toBe('주체');
+  });
+
+  it('책 안에 있다 — 안 은 안다 가 아니다', () => {
+    for (const s of ['책 안에 있다', '마음 안에', '살에', '살을', '마음 안은 따뜻해', '안을 봐']) {
+      const cs = parseKo(s, lex);
+      expect(hasLemma(cs, '안다') || hasLemma(cs, '살다'), `${s}: ${brief(cs)}`).toBe(false);
+    }
+  });
+
+  it('조사 없이 홀로 선 받침 있는 명사도 동사로 짐작하지 않는다', () => {
+    for (const s of ['살', '안', '잔']) {
+      const cs = parseKo(s, lex);
+      expect(cs.every((c) => c.kind === 'phonetic'), `${s}: ${brief(cs)}`).toBe(true);
+    }
+  });
+
+  it('조사와 같은 모양의 관형형 어미는 기본형이 사전에 있을 때만 동사로 읽는다', () => {
+    expect(brief(parseKo('사랑하는 사람', lex))).toBe('행위:사랑 대상:사람');
+    expect(roleOf(parseKo('너를 기다리는 나', lex), '기다림')).toBe('행위');
+    expect(roleOf(parseKo('여기 사는 고양이', lex), '살다')).toBe('행위');
+  });
+
+  it('조사 하고 는 앞말이 사전의 비행위 명사일 때만 조사다', () => {
+    expect(brief(parseKo('너하고 나', lex))).toBe('대상:너 주체:나');
+    expect(roleOf(parseKo('너를 사랑하고', lex), '사랑')).toBe('행위');
+  });
+});
+
+describe('계획 III 최종 리뷰 I5 — 에 의 시간/장소', () => {
+  it('시간 낱말만 시간이다', () => {
+    expect(roleOf(parseKo('아침에 너를 만났다', lex), '아침')).toBe('시간');
+    expect(roleOf(parseKo('하늘에 별이', lex), '하늘')).toBe('장소');
+  });
+
+  it('시간성 자질이 높은 행위 명사는 시간이 아니다', () => {
+    for (const [s, lemma] of [['약속에', '약속'], ['기다림에', '기다림'], ['추억에', '추억']] as const) {
+      expect(roleOf(parseKo(s, lex), lemma), s).not.toBe('시간');
+    }
+  });
+});
+
+describe('겹친 조사·복수·문장 부호', () => {
+  it('보조사 뒤의 격조사를 한 번 더 뗀다', () => {
+    expect(roleOf(parseKo('너에게는', lex), '너')).toBe('대상');
+    expect(roleOf(parseKo('바다에서도', lex), '바다')).toBe('장소');
+  });
+
+  it('문장 부호는 낱말이 아니다', () => {
+    expect(brief(parseKo('나는, 너를 사랑해.', lex))).toBe('주체:나 대상:너 행위:사랑');
+  });
+});
+
+describe('짐작 가드 — 음성 사례', () => {
+  it('명사형 짐작은 비행위 명사에 닿지 않는다 (꾸었다 ↛ 꿈)', () => {
+    const cs = parseKo('나는 꾸었다', lex);
+    expect(hasLemma(cs, '꿈'), brief(cs)).toBe(false);
+  });
+
+  it('하 떼기는 사람 명사에 닿지 않는다', () => {
+    const cs = parseKo('나는 친구해', lex);
+    expect(roleOf(cs, '친구'), brief(cs)).not.toBe('행위');
+  });
+
+  it('사전에 없는 명사는 짐작에 걸리지 않고 나선이 된다', () => {
+    for (const s of ['잠자리', '사자', '남자', '의자', '모자', '감자', '어머니', '가지']) {
+      const cs = parseKo(s, lex);
+      expect(cs.every((c) => c.kind === 'phonetic'), `${s}: ${brief(cs)}`).toBe(true);
+    }
+  });
+});
+
+describe('목걸이 문장', () => {
+  it('그럼에도 불구하고 나는 너를 사랑해 — 모든 획이 그대로다', () => {
+    const ir = parse('그럼에도 불구하고 나는 너를 사랑해', lex);
+    expect(ir.mood).toBe('concessive');
+    expect(brief(ir.constituents)).toBe('주체:나 대상:너 행위:사랑');
   });
 });
 
