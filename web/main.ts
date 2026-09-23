@@ -2,6 +2,7 @@ import { parse } from '../src/core/parse';
 import { loadSeedLexicon } from '../src/core/lexicon';
 import { render } from '../src/render/compose';
 import { loadLook } from '../src/render/look';
+import { encodeShare, decodeShare } from './share';
 
 const lex = loadSeedLexicon();
 const look = loadLook();
@@ -51,7 +52,44 @@ const form = document.getElementById('form') as HTMLFormElement;
 const input = document.getElementById('text') as HTMLInputElement;
 const glyph = document.getElementById('glyph') as HTMLElement;
 
+function show(text: string, pushHash: boolean): void {
+  renderInto(glyph, text);
+  if (pushHash) {
+    const hash = text.trim() === '' ? '' : encodeShare(text.trim());
+    // replaceState 를 쓰면 뒤로 가기 기록이 문장마다 쌓이지 않는다
+    history.replaceState(null, '', hash === '' ? location.pathname : hash);
+  }
+}
+
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  renderInto(glyph, input.value);
+  show(input.value, true);
+});
+
+// 링크로 들어온 경우 — 주소의 문장을 입력창에 채우고 바로 그린다
+const shared = decodeShare(location.hash);
+if (shared) {
+  input.value = shared.text;
+  show(shared.text, false);
+}
+
+window.addEventListener('hashchange', () => {
+  const next = decodeShare(location.hash);
+  if (next && next.text !== input.value) {
+    input.value = next.text;
+    show(next.text, false);
+  }
+});
+
+const copyBtn = document.getElementById('copyLink') as HTMLButtonElement;
+copyBtn.addEventListener('click', async () => {
+  const url = `${location.origin}${location.pathname}${encodeShare(input.value.trim())}`;
+  const old = copyBtn.textContent;
+  try {
+    await navigator.clipboard.writeText(url);
+    copyBtn.textContent = '복사됨';
+  } catch {
+    copyBtn.textContent = '복사 실패 — 주소창을 쓰세요';
+  }
+  setTimeout(() => { copyBtn.textContent = old; }, 1500);
 });

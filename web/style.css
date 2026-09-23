@@ -21,3 +21,6 @@ figcaption { color: var(--tx2); font-size: 13px; padding-top: 8px; text-align: c
 footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
          color: var(--tx2); font-size: 12px; }
 footer a { color: var(--tx2); }
+.actions { display: flex; gap: 8px; justify-content: center; margin: 12px 0 0; }
+.actions button { background: transparent; color: var(--tx); border: 1px solid var(--line); }
+.actions button:hover { border-color: var(--acc); color: var(--acc); }
