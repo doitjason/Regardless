@@ -228,3 +228,41 @@ describe('표제어는 입력에서 닿을 수 있어야 한다', () => {
     }
   });
 });
+
+describe('한 개념 한 표제어 (계획 III 최종 리뷰 C6)', () => {
+  it('한 형태는 한 개념에만 닿는다 — 별칭이 겹치지 않는다', () => {
+    const lex = loadSeedLexicon();
+    const seen = new Map<string, string>();
+    for (const e of Object.values(lex)) {
+      for (const f of [e.lemma, ...(e.aliases ?? [])]) {
+        expect(seen.get(f), `${f}: ${e.lemma} 와 ${seen.get(f)}`).toBeUndefined();
+        seen.set(f, e.lemma);
+      }
+    }
+  });
+
+  it('영어 형태도 한 개념에만 닿는다', () => {
+    const seen = new Map<string, string>();
+    for (const e of Object.values(loadSeedLexicon())) {
+      for (const g of [e.gloss_en, ...(e.glossAliases ?? [])].map((x) => x.toLowerCase())) {
+        expect(seen.get(g), `${g}: ${e.lemma} 와 ${seen.get(g)}`).toBeUndefined();
+        seen.set(g, e.lemma);
+      }
+    }
+  });
+
+  it('별칭으로 찾아도 대표 표제어가 나온다', () => {
+    const lex = loadSeedLexicon();
+    expect(lookup(lex, '선택하다')?.lemma).toBe('선택');
+    expect(lookup(lex, '기다리다')?.lemma).toBe('기다림');
+  });
+
+  it('사실상 같은 개념이 두 항목으로 남아 있지 않다', () => {
+    // 자질 거리(L1)가 이보다 가까우면 같은 개념의 중복으로 본다
+    const es = Object.values(loadSeedLexicon());
+    for (let i = 0; i < es.length; i++) for (let j = i + 1; j < es.length; j++) {
+      const d = FEATURE_KEYS.reduce((s, k) => s + Math.abs(es[i]!.features[k] - es[j]!.features[k]), 0);
+      expect(d, `${es[i]!.lemma} / ${es[j]!.lemma}`).toBeGreaterThanOrEqual(0.06);
+    }
+  });
+});

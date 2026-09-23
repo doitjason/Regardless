@@ -59,8 +59,8 @@ describe('parseEn', () => {
 
 describe('동사 기본형', () => {
   it('영어 동사가 명사형만 있는 개념에도 닿는다', () => {
-    for (const [sentence, lemma] of [['I wait', '기다리다'], ['I hate you', '미워하다'],
-                                     ['I choose you', '선택하다']] as const) {
+    for (const [sentence, lemma] of [['I wait', '기다림'], ['I hate you', '미움'],
+                                     ['I choose you', '선택']] as const) {
       const cs = parseEn(sentence, lex);
       expect(cs.some((c) => c.kind === 'concept' && c.lemma === lemma), sentence).toBe(true);
     }
@@ -73,7 +73,7 @@ describe('동사 기본형', () => {
 
 describe('불규칙 과거형', () => {
   it('met·saw·went 가 기본형에 닿는다', () => {
-    for (const [s, lemma] of [['we met yesterday', '만나다'], ['I saw the sky', '보다'],
+    for (const [s, lemma] of [['we met yesterday', '만남'], ['I saw the sky', '보다'],
                               ['I gave water', '주다']] as const) {
       expect(parseEn(s, lex).some((c) => c.kind === 'concept' && c.lemma === lemma), s).toBe(true);
     }

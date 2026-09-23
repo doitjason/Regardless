@@ -59,9 +59,15 @@ function toLemma(word: string, lex: Lexicon, glossIndex: Map<string, string>): s
 }
 
 export function parseEn(text: string, lex: Lexicon): Constituent[] {
-  // gloss_en → lemma 색인. 사전은 불변이므로 매 호출 만들어도 결과가 같다.
+  // gloss_en/glossAliases → lemma 색인. 사전은 불변이므로 매 호출 만들어도
+  // 결과가 같다. `glossAliases` 를 같이 넣어야 한 개념의 다른 영어 형태
+  // (기본형·불규칙 과거형 등)가 모두 같은 lemma 에 닿는다 — 그래야 별칭
+  // 형태가 IR 에서 개념을 다시 갈라놓지 않는다 (설계 문서 6.1).
   const glossIndex = new Map<string, string>();
-  for (const entry of Object.values(lex)) glossIndex.set(entry.gloss_en.toLowerCase(), entry.lemma);
+  for (const entry of Object.values(lex)) {
+    glossIndex.set(entry.gloss_en.toLowerCase(), entry.lemma);
+    for (const alias of entry.glossAliases ?? []) glossIndex.set(alias.toLowerCase(), entry.lemma);
+  }
 
   const words = text.trim().split(/[\s,.;:!?]+/).filter(Boolean);
   const out: Constituent[] = [];

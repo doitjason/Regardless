@@ -35,7 +35,9 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-11"
+    "addedAt": "2026-09-11",
+    "aliases": ["미워하다"],
+    "glossAliases": ["hate"]
   },
   "기다림": {
     "lemma": "기다림",
@@ -54,7 +56,9 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-11"
+    "addedAt": "2026-09-11",
+    "aliases": ["기다리다"],
+    "glossAliases": ["wait"]
   },
   "그리움": {
     "lemma": "그리움",
@@ -187,7 +191,9 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-11"
+    "addedAt": "2026-09-11",
+    "aliases": ["선택하다"],
+    "glossAliases": ["choose", "chose", "chosen"]
   },
   "나": {
     "lemma": "나",
@@ -358,7 +364,9 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-11"
+    "addedAt": "2026-09-11",
+    "aliases": ["영원히"],
+    "glossAliases": ["eternally"]
   },
   "어제": {
     "lemma": "어제",
@@ -563,11 +571,13 @@
       "boundedness": 0.35,
       "sociality": 0.75
     },
-    "defaultRole": "대상",
+    "defaultRole": "행위",
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-21"
+    "addedAt": "2026-09-21",
+    "aliases": ["말하다"],
+    "glossAliases": ["speak", "spoke"]
   },
   "사람": {
     "lemma": "사람",
@@ -1171,11 +1181,13 @@
       "boundedness": 0.25,
       "sociality": 0.3
     },
-    "defaultRole": "대상",
+    "defaultRole": "행위",
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-21"
+    "addedAt": "2026-09-21",
+    "aliases": ["기억하다"],
+    "glossAliases": ["remember"]
   },
   "추억": {
     "lemma": "추억",
@@ -1213,7 +1225,9 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-21"
+    "addedAt": "2026-09-21",
+    "aliases": ["헤어지다"],
+    "glossAliases": ["separate"]
   },
   "만남": {
     "lemma": "만남",
@@ -1232,7 +1246,9 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-21"
+    "addedAt": "2026-09-21",
+    "aliases": ["만나다"],
+    "glossAliases": ["meet"]
   },
   "인사": {
     "lemma": "인사",
@@ -1251,7 +1267,9 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-21"
+    "addedAt": "2026-09-21",
+    "aliases": ["인사하다"],
+    "glossAliases": ["greet"]
   },
   "편지": {
     "lemma": "편지",
@@ -1519,25 +1537,6 @@
     "source": "seed",
     "addedAt": "2026-09-21"
   },
-  "말하다": {
-    "lemma": "말하다",
-    "gloss_en": "speak",
-    "features": {
-      "animacy": 0.3,
-      "agency": 0.7,
-      "concreteness": 0.15,
-      "valence": 0.55,
-      "intensity": 0.45,
-      "temporality": 0.35,
-      "boundedness": 0.35,
-      "sociality": 0.7
-    },
-    "defaultRole": "행위",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-21"
-  },
   "웃다": {
     "lemma": "웃다",
     "gloss_en": "laugh",
@@ -1645,63 +1644,6 @@
       "temporality": 0.35,
       "boundedness": 0.35,
       "sociality": 0.1
-    },
-    "defaultRole": "행위",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-21"
-  },
-  "만나다": {
-    "lemma": "만나다",
-    "gloss_en": "meet",
-    "features": {
-      "animacy": 0.35,
-      "agency": 0.6,
-      "concreteness": 0.18,
-      "valence": 0.78,
-      "intensity": 0.55,
-      "temporality": 0.45,
-      "boundedness": 0.5,
-      "sociality": 0.92
-    },
-    "defaultRole": "행위",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-21"
-  },
-  "헤어지다": {
-    "lemma": "헤어지다",
-    "gloss_en": "separate",
-    "features": {
-      "animacy": 0.3,
-      "agency": 0.4,
-      "concreteness": 0.15,
-      "valence": 0.15,
-      "intensity": 0.75,
-      "temporality": 0.5,
-      "boundedness": 0.55,
-      "sociality": 0.9
-    },
-    "defaultRole": "행위",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-21"
-  },
-  "기억하다": {
-    "lemma": "기억하다",
-    "gloss_en": "remember",
-    "features": {
-      "animacy": 0.25,
-      "agency": 0.45,
-      "concreteness": 0.1,
-      "valence": 0.6,
-      "intensity": 0.45,
-      "temporality": 0.75,
-      "boundedness": 0.25,
-      "sociality": 0.3
     },
     "defaultRole": "행위",
     "seedGlyph": null,
@@ -2030,26 +1972,9 @@
     "seedGlyph": null,
     "status": "confirmed",
     "source": "seed",
-    "addedAt": "2026-09-21"
-  },
-  "매우": {
-    "lemma": "매우",
-    "gloss_en": "extremely",
-    "features": {
-      "animacy": 0.02,
-      "agency": 0.02,
-      "concreteness": 0.05,
-      "valence": 0.5,
-      "intensity": 0.94,
-      "temporality": 0.12,
-      "boundedness": 0.1,
-      "sociality": 0.05
-    },
-    "defaultRole": "정도",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-21"
+    "addedAt": "2026-09-21",
+    "aliases": ["매우"],
+    "glossAliases": ["extremely"]
   },
   "조금": {
     "lemma": "조금",
@@ -2260,25 +2185,6 @@
     "source": "seed",
     "addedAt": "2026-09-21"
   },
-  "영원히": {
-    "lemma": "영원히",
-    "gloss_en": "eternally",
-    "features": {
-      "animacy": 0.04,
-      "agency": 0.06,
-      "concreteness": 0.06,
-      "valence": 0.62,
-      "intensity": 0.78,
-      "temporality": 0.97,
-      "boundedness": 0.04,
-      "sociality": 0.12
-    },
-    "defaultRole": "시간수식",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-21"
-  },
   "잠깐": {
     "lemma": "잠깐",
     "gloss_en": "briefly",
@@ -2430,81 +2336,5 @@
     "status": "confirmed",
     "source": "seed",
     "addedAt": "2026-09-21"
-  },
-  "기다리다": {
-    "lemma": "기다리다",
-    "gloss_en": "wait",
-    "features": {
-      "animacy": 0.12,
-      "agency": 0.4,
-      "concreteness": 0.15,
-      "valence": 0.55,
-      "intensity": 0.5,
-      "temporality": 0.85,
-      "boundedness": 0.13,
-      "sociality": 0.6
-    },
-    "defaultRole": "행위",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-22"
-  },
-  "미워하다": {
-    "lemma": "미워하다",
-    "gloss_en": "hate",
-    "features": {
-      "animacy": 0.1,
-      "agency": 0.35,
-      "concreteness": 0.12,
-      "valence": 0.06,
-      "intensity": 0.84,
-      "temporality": 0.3,
-      "boundedness": 0.11,
-      "sociality": 0.92
-    },
-    "defaultRole": "행위",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-22"
-  },
-  "선택하다": {
-    "lemma": "선택하다",
-    "gloss_en": "choose",
-    "features": {
-      "animacy": 0.1,
-      "agency": 1.0,
-      "concreteness": 0.2,
-      "valence": 0.55,
-      "intensity": 0.72,
-      "temporality": 0.55,
-      "boundedness": 0.73,
-      "sociality": 0.35
-    },
-    "defaultRole": "행위",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-22"
-  },
-  "인사하다": {
-    "lemma": "인사하다",
-    "gloss_en": "greet",
-    "features": {
-      "animacy": 0.15,
-      "agency": 0.65,
-      "concreteness": 0.18,
-      "valence": 0.68,
-      "intensity": 0.35,
-      "temporality": 0.3,
-      "boundedness": 0.53,
-      "sociality": 0.9
-    },
-    "defaultRole": "행위",
-    "seedGlyph": null,
-    "status": "confirmed",
-    "source": "seed",
-    "addedAt": "2026-09-22"
   }
 }

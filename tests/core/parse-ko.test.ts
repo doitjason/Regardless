@@ -80,11 +80,11 @@ describe('parseKo', () => {
   });
 
   it('축약형을 되돌려 사전에서 찾는다', () => {
-    // 기다려 = 기다리 + 어. 사전에는 명사형 '기다림' 이 있다.
+    // 기다려 = 기다리 + 어. 사전의 표제어는 명사형 '기다림' 하나뿐이다
+    // (계획 III 최종 리뷰 C6) — '기다리다' 는 그 별칭이므로, 이 어절을
+    // 어떻게 되돌리든 IR 에는 대표 표제어 '기다림' 만 새겨져야 한다.
     const cs = parseKo('너를 기다려', lex);
-    // 사전에 기본형(기다리다)과 명사형(기다림)이 둘 다 있다. 어느 쪽에 닿든
-    // 같은 개념이다 — 자질이 거의 같아 그림도 거의 같다.
-    expect(cs.some((c) => c.kind === 'concept' && (c.lemma === '기다리다' || c.lemma === '기다림')),
+    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '기다림'),
       JSON.stringify(cs)).toBe(true);
   });
 
@@ -116,14 +116,14 @@ describe('parseKo', () => {
   it('짐작으로 찾은 낱말은 용언만 받는다', () => {
     // 기다림(행위)은 받고, 봄(시간)은 받지 않는다
     const wait = parseKo('너를 기다려', lex);
-    expect(wait.some((c) => c.kind === 'concept' && (c.lemma === '기다리다' || c.lemma === '기다림'))).toBe(true);
+    expect(wait.some((c) => c.kind === 'concept' && c.lemma === '기다림')).toBe(true);
   });
 
   it('어간에 붙어 줄어든 과거형을 되돌린다', () => {
     const cs = parseKo('우리는 어제 만났다', lex);
-    // 기본형(만나다)이든 명사형(만남)이든 '만나다' 라는 뜻에 닿으면 된다.
-    // 어느 쪽을 고르는지는 사전이 무엇을 싣고 있느냐의 문제다.
-    expect(cs.some((c) => c.kind === 'concept' && (c.lemma === '만나다' || c.lemma === '만남')),
+    // 사전의 표제어는 명사형 '만남' 하나뿐이다 (계획 III 최종 리뷰 C6) —
+    // '만나다' 는 그 별칭이므로 IR 에는 대표 표제어만 새겨져야 한다.
+    expect(cs.some((c) => c.kind === 'concept' && c.lemma === '만남'),
       JSON.stringify(cs)).toBe(true);
   });
 

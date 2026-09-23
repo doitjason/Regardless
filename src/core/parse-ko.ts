@@ -213,35 +213,38 @@ function isVerbalGuess(entry: LexiconEntry): boolean {
   return entry.defaultRole === '행위';
 }
 
-/** 한 후보 어간에 명사형 만들기 → 하 떼기 순서로 사전을 조회한다. 짐작 가드를 거친다. */
-function resolveViaTricks(
-  candidate: string,
-  lex: Lexicon,
-): { lemma: string; entry: LexiconEntry } | null {
+/**
+ * 한 후보 어간에 명사형 만들기 → 하 떼기 순서로 사전을 조회한다. 짐작 가드를 거친다.
+ *
+ * 반환값은 찾아낸 사전 항목 그 자체다 — 후보 문자열(`plain`, `hada` …)이
+ * 아니라 `entry.lemma` 를 쓴다. `lookup` 이 별칭도 보므로, 후보 문자열이
+ * 대표 표제어가 아니라 별칭일 수 있다(예: 후보가 `기다리` 일 때
+ * `${candidate}다` = `기다리다` 는 `기다림` 의 별칭이다). 후보 문자열을
+ * 그대로 lemma 로 썼다면 별칭이 IR 에 새겨져 같은 개념이 다시 갈라진다.
+ */
+function resolveViaTricks(candidate: string, lex: Lexicon): LexiconEntry | undefined {
   // 기본형 만들기가 가장 먼저다. 사전은 용언을 기본형으로 싣고 있으므로
   // (`보다` `오다` `만나다`), 어간에 `다` 를 붙이는 것이 가장 곧은 길이다.
   // 명사형 만들기를 먼저 하면 `보 → 봄` 처럼 우연히 다른 낱말에 걸릴 수 있다.
-  const plain = `${candidate}다`;
-  const plainEntry = lookup(lex, plain);
-  if (plainEntry && isVerbalGuess(plainEntry)) return { lemma: plain, entry: plainEntry };
+  const plainEntry = lookup(lex, `${candidate}다`);
+  if (plainEntry && isVerbalGuess(plainEntry)) return plainEntry;
 
   // '하다' 붙이기 — '미워해 → 미워 → 미워하다', '선택했어 → 선택 → 선택하다'.
   // 어미를 떼면 '하' 까지 같이 떨어지는 경우가 많아 기본형이 두 음절 모자란다.
-  const hada = `${candidate}하다`;
-  const hadaEntry = lookup(lex, hada);
-  if (hadaEntry && isVerbalGuess(hadaEntry)) return { lemma: hada, entry: hadaEntry };
+  const hadaEntry = lookup(lex, `${candidate}하다`);
+  if (hadaEntry && isVerbalGuess(hadaEntry)) return hadaEntry;
 
   const nominalized = nominalize(candidate);
   if (nominalized) {
     const e = lookup(lex, nominalized);
-    if (e && isVerbalGuess(e)) return { lemma: nominalized, entry: e };
+    if (e && isVerbalGuess(e)) return e;
   }
   const rooted = deHa(candidate);
   if (rooted) {
     const e = lookup(lex, rooted);
-    if (e && isVerbalGuess(e)) return { lemma: rooted, entry: e };
+    if (e && isVerbalGuess(e)) return e;
   }
-  return null;
+  return undefined;
 }
 
 /**
@@ -249,17 +252,17 @@ function resolveViaTricks(
  * 1) 어간 그대로 명사형/하-제거 시도
  * 2) 안 되면 ㅆ받침 과거형을 되돌린 어간으로 직접 조회 + 같은 두 가지 시도
  * 3) 안 되면 축약모음을 되돌린 어간으로 직접 조회 + 같은 두 가지 시도
- * 모두 실패하면 null — 호출 쪽은 원래 어간으로 음소 폴백을 그대로 쓴다.
+ * 모두 실패하면 undefined — 호출 쪽은 원래 어간으로 음소 폴백을 그대로 쓴다.
  * 여기서 나가는 모든 결과는 짐작이므로 `isVerbalGuess` 가드를 거친다.
  */
-function resolveContractedStem(stem: string, lex: Lexicon): { lemma: string; entry: LexiconEntry } | null {
+function resolveContractedStem(stem: string, lex: Lexicon): LexiconEntry | undefined {
   const direct = resolveViaTricks(stem, lex);
   if (direct) return direct;
 
   const fusedPast = revertFusedPastCoda(stem);
   if (fusedPast) {
     const e = lookup(lex, fusedPast);
-    if (e && isVerbalGuess(e)) return { lemma: fusedPast, entry: e };
+    if (e && isVerbalGuess(e)) return e;
     const viaTricks = resolveViaTricks(fusedPast, lex);
     if (viaTricks) return viaTricks;
   }
@@ -267,11 +270,11 @@ function resolveContractedStem(stem: string, lex: Lexicon): { lemma: string; ent
   const reverted = revertContractedVowel(stem);
   if (reverted && reverted !== stem) {
     const e = lookup(lex, reverted);
-    if (e && isVerbalGuess(e)) return { lemma: reverted, entry: e };
+    if (e && isVerbalGuess(e)) return e;
     const viaTricks = resolveViaTricks(reverted, lex);
     if (viaTricks) return viaTricks;
   }
-  return null;
+  return undefined;
 }
 
 /** 어절에서 조사를 떼어 낸다. 떼지 못하면 role 은 null. */
@@ -309,16 +312,14 @@ export function parseKo(text: string, lex: Lexicon): Constituent[] {
     // 3) 조사 뒤에 남은 대명사 이형태를 기본형으로 되돌린다 (내→나, 네→너, 제→저)
     const stem = PRONOUN_VARIANTS[strippedStem] ?? strippedStem;
 
+    // `lookup` 이 별칭도 보므로, `entry` 를 직접 찾았을 때도 stem 이 아니라
+    // `entry.lemma` 를 써야 한다 — stem 자체가 별칭 문자열일 수 있다
+    // (예: '선택하다' 가 조사 없이 그대로 남았을 때).
     let entry = lookup(lex, stem);
-    let lemma = stem;
     if (!entry) {
       // 4) 직접 조회가 실패하면 축약형을 되돌려 다시 찾는다 (보았다→봄, 기다려→기다림).
       //    실패하면 entry 는 계속 undefined 고, 아래에서 음소 폴백으로 내려간다.
-      const resolved = resolveContractedStem(stem, lex);
-      if (resolved) {
-        entry = resolved.entry;
-        lemma = resolved.lemma;
-      }
+      entry = resolveContractedStem(stem, lex);
     }
 
     let role: Role;
@@ -342,7 +343,7 @@ export function parseKo(text: string, lex: Lexicon): Constituent[] {
     if (role === '양상') role = '대상';
 
     if (entry) {
-      out.push({ kind: 'concept', lemma, role });
+      out.push({ kind: 'concept', lemma: entry.lemma, role });
       continue;
     }
     const syllables = syllabify(stem);

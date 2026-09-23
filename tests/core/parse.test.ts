@@ -62,4 +62,15 @@ describe('parse', () => {
     expect(canonicalize(parse('나는 너를 사랑해', lex)))
       .toBe(canonicalize(parse('나는 너를 사랑해', lex)));
   });
+
+  it('한 개념의 여러 형태가 두 언어에서 같은 IR 을 낸다 (스펙 6.1)', () => {
+    const same = (a: string, b: string) =>
+      expect(canonicalize(parse(b, lex)), `${a} / ${b}`).toBe(canonicalize(parse(a, lex)));
+    same('나는 너를 선택했다', 'I choose you');
+    same('나는 너를 선택했다', 'I chose you');
+    same('나는 너를 기다려', 'I wait for you');
+    same('나는 너를 기다려', 'I am waiting for you');
+    same('나는 너를 기억해', 'I remember you');
+    same('나는 너를 미워해', 'I hate you');
+  });
 });
