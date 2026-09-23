@@ -127,10 +127,13 @@ export function parseEn(text: string, lex: Lexicon): Constituent[] {
   }
   const pivotAt = verbAt >= 0 ? verbAt : copulaAt;
 
-  let pendingPrep: 'place' | 'dir' | null = null;
+  let pendingPrep: 'place' | 'dir' | 'compare' | null = null;
   for (let i = 0; i < words.length; i++) {
     const raw = words[i]!;
     const w = raw.toLowerCase();
+    // 동사 뒤의 `like` 는 동사(좋아함)가 아니라 비교 전치사다 — 한국어 `처럼` 과 같은
+    // 대상수식 자리 (`I love you like a star` = `너를 별처럼 사랑해`).
+    if (w === 'like' && verbAt >= 0 && i > verbAt) { pendingPrep = 'compare'; continue; }
     if (PLACE_PREP.has(w)) { pendingPrep = 'place'; continue; }
     if (DIR_PREP.has(w)) { pendingPrep = 'dir'; continue; }
     if (STOP.has(w)) continue;
@@ -144,6 +147,7 @@ export function parseEn(text: string, lex: Lexicon): Constituent[] {
     // (I2) — 한국어 '에' 가 조형이 아니라 temporality 로 갈리는 것과 같다.
     if (pendingPrep === 'place') role = entry && entry.defaultRole === '시간' ? '시간' : '장소';
     else if (pendingPrep === 'dir') role = '방향';
+    else if (pendingPrep === 'compare') role = '대상수식';
     else if (i === verbAt) role = '행위';
     // 관사 + 시간 명사는 부사가 아니라 문장 성분이다 (I1: `I love the night`
     // → 대상, `the morning is bright` → 주체). 관사가 없는 시간 낱말(`I wait

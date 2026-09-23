@@ -117,3 +117,17 @@ describe('연인 문장 — 두 언어가 같은 그림 (알다/잃다, -고 싶
     expect(brief('보고 싶지 않아')).toBe('행위:그리움');
   });
 });
+
+describe('비교 전치사 like', () => {
+  it('동사 뒤의 like 는 처럼 과 같은 그림이다', () => {
+    expect(canonicalize(parse('I love you like a star', lex)))
+      .toBe(canonicalize(parse('나는 너를 별처럼 사랑해', lex)));
+  });
+
+  it('동사 자리의 like 는 그대로 좋아함이다', () => {
+    const ir = parse('I like you', lex);
+    expect(ir.constituents.some((c) => c.kind === 'concept' && c.lemma === '좋아함' && c.role === '행위')).toBe(true);
+    expect(parse('I love you like a star', lex).constituents
+      .some((c) => c.kind === 'concept' && c.lemma === '좋아함')).toBe(false);
+  });
+});
