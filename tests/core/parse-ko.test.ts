@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseKo } from '../../src/core/parse-ko';
 import { parse } from '../../src/core/parse';
 import { loadSeedLexicon, lookup } from '../../src/core/lexicon';
-import type { Constituent } from '../../src/core/ir';
+import { canonicalize, type Constituent } from '../../src/core/ir';
 
 const lex = loadSeedLexicon();
 const lookupRole = (w: string) => lookup(lex, w)?.defaultRole;
@@ -306,6 +306,34 @@ describe('짐작 가드 — 음성 사례', () => {
       const cs = parseKo(s, lex);
       expect(cs.every((c) => c.kind === 'phonetic'), `${s}: ${brief(cs)}`).toBe(true);
     }
+  });
+});
+
+describe('3인칭 대명사와 지시 관형사 — 영어 she/he/they 와 같은 그림', () => {
+  it('그녀·그·그들은 사람이다', () => {
+    expect(brief(parseKo('그녀가 나를 사랑해', lex))).toBe('주체:사람 대상:나 행위:사랑');
+    expect(brief(parseKo('그가 나를 사랑해', lex))).toBe('주체:사람 대상:나 행위:사랑');
+    expect(brief(parseKo('나는 그를 사랑해', lex))).toBe('주체:나 대상:사람 행위:사랑');
+    expect(brief(parseKo('그녀의 마음', lex))).toBe('주체수식:사람 대상:마음');
+    expect(brief(parseKo('그들은 웃었다', lex))).toBe('주체:사람 행위:웃다');
+  });
+
+  it('그녀가 나를 사랑해 는 She loves me 와 같은 IR 이다', () => {
+    expect(canonicalize(parse('그녀가 나를 사랑해', lex))).toBe(canonicalize(parse('She loves me', lex)));
+  });
+
+  it('명사 앞의 홀로 선 그 는 관형사다 — 그리지 않는다', () => {
+    expect(brief(parse('그 사람이 나를 사랑해', lex).constituents)).toBe('주체:사람 대상:나 행위:사랑');
+    expect(brief(parseKo('이 밤에 너를 기다려', lex))).toBe('시간:밤 대상:너 행위:기다림');
+  });
+
+  it('그 로 시작하는 다른 낱말은 사람이 아니다', () => {
+    for (const s of ['그림', '그림을 보았다', '그럼에도', '그대가 웃는다', '그리움', '그리고']) {
+      const cs = parseKo(s, lex);
+      expect(hasLemma(cs, '사람'), `${s}: ${brief(cs)}`).toBe(false);
+    }
+    expect(parse('그럼에도 불구하고 나는 너를 사랑해', lex).constituents.some(
+      (c) => c.kind === 'concept' && c.lemma === '사람')).toBe(false);
   });
 });
 
