@@ -361,3 +361,20 @@ describe('기본형 되찾기', () => {
     expect(parseKo('바다를 보았다', lex).some((c) => c.kind === 'concept' && c.lemma === '바다')).toBe(true);
   });
 });
+
+describe('그 는 대명사로 읽히는 조사 앞에서만 사람이다', () => {
+  const hasPerson = (s: string) =>
+    parseKo(s, lex).some((c) => c.kind === 'concept' && c.lemma === '사람');
+
+  it('그만·그로·그에·그은 은 사람이 아니다', () => {
+    for (const s of ['그만', '그만 울어', '그로 인해 슬프다', '그에 따라 변한다', '그은 선']) {
+      expect(hasPerson(s), s).toBe(false);
+    }
+  });
+
+  it('그가·그를·그에게·그들이·그들과 는 사람이다', () => {
+    for (const s of ['그가 웃는다', '그를 기다려', '그에게 말해', '그들이 왔다', '그들과 함께']) {
+      expect(hasPerson(s), s).toBe(true);
+    }
+  });
+});

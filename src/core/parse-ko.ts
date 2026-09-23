@@ -97,11 +97,20 @@ const PRONOUN_VARIANTS: Record<string, string> = {
   // `사람` 으로 보내므로, 두 언어가 같은 그림을 내려면 여기서도 그래야 한다
   // (스펙 6.1). 그녀·그·그들은 일부러 한 그림으로 접는다 — 성별과 수를 가르는
   // 표제어가 사전에 없고, 음소 폴백으로 두면 `그녀가 나를 사랑해` 와
-  // `She loves me` 가 다른 목걸이가 된다. 복수 `그들` 은 `lookupNoun` 의
-  // `들` 벗기기로 `그` 에 닿는다. 조사 없이 홀로 선 `그` 는 관형사다 —
-  // `DETERMINERS` 참고.
+  // `She loves me` 가 다른 목걸이가 된다. 한 글자 `그`·`그들` 은 여기 두지 않고
+  // `readThirdPerson` 이 조사를 보고 가른다. 조사 없이 홀로 선 `그` 는
+  // 관형사다 — `DETERMINERS` 참고.
   '그녀': '사람',
-  '그': '사람',
+};
+
+/**
+ * `그`·`그들` 이 대명사로 읽히는 조사. `그만`·`그로 (인해)`·`그에 (따라)` 는
+ * 대명사가 아닌 쓰임이 흔하고 `그은`·`그을` 은 `긋다` 라서 뺀다. `그들` 은
+ * 받침이 있어 받침 뒤 조사를 쓴다.
+ */
+const THIRD_PERSON_PARTICLES: Record<string, ReadonlySet<string>> = {
+  '그': new Set(['가', '는', '를', '의', '도', '와', '랑', '에게', '한테']),
+  '그들': new Set(['이', '은', '을', '의', '도', '과', '이랑', '에게', '한테']),
 };
 
 /**
@@ -548,7 +557,22 @@ function nounAfterParticle(
   return null;
 }
 
+/**
+ * `그가`·`그들을` → `사람`. 대명사로 읽히는 조사가 붙었을 때만 받고,
+ * 아니면 undefined 를 돌려 보통 규칙에 맡긴다 (`THIRD_PERSON_PARTICLES`).
+ */
+function readThirdPerson(word: string, lex: Lexicon): Constituent | undefined {
+  const p = stripParticle(word);
+  if (!p || !THIRD_PERSON_PARTICLES[p.stem]?.has(p.suffix)) return undefined;
+  const person = lookup(lex, '사람');
+  return person ? concept(person, particleRole(p.role, person)) : undefined;
+}
+
 function readWord(word: string, lex: Lexicon): Constituent | null {
+  // 0) 3인칭 `그` — 조사로 대명사인지 가린다
+  const third = readThirdPerson(word, lex);
+  if (third) return third;
+
   // 1) 어절 전체 (C2)
   const whole = lookupNoun(word, lex);
   if (whole) return concept(whole, whole.defaultRole);
