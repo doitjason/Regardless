@@ -7,6 +7,9 @@ import { encodeShare, decodeShare } from './share';
 const lex = loadSeedLexicon();
 const look = loadLook();
 
+/** 마지막으로 그린 SVG — 내려받기 버튼이 쓴다. 그림이 없으면 빈 문자열. */
+let lastSvg = '';
+
 /**
  * 문장 하나를 그려 넣는다. 오류는 던지지 않고 화면에 적는다 —
  * 사용자가 무엇을 고쳐야 하는지 알아야 하기 때문이다.
@@ -21,6 +24,7 @@ export function renderInto(root: HTMLElement, text: string): void {
     glyphEl.innerHTML = '';
     captionEl.textContent = '';
     errorEl.hidden = true;
+    lastSvg = '';
     return;
   }
 
@@ -29,6 +33,7 @@ export function renderInto(root: HTMLElement, text: string): void {
     const result = render(ir, lex, look, { size: 640 });
     glyphEl.innerHTML = result.svg;
     glyphEl.setAttribute('aria-label', `${trimmed} 의 로고그램`);
+    lastSvg = result.svg;
 
     const words = ir.constituents.length;
     const spelled = ir.constituents.filter((c) => c.kind === 'phonetic').length;
@@ -45,6 +50,7 @@ export function renderInto(root: HTMLElement, text: string): void {
     captionEl.textContent = '';
     errorEl.textContent = (e as Error).message;
     errorEl.hidden = false;
+    lastSvg = '';
   }
 }
 
@@ -92,4 +98,19 @@ copyBtn.addEventListener('click', async () => {
     copyBtn.textContent = '복사 실패 — 주소창을 쓰세요';
   }
   setTimeout(() => { copyBtn.textContent = old; }, 1500);
+});
+
+import { downloadSvg, downloadPng, fileNameFor } from './download';
+
+const svgBtn = document.getElementById('saveSvg') as HTMLButtonElement;
+const pngBtn = document.getElementById('savePng') as HTMLButtonElement;
+
+svgBtn.addEventListener('click', () => {
+  if (lastSvg === '') return;
+  downloadSvg(lastSvg, fileNameFor(input.value, 'svg'));
+});
+
+pngBtn.addEventListener('click', () => {
+  if (lastSvg === '') return;
+  void downloadPng(lastSvg, fileNameFor(input.value, 'png'), 1200);
 });
