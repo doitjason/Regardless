@@ -33,7 +33,7 @@ export function detectLanguage(text: string): Language {
  */
 export function parse(text: string, lex: Lexicon): IR {
   const lang = detectLanguage(text);
-  const { mood, rest } = lang === 'ko' ? detectMoodKo(text) : detectMoodEn(text);
+  const { mood, rest } = lang === 'ko' ? detectMoodKo(text, lex) : detectMoodEn(text);
   const constituents = lang === 'ko' ? parseKo(rest, lex) : parseEn(rest, lex);
   if (constituents.length === 0) {
     throw new Error(`parse: 성분이 하나도 없다 — 그릴 것이 없다: "${text}"`);
