@@ -93,7 +93,23 @@ const PRONOUN_VARIANTS: Record<string, string> = {
   '내': '나',
   '네': '너',
   '제': '저',
+  // 3인칭 대명사 → `사람`. 영어 파서가 she/he/they/him/her/them 을 같은 항목
+  // `사람` 으로 보내므로, 두 언어가 같은 그림을 내려면 여기서도 그래야 한다
+  // (스펙 6.1). 그녀·그·그들은 일부러 한 그림으로 접는다 — 성별과 수를 가르는
+  // 표제어가 사전에 없고, 음소 폴백으로 두면 `그녀가 나를 사랑해` 와
+  // `She loves me` 가 다른 목걸이가 된다. 복수 `그들` 은 `lookupNoun` 의
+  // `들` 벗기기로 `그` 에 닿는다. 조사 없이 홀로 선 `그` 는 관형사다 —
+  // `DETERMINERS` 참고.
+  '그녀': '사람',
+  '그': '사람',
 };
+
+/**
+ * 지시 관형사. 조사 없이 홀로 서고 뒤에 어절이 이어지면 뒤 명사를 꾸밀
+ * 뿐이므로 그리지 않는다 (`그 사람이` → `사람`). 조사가 붙은 `그가`·`그를` 은
+ * 대명사다 — 어절 자체가 `그` 가 아니므로 여기 걸리지 않는다.
+ */
+const DETERMINERS = new Set(['그', '이', '저']);
 
 // ─── 한글 음절 산수 ─────────────────────────────────────────────────────────
 //
@@ -599,9 +615,10 @@ function clean(word: string): string {
 
 export function parseKo(text: string, lex: Lexicon): Constituent[] {
   const out: Constituent[] = [];
-  for (const raw of text.trim().split(/\s+/)) {
-    const word = clean(raw);
-    if (word.length === 0) continue;
+  const words = text.trim().split(/\s+/).map(clean).filter((w) => w.length > 0);
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i] ?? '';
+    if (DETERMINERS.has(word) && i + 1 < words.length) continue;
     const c = readWord(word, lex);
     if (c) out.push(c);
   }
