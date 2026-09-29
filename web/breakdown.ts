@@ -1,4 +1,6 @@
 import type { RenderResult } from '../src/render/compose';
+import { partKeyOf } from '../src/render/parts';
+export { partKeyOf };
 
 export interface Part {
   /** 라벨과 역할을 합친 키 — DOM 속성으로 쓴다 */
@@ -32,17 +34,6 @@ export function partsOf(result: RenderResult): Part[] {
   return [...byKey.values()];
 }
 
-/**
- * 획 하나가 어느 묶음에 속하는지. 목록과 강조가 **같은 규칙**을 써야 하므로
- * 한 곳에 둔다.
- *
- * 링의 획들(본체·겹선·양보의 지나침)은 라벨이 달라도 한 묶음이다. 보는
- * 사람에게는 모두 "링" 이고, 두 줄로 나오면 링이 둘인 것처럼 읽힌다.
- */
-export function partKeyOf(s: { role: unknown; label: string }): string {
-  const role = String(s.role);
-  return role === 'ring' ? 'ring|링' : `${role}|${s.label}`;
-}
 
 /** 사람이 읽을 한 줄. */
 export function describe(part: Part): string {
