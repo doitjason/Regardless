@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>장면 실험실</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0d0e; color: #d8dcdc; font: 13px/1.4 system-ui, sans-serif; overflow: hidden; }
+    #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+    #bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 8px; width: min(560px, calc(100vw - 32px)); }
+    #bar input { flex: 1; padding: 10px 12px; border-radius: 6px; border: 1px solid #ffffff22; background: #0008; color: #eee; font-size: 15px; }
+    #bar button, #panel button { padding: 8px 12px; border-radius: 6px; border: 1px solid #ffffff33; background: #0009; color: #eee; cursor: pointer; }
+    #panel { position: fixed; top: 0; right: 0; bottom: 0; width: 330px; overflow-y: auto; background: #0b0d0eee; border-left: 1px solid #ffffff18; padding: 12px; box-sizing: border-box; }
+    #panel.hide { display: none; }
+    #panel summary { cursor: pointer; font-weight: 600; margin: 10px 0 6px; }
+    .row { display: grid; grid-template-columns: 1fr 48px; gap: 2px 8px; margin: 6px 0; }
+    .row input { grid-column: 1 / 3; width: 100%; }
+    .v { text-align: right; color: #9ab; font-variant-numeric: tabular-nums; }
+    #out { width: 100%; height: 120px; margin-top: 8px; background: #000; color: #9c9; font: 11px monospace; }
+    #toggle { position: fixed; top: 10px; right: 340px; }
+    #toggle.alone { right: 10px; }
+    #fps { position: fixed; left: 10px; top: 10px; color: #fff8; font: 11px monospace; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="fps"></div>
+  <form id="bar" autocomplete="off">
+    <input id="text" value="그럼에도 불구하고 나는 너를 사랑해">
+    <button type="submit">번지기</button>
+  </form>
+  <button id="toggle">패널 숨기기</button>
+  <div id="panel">
+    <div id="groups"></div>
+    <details open>
+      <summary>설정 내보내기</summary>
+      <button id="copy">JSON 복사</button> <button id="reset">기본값</button>
+      <textarea id="out" readonly></textarea>
+      <p>마음에 드는 조합이 나오면 이 JSON 을 주세요.</p>
+    </details>
+  </div>
+  <script type="module" src="./lab.ts"></script>
+</body>
+</html>
