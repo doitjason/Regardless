@@ -6,7 +6,7 @@ import { loadLook } from '../src/render/look';
 import { maskVertices, FLOATS_PER_VERTEX } from './smoke/geometry';
 import { MASK_VS, MASK_FS, SMOKE_VS } from './smoke/shaders';
 import { loadScreen } from './screen';
-import { LAB_PARAMS, JS_ONLY_KEYS, SCENE_FS } from './lab-shader';
+import { LAB_PARAMS, JS_ONLY_KEYS, SCENE_FS, NOISE_FS, NOISE_SIZE } from './lab-shader';
 
 /**
  * 장면 실험실 — 개발용 페이지 (배포 번들에 들어가지 않는다).
@@ -70,10 +70,34 @@ const quadBuf = gl.createBuffer()!;
 gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 
+// ── 노이즈 텍스처 — 시작할 때 한 번 굽고, 장면 셰이더는 읽기만 한다 ──
+const noiseTex = gl.createTexture()!;
+{
+  gl.bindTexture(gl.TEXTURE_2D, noiseTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, NOISE_SIZE, NOISE_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  const nfbo = gl.createFramebuffer()!;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, nfbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, noiseTex, 0);
+  gl.viewport(0, 0, NOISE_SIZE, NOISE_SIZE);
+  const noiseProg = link(SMOKE_VS, NOISE_FS);
+  gl.useProgram(noiseProg);
+  gl.uniform1f(gl.getUniformLocation(noiseProg, 'uSize'), NOISE_SIZE);
+  const a = gl.getAttribLocation(noiseProg, 'a');
+  gl.enableVertexAttribArray(a);
+  gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(nfbo);
+}
+
 const U = (n: string) => gl!.getUniformLocation(sceneProg, n);
 const uniforms = Object.keys(DEF).filter((k) => !JS_ONLY_KEYS.has(k)).map((k) => [k, U(k)] as const);
 const uMask = U('uMask'), uRes = U('uRes'), uT = U('uT'), uHalf = U('uHalf'),
-  uProg = U('uProg'), uHighlight = U('uHighlight'), uRingR = U('uRingR');
+  uProg = U('uProg'), uHighlight = U('uHighlight'), uRingR = U('uRingR'), uNoise = U('uNoise');
 
 // ── 문장 → 마스크 ──
 const bloom = { t0: performance.now(), duration: 1 };
@@ -125,6 +149,10 @@ function frame(now: number): void {
   gl!.activeTexture(gl!.TEXTURE0);
   gl!.bindTexture(gl!.TEXTURE_2D, maskTex);
   gl!.uniform1i(uMask, 0);
+  gl!.activeTexture(gl!.TEXTURE1);
+  gl!.bindTexture(gl!.TEXTURE_2D, noiseTex);
+  gl!.uniform1i(uNoise, 1);
+  gl!.activeTexture(gl!.TEXTURE0);
   gl!.uniform2f(uRes, canvas.width, canvas.height);
   gl!.uniform1f(uT, 3.7 + ((now - t0) / 1000) % 600);
   gl!.uniform1f(uHalf, P_SPAN);
