@@ -18,18 +18,32 @@ const screen = loadScreen();
 const smokeCanvas = document.getElementById('smoke') as HTMLCanvasElement;
 const smoke = SmokeRenderer.create(smokeCanvas, look);
 smokeCanvas.hidden = smoke === null;
+/** 셰이더가 아직 살아 있나 — 컨텍스트를 잃으면 false 가 되고 SVG 길로 돌아간다. */
+let smokeAlive = smoke !== null;
+/** 살아 있는 렌더러, 아니면 null. */
+const liveSmoke = (): SmokeRenderer | null => (smokeAlive ? smoke : null);
 
 /** 지금 번지는 그림 — 시작 시각(ms), 길이(초), 강조 묶음 */
 const bloom = { t0: 0, duration: 1, highlight: -1 };
 
 /** 캔버스의 먹을 비운다 — 빈 입력·오류일 때 지난 그림이 남지 않게. */
 function clearSmoke(): void {
-  smoke?.setVertices(new Float32Array(0));
+  liveSmoke()?.setVertices(new Float32Array(0));
   bloom.highlight = -1;
 }
 
 /** 마지막으로 그린 SVG — 내려받기 버튼이 쓴다. 그림이 없으면 빈 문자열. */
 let lastSvg = '';
+
+// 폰에서 앱을 바꾸거나 인앱 브라우저가 컨텍스트를 빼앗으면 gl 호출이 조용히
+// 아무 일도 하지 않는다. 복구는 시도하지 않고, 마지막 SVG 로 대신한다.
+smokeCanvas.addEventListener('webglcontextlost', () => {
+  if (!smokeAlive) return;
+  smokeAlive = false;
+  smokeCanvas.hidden = true;
+  bloom.highlight = -1;
+  (document.getElementById('svgGlyph') as HTMLElement).innerHTML = lastSvg;
+});
 
 /**
  * 문장 하나를 그려 넣는다. 오류는 던지지 않고 화면에 적는다 —
@@ -46,6 +60,7 @@ export function renderInto(root: HTMLElement, text: string): void {
   if (trimmed === '') {
     svgEl.innerHTML = '';
     clearSmoke();
+    glyphEl.setAttribute('aria-label', '로고그램');
     captionEl.textContent = '';
     partsEl.innerHTML = '';
     errorEl.hidden = true;
@@ -62,9 +77,10 @@ export function renderInto(root: HTMLElement, text: string): void {
     // 먹 셰이더가 있으면 번짐을 시작하고 SVG 자리는 비운다
     const sk = buildStrokes(ir, lex, look);
     const arr = arrival(sk, look, screen.timing);
-    if (smoke) {
+    const sm = liveSmoke();
+    if (sm) {
       svgEl.innerHTML = '';
-      smoke.setVertices(maskVertices(sk, arr));
+      sm.setVertices(maskVertices(sk, arr));
       bloom.t0 = performance.now();
       bloom.duration = arr.duration;
       bloom.highlight = -1;
@@ -85,7 +101,6 @@ export function renderInto(root: HTMLElement, text: string): void {
 
     // 분해 보기 — 어느 획이 어느 낱말인지 (스펙 3)
     partsEl.innerHTML = '';
-    const paths = [...svgEl.querySelectorAll('path')];
     for (const part of partsOf(result)) {
       const li = document.createElement('li');
       li.textContent = describePart(part);
@@ -93,7 +108,9 @@ export function renderInto(root: HTMLElement, text: string): void {
       const partIndex = arr.parts.indexOf(part.key);
       const mark = (on: boolean) => {
         li.classList.toggle('on', on);
-        if (smoke) { bloom.highlight = on ? partIndex : -1; return; }
+        if (smokeAlive) { bloom.highlight = on ? partIndex : -1; return; }
+        // 컨텍스트를 잃은 뒤에는 그때의 SVG 가 들어 있으므로 누를 때 찾는다
+        const paths = [...svgEl.querySelectorAll('path')];
         result.strokes.forEach((s, i) => {
           if (partKeyOf(s) !== part.key) return;
           paths[i]?.setAttribute('fill', on ? '#c0563f' : '#16120e');
@@ -108,6 +125,7 @@ export function renderInto(root: HTMLElement, text: string): void {
   } catch (e) {
     svgEl.innerHTML = '';
     clearSmoke();
+    glyphEl.setAttribute('aria-label', '로고그램');
     captionEl.textContent = '';
     partsEl.innerHTML = '';
     errorEl.textContent = (e as Error).message;
@@ -176,12 +194,26 @@ pngBtn.addEventListener('click', () => {
 });
 
 // 번짐과 일렁임 — 문장이 없을 때도 돌지만 마스크가 비어 있어 안개만 보인다.
-// 탭이 가려지면 브라우저가 requestAnimationFrame 을 알아서 멈춘다.
+// 탭이 가려지면 브라우저가 requestAnimationFrame 을 알아서 멈추고,
+// 캔버스가 화면 밖이면 셰이더는 그리지 않는다.
 if (smoke) {
   new ResizeObserver(() => smoke.resize()).observe(smokeCanvas);
+  let onScreen = true;
+  if (typeof IntersectionObserver !== 'undefined') {
+    new IntersectionObserver((entries) => {
+      for (const en of entries) onScreen = en.isIntersecting;
+    }).observe(smokeCanvas);
+  }
+  // 일렁임 시계는 페이지가 열린 뒤로 흐른다 — 문장을 보낼 때마다 되감기지 않는다.
+  // 600초로 감아 sin 해시의 정밀도를 지킨다.
+  const pageT0 = performance.now();
   const frame = (now: number) => {
-    const el = (now - bloom.t0) / 1000;
-    smoke.draw(3.7 + el, Math.min(1, el / bloom.duration), bloom.highlight);
+    if (!smokeAlive) return;
+    if (onScreen) {
+      const ambient = 3.7 + (Math.max(0, now - pageT0) / 1000) % 600;
+      const el = Math.max(0, now - bloom.t0) / 1000;
+      smoke.draw(ambient, Math.min(1, el / bloom.duration), bloom.highlight);
+    }
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);

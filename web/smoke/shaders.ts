@@ -89,9 +89,10 @@ void main(){
   vec4 bw = textureLod(uMask, uvW, 5.0);
   float arrive = b.r > 0.02 ? b.g / b.r : (bw.r > 0.001 ? bw.g / bw.r : 1.0);
   float front = uProg * (1.0 + pFrontSoft);
-  float reveal = smoothstep(front, front - pFrontSoft, arrive);
-  float lead = exp(-pow((arrive - front + pFrontSoft*0.5) / max(pFrontSoft*0.55, 0.02), 2.0))
-             * step(0.001, uProg) * step(uProg, 0.999);
+  float reveal = 1.0 - smoothstep(front - pFrontSoft, front, arrive);
+  // pow(음수, 2.0) 은 GLSL ES 3.00 에서 정의되지 않는다 — 제곱으로 쓴다
+  float z = (arrive - front + pFrontSoft*0.5) / max(pFrontSoft*0.55, 0.02);
+  float lead = exp(-z*z) * step(0.001, uProg) * step(uProg, 0.999);
 
   // 획의 결 방향 — 흐린 마스크의 기울기에서 접선을 얻는다
   vec2 tx = 1.0 / vec2(textureSize(uMask, 0));
@@ -113,10 +114,10 @@ void main(){
 
   float turb = 1.0 + lead * pLeadTurb;
 
-  float interior = smoothstep(0.010, -pSoft, d + (nMid*0.022 + nHi*0.014) * pErode * turb);
+  float interior = 1.0 - smoothstep(-pSoft, 0.010, d + (nMid*0.022 + nHi*0.014) * pErode * turb);
   float substance = pow(n01(nGrain * pGrainAmp + nLow * 0.55), pContrast);
   float body = interior * (pFloor + (1.0 - pFloor) * substance);
-  float coreInk = smoothstep(-0.004, -0.030, d) * smoothstep(0.34, 0.86, substance);
+  float coreInk = (1.0 - smoothstep(-0.030, -0.004, d)) * smoothstep(0.34, 0.86, substance);
   // 얇은 세부 — LOD 0 을 직접 섞어야 가시가 살아남는다 (9.5.1c)
   float sharp = smoothstep(0.30, 0.72, m0) * pSharp;
 
