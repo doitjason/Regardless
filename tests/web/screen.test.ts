@@ -17,4 +17,14 @@ describe('loadScreen', () => {
     expect(() => loadScreen({ ...ok, bogus: 1 })).toThrow(/bogus/);
     expect(loadScreen({ ...ok, _: '설명' }).timing.ringSeconds).toBe(3);
   });
+
+  it('flowSpeed 는 0 보다 크고 나머지 시간은 0 이상이어야 한다 — 키 이름을 알려 준다', () => {
+    const ok = { ringSeconds: 3, depthSecondsPerUnit: 6, flowSpeed: 0.4, jitterSeconds: 0.2, tailSeconds: 0.8 };
+    expect(() => loadScreen({ ...ok, flowSpeed: 0 })).toThrow(/flowSpeed/);
+    expect(() => loadScreen({ ...ok, flowSpeed: -1 })).toThrow(/flowSpeed/);
+    for (const k of ['ringSeconds', 'depthSecondsPerUnit', 'jitterSeconds', 'tailSeconds'] as const) {
+      expect(() => loadScreen({ ...ok, [k]: -0.1 }), k).toThrow(new RegExp(k));
+      expect(loadScreen({ ...ok, [k]: 0 }).timing[k], k).toBe(0);
+    }
+  });
 });

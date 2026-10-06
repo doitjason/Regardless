@@ -90,3 +90,35 @@ describe('arrival', () => {
     expect(new Set(a.parts).size).toBe(a.parts.length);
   });
 });
+
+describe('arrival — 링 (스펙 7)', () => {
+  // 틈이 있는 룩으로 — 틈이 번짐을 막지 못한다는 것을 확인하려는 것이다
+  const gapLook = look.cGaps > 0 ? look : { ...look, cGaps: 2 };
+  const sk = buildStrokes(parse(KEY, lex), lex, gapLook);
+  const a = arrival(sk, gapLook, T);
+  const ringIdx = sk.strokes.flatMap((s, i) => (s.role === 'ring' ? [i] : []));
+
+  it('틈이 있는 양보문의 링을 시험한다', () => {
+    expect(gapLook.cGaps).toBeGreaterThan(0);
+    expect(ringIdx.length).toBeGreaterThan(0);
+  });
+
+  it('링의 모든 점은 자기 각도의 시각을 받는다 — 획 단위가 아니라 각도 단위', () => {
+    for (const i of ringIdx) {
+      const pts = sk.strokes[i]!.pts;
+      const times = a.strokes[i]!.times;
+      expect(times.length).toBe(pts.length);
+      pts.forEach((p, k) => {
+        expect(times[k]!).toBeCloseTo(ringTimeAt(Math.atan2(p[1], p[0]), a.origin, T), 12);
+      });
+    }
+  });
+
+  it('틈이 있어도 먹은 반대편까지 간다', () => {
+    let max = 0;
+    for (const i of ringIdx) for (const t of a.strokes[i]!.times) max = Math.max(max, t);
+    expect(max).toBeGreaterThan(T.ringSeconds * 0.97);
+    expect(max).toBeLessThanOrEqual(T.ringSeconds + 1e-9);
+  });
+});
+

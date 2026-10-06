@@ -13,6 +13,13 @@ export function loadScreen(source: Record<string, unknown> = raw as Record<strin
   const extra = Object.keys(source).filter(
     (k) => typeof source[k] === 'number' && !(TIMING_KEYS as readonly string[]).includes(k));
   if (extra.length > 0) throw new Error(`screen.json 에 선언되지 않은 값: ${extra.join(', ')}`);
+  // flowSpeed 는 나누는 수라 0 도 안 된다. 나머지 시간은 0 이상이면 된다.
+  for (const k of TIMING_KEYS) {
+    const v = source[k] as number;
+    if (k === 'flowSpeed' ? !(v > 0) : !(v >= 0)) {
+      throw new Error(`screen.json 의 ${k} 는 ${k === 'flowSpeed' ? '0 보다 커야' : '0 이상이어야'} 합니다: ${v}`);
+    }
+  }
   const timing = {} as ArrivalTiming;
   for (const k of TIMING_KEYS) timing[k] = source[k] as number;
   return { timing };

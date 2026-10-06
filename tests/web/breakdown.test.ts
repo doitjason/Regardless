@@ -1,7 +1,8 @@
 import { describe as group, it, expect } from 'vitest';
 import { partsOf, describe as describePart } from '../../web/breakdown';
 import { parse } from '../../src/core/parse';
-import { render } from '../../src/render/compose';
+import { render, buildStrokes } from '../../src/render/compose';
+import { arrival, type ArrivalTiming } from '../../src/render/arrival';
 import { loadSeedLexicon } from '../../src/core/lexicon';
 import { loadLook } from '../../src/render/look';
 
@@ -61,5 +62,19 @@ group('링 묶음', () => {
     const r = resultOf('나는 너를 사랑해');
     const ring = partsOf(r).find((p) => p.role === 'ring')!;
     expect(ring.count).toBe(r.strokes.filter((s) => String(s.role) === 'ring').length);
+  });
+});
+
+group('분해 보기와 번짐 묶음', () => {
+  it('분해 목록의 모든 키가 번짐 시간표의 묶음에 있다 — 강조가 빈 번호를 가리키지 않는다', () => {
+    const T: ArrivalTiming = { ringSeconds: 3, depthSecondsPerUnit: 6, flowSpeed: 0.4, jitterSeconds: 0.2, tailSeconds: 0.8 };
+    const sentences = ['나는 너를 사랑해', '그럼에도 불구하고 나는 너를 사랑해', '너는 너를 사랑해',
+      'Regardless, I love you', 'I see the sea'];
+    for (const text of sentences) {
+      const ir = parse(text, lex);
+      const keys = partsOf(render(ir, lex, look, { size: 300 })).map((p) => p.key);
+      const parts = arrival(buildStrokes(ir, lex, look), look, T).parts;
+      for (const k of keys) expect(parts, `${text} / ${k}`).toContain(k);
+    }
   });
 });
