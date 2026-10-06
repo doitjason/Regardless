@@ -29,3 +29,5 @@ footer a { color: var(--tx2); }
 .parts li { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px;
             font-size: 12px; color: var(--tx2); cursor: default; }
 .parts li.on, .parts li:focus-visible { border-color: var(--acc); color: var(--acc); outline: none; }
+#smoke { display: block; width: 100%; aspect-ratio: 1; }
+#smoke[hidden] { display: none; }
