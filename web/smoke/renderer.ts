@@ -27,6 +27,36 @@ function link(gl: WebGL2RenderingContext, vs: string, fs: string): WebGLProgram 
   return p;
 }
 
+/** 프로그램을 링크할 때 한 번 찾아 두는 유니폼·어트리뷰트 위치. 프레임마다 묻지 않는다. */
+interface Locations {
+  maskHalf: WebGLUniformLocation | null;
+  maskV: number;
+  smokeA: number;
+  uMask: WebGLUniformLocation | null;
+  uRes: WebGLUniformLocation | null;
+  uT: WebGLUniformLocation | null;
+  uHalf: WebGLUniformLocation | null;
+  uProg: WebGLUniformLocation | null;
+  uHighlight: WebGLUniformLocation | null;
+  look: ReadonlyArray<readonly [WebGLUniformLocation | null, (typeof SMOKE_LOOK_KEYS)[number]]>;
+}
+
+function locate(gl: WebGL2RenderingContext, maskProg: WebGLProgram, smokeProg: WebGLProgram): Locations {
+  const u = (name: string) => gl.getUniformLocation(smokeProg, name);
+  return {
+    maskHalf: gl.getUniformLocation(maskProg, 'uHalf'),
+    maskV: gl.getAttribLocation(maskProg, 'aV'),
+    smokeA: gl.getAttribLocation(smokeProg, 'a'),
+    uMask: u('uMask'),
+    uRes: u('uRes'),
+    uT: u('uT'),
+    uHalf: u('uHalf'),
+    uProg: u('uProg'),
+    uHighlight: u('uHighlight'),
+    look: SMOKE_LOOK_KEYS.map((k) => [u(k), k] as const),
+  };
+}
+
 /**
  * 룩랩의 먹 셰이더를 화면에 그린다 (화면 경험 설계 4.2).
  *
@@ -46,11 +76,15 @@ export class SmokeRenderer {
     private readonly fbo: WebGLFramebuffer,
     private readonly geoBuf: WebGLBuffer,
     private readonly quadBuf: WebGLBuffer,
+    private readonly loc: Locations,
   ) {}
 
   static create(canvas: HTMLCanvasElement, look: LookParams): SmokeRenderer | null {
     const gl = canvas.getContext('webgl2', { antialias: false }) as WebGL2RenderingContext | null;
-    if (!gl) return null;
+    if (!gl) {
+      console.warn('SmokeRenderer: WebGL2 를 쓸 수 없어 SVG 로 대신한다');
+      return null;
+    }
     try {
       const maskProg = link(gl, MASK_VS, MASK_FS);
       const smokeProg = link(gl, SMOKE_VS, SMOKE_FS);
@@ -72,10 +106,12 @@ export class SmokeRenderer {
       gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 
-      const r = new SmokeRenderer(canvas, gl, look, maskProg, smokeProg, maskTex, fbo, geoBuf, quadBuf);
+      const loc = locate(gl, maskProg, smokeProg);
+      const r = new SmokeRenderer(canvas, gl, look, maskProg, smokeProg, maskTex, fbo, geoBuf, quadBuf, loc);
       r.resize();
       return r;
-    } catch {
+    } catch (e) {
+      console.warn('SmokeRenderer: 셰이더를 준비하지 못해 SVG 로 대신한다', e);
       return null;
     }
   }
@@ -92,10 +128,9 @@ export class SmokeRenderer {
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(this.maskProg);
-    gl.uniform1f(gl.getUniformLocation(this.maskProg, 'uHalf'), P_SPAN);
-    const loc = gl.getAttribLocation(this.maskProg, 'aV');
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 0, 0);
+    gl.uniform1f(this.loc.maskHalf, P_SPAN);
+    gl.enableVertexAttribArray(this.loc.maskV);
+    gl.vertexAttribPointer(this.loc.maskV, FLOATS_PER_VERTEX, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.TRIANGLES, 0, this.vertexCount);
     gl.bindTexture(gl.TEXTURE_2D, this.maskTex);
     gl.generateMipmap(gl.TEXTURE_2D);
@@ -104,23 +139,22 @@ export class SmokeRenderer {
 
   /** 한 프레임. `timeSec` 은 일렁임 시계, `prog` 는 번짐 진행(0..1). */
   draw(timeSec: number, prog: number, highlight: number): void {
-    const gl = this.gl, p = this.smokeProg;
+    const gl = this.gl, p = this.smokeProg, l = this.loc;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.useProgram(p);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuf);
-    const loc = gl.getAttribLocation(p, 'a');
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(l.smokeA);
+    gl.vertexAttribPointer(l.smokeA, 2, gl.FLOAT, false, 0, 0);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.maskTex);
-    gl.uniform1i(gl.getUniformLocation(p, 'uMask'), 0);
-    gl.uniform2f(gl.getUniformLocation(p, 'uRes'), this.canvas.width, this.canvas.height);
-    gl.uniform1f(gl.getUniformLocation(p, 'uT'), timeSec);
-    gl.uniform1f(gl.getUniformLocation(p, 'uHalf'), P_SPAN);
-    gl.uniform1f(gl.getUniformLocation(p, 'uProg'), prog);
-    gl.uniform1f(gl.getUniformLocation(p, 'uHighlight'), highlight);
-    for (const k of SMOKE_LOOK_KEYS) gl.uniform1f(gl.getUniformLocation(p, k), this.look[k]);
+    gl.uniform1i(l.uMask, 0);
+    gl.uniform2f(l.uRes, this.canvas.width, this.canvas.height);
+    gl.uniform1f(l.uT, timeSec);
+    gl.uniform1f(l.uHalf, P_SPAN);
+    gl.uniform1f(l.uProg, prog);
+    gl.uniform1f(l.uHighlight, highlight);
+    for (const [at, k] of l.look) gl.uniform1f(at, this.look[k]);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 

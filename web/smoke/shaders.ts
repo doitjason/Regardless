@@ -9,7 +9,10 @@ export const SMOKE_LOOK_KEYS = [
   'pFog', 'pGrain', 'pVig', 'pLeadTurb', 'pFrontSoft',
 ] as const satisfies readonly LookKey[];
 
-/** 1단계: 골격 삼각형을 마스크 텍스처(R=덮임, G=도착 시각, B=묶음/255)에 그린다. */
+/**
+ * 1단계: 골격 삼각형을 마스크 텍스처(R=덮임, G=도착 시각, B=(묶음+1)/255)에 그린다.
+ * 묶음에 1 을 더하는 것은 0번(링)이 지워진 배경(B=0)과 겹치지 않게 하려는 것이다.
+ */
 export const MASK_VS = `#version 300 es
 in vec4 aV;
 uniform float uHalf;
@@ -20,7 +23,7 @@ export const MASK_FS = `#version 300 es
 precision highp float;
 in vec2 vTP;
 out vec4 o;
-void main(){ o = vec4(1.0, vTP.x, vTP.y / 255.0, 1.0); }`;
+void main(){ o = vec4(1.0, vTP.x, (vTP.y + 1.0) / 255.0, 1.0); }`;
 
 /** 2단계: 화면 전체 삼각형 하나. */
 export const SMOKE_VS = `#version 300 es
@@ -80,8 +83,11 @@ void main(){
 
   // 번짐: 도착 시각은 마스크 G 에 있다. 흐린 단계에서 G/R 을 읽으면
   // 획 바깥 가장자리도 가까운 먹의 평균 도착 시각을 얻는다.
+  // 덮임이 거의 없는 바깥 픽셀(플룸·테두리 연기)은 더 흐린 단계(LOD 5)의 평균
+  // 도착 시각을 쓴다. 그러지 않으면 끝에 가서야 한꺼번에 나타난다.
   vec4 b = textureLod(uMask, uvW, 2.0);
-  float arrive = b.r > 0.02 ? b.g / b.r : 1.0;
+  vec4 bw = textureLod(uMask, uvW, 5.0);
+  float arrive = b.r > 0.02 ? b.g / b.r : (bw.r > 0.001 ? bw.g / bw.r : 1.0);
   float front = uProg * (1.0 + pFrontSoft);
   float reveal = smoothstep(front, front - pFrontSoft, arrive);
   float lead = exp(-pow((arrive - front + pFrontSoft*0.5) / max(pFrontSoft*0.55, 0.02), 2.0))
@@ -147,7 +153,7 @@ void main(){
   // 해독 강조 — 이 픽셀의 묶음 번호가 uHighlight 면 먹을 따뜻하게 밝힌다
   ivec2 ts = textureSize(uMask, 0);
   ivec2 ti = clamp(ivec2(uvW * vec2(ts)), ivec2(0), ts - 1);
-  float part = floor(texelFetch(uMask, ti, 0).b * 255.0 + 0.5);
+  float part = floor(texelFetch(uMask, ti, 0).b * 255.0 + 0.5) - 1.0;
   float hl = (uHighlight >= 0.0 && abs(part - uHighlight) < 0.5) ? 1.0 : 0.0;
   ink = mix(ink, vec3(0.75, 0.34, 0.25), hl * 0.85);
 
