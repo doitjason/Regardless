@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  decomposeHangul, syllabify, consonantFeatures, vowelFeatures,
+  decomposeHangul, syllabify, composeHangul, consonantFeatures, vowelFeatures,
 } from '../../src/core/phonology';
 
 describe('decomposeHangul', () => {
@@ -208,5 +208,15 @@ describe('vowelFeatures', () => {
     const f = vowelFeatures('zzz');
     expect(f.height).toBeGreaterThanOrEqual(0);
     expect(f.height).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('composeHangul', () => {
+  it('음절을 한글 글자로 되돌린다 — syllabify 의 역', () => {
+    const text = '루이즈를사랑해닭값';
+    expect(syllabify(text).map(composeHangul).join('')).toBe(text);
+  });
+  it('모르는 자모면 빈 문자열', () => {
+    expect(composeHangul({ onset: 'x', nucleus: 'a', coda: '' })).toBe('');
   });
 });

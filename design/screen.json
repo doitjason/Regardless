@@ -1,8 +1,11 @@
 {
-  "_": "화면 전용 수치 (화면 경험 설계 4.2). 1단계는 번짐 시간만. 방·유리벽(2단계)과 소리(3단계) 값이 여기 더해진다.",
+  "_": "화면 전용 수치 (화면 경험 설계 4.2). 1단계 번짐 시간, 2단계 해독 시간. 소리(3단계) 값이 여기 더해진다.",
   "ringSeconds": 4.5,
   "depthSecondsPerUnit": 9.0,
   "flowSpeed": 0.233,
   "jitterSeconds": 0.375,
-  "tailSeconds": 1.0
+  "tailSeconds": 1.0,
+  "decodeHintSeconds": 1.5,
+  "decodeStepSeconds": 1.6,
+  "decodeSentenceSeconds": 1.0
 }

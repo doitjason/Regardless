@@ -41,6 +41,15 @@ export function syllabify(text: string): Syllable[] {
   return out;
 }
 
+/** 음절 하나를 한글 글자로 되돌린다 (`decomposeHangul` 의 역). 모르는 자모면 빈 문자열. */
+export function composeHangul(s: Syllable): string {
+  const o = (ONSETS as readonly string[]).indexOf(s.onset);
+  const n = (NUCLEI as readonly string[]).indexOf(s.nucleus);
+  const c = (CODAS as readonly string[]).indexOf(s.coda);
+  if (o < 0 || n < 0 || c < 0) return '';
+  return String.fromCodePoint(HANGUL_BASE + o * 588 + n * 28 + c);
+}
+
 export type Manner = 'stop' | 'fricative' | 'nasal' | 'liquid' | 'affricate' | 'none';
 
 export interface ConsonantFeatures {
