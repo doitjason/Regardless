@@ -1,220 +1,258 @@
 import { parse } from '../src/core/parse';
 import { loadSeedLexicon } from '../src/core/lexicon';
-import { render, buildStrokes } from '../src/render/compose';
+import type { IR } from '../src/core/ir';
+import { render, buildStrokes, type RenderResult } from '../src/render/compose';
 import { arrival } from '../src/render/arrival';
 import { loadLook } from '../src/render/look';
 import { encodeShare, decodeShare } from './share';
 import { downloadSvg, downloadPng, fileNameFor } from './download';
 import { partsOf, partKeyOf, describe as describePart } from './breakdown';
 import { maskVertices } from './smoke/geometry';
-import { SmokeRenderer } from './smoke/renderer';
+import { SceneRenderer } from './scene/renderer';
+import { loadScene } from './scene/params';
 import { loadScreen } from './screen';
+import { decodeSteps } from './decode';
+import { Flow, type FlowTiming, type FrameState } from './scenes/flow';
 
 const lex = loadSeedLexicon();
 const look = loadLook();
 const screen = loadScreen();
+const scene = loadScene();
 
-// WebGL2 가 있으면 먹 셰이더, 없으면 SVG 를 그대로 (화면 경험 설계 5절)
-const smokeCanvas = document.getElementById('smoke') as HTMLCanvasElement;
-const smoke = SmokeRenderer.create(smokeCanvas, look);
-smokeCanvas.hidden = smoke === null;
-/** 셰이더가 아직 살아 있나 — 컨텍스트를 잃으면 false 가 되고 SVG 길로 돌아간다. */
-let smokeAlive = smoke !== null;
-/** 살아 있는 렌더러, 아니면 null. */
-const liveSmoke = (): SmokeRenderer | null => (smokeAlive ? smoke : null);
+const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
+const canvas = el<HTMLCanvasElement>('scene');
+const svgEl = el<HTMLDivElement>('svgGlyph');
+const form = el<HTMLFormElement>('form');
+const input = el<HTMLInputElement>('text');
+const errorEl = el<HTMLParagraphElement>('error');
+const startBtn = el<HTMLButtonElement>('start');
+const decodeBtn = el<HTMLButtonElement>('decodeBtn');
+const againBtn = el<HTMLButtonElement>('again');
+const wordsEl = el<HTMLOListElement>('words');
+const sentenceEl = el<HTMLParagraphElement>('sentence');
+const shareBtn = el<HTMLButtonElement>('share');
+const captionEl = el<HTMLParagraphElement>('caption');
+const partsEl = el<HTMLUListElement>('parts');
 
-/** 지금 번지는 그림 — 시작 시각(ms), 길이(초), 강조 묶음 */
-const bloom = { t0: 0, duration: 1, highlight: -1 };
+// WebGL2 가 있으면 장면 셰이더, 없거나 잃으면 SVG (화면 경험 설계 5절)
+const renderer = SceneRenderer.create(canvas, scene, look.pR);
+let glAlive = renderer !== null;
+document.body.classList.toggle('no-gl', !glAlive);
 
-/** 캔버스의 먹을 비운다 — 빈 입력·오류일 때 지난 그림이 남지 않게. */
-function clearSmoke(): void {
-  liveSmoke()?.setVertices(new Float32Array(0));
-  bloom.highlight = -1;
+/** 지금 그려진 문장 */
+interface Current { text: string; svg: string; strokes: RenderResult['strokes']; partKeys: string[] }
+let current: Current | null = null;
+
+const timingFor = (bloomSeconds: number): FlowTiming => ({
+  bloomSeconds,
+  hintSeconds: screen.decode.hintSeconds,
+  stepSeconds: screen.decode.stepSeconds,
+  sentenceSeconds: screen.decode.sentenceSeconds,
+});
+let flow = new Flow([], timingFor(1), false);
+/** '자세히' 의 분해 목록에서 가리킨 묶음 — 흐름이 강조하지 않을 때만 쓴다 */
+let hover = -1;
+let lastState: FrameState | null = null;
+/** SVG 경로에 마지막으로 칠한 강조 — 같은 값이면 DOM 을 건드리지 않는다 */
+let painted = -2;
+
+function showError(message: string | null): void {
+  errorEl.textContent = message ?? '';
+  errorEl.hidden = message === null;
 }
 
-/** 마지막으로 그린 SVG — 내려받기 버튼이 쓴다. 그림이 없으면 빈 문자열. */
-let lastSvg = '';
+/** '자세히' — 성분 요약과 분해 목록 */
+function fillDetails(ir: IR, result: RenderResult, partKeys: string[]): void {
+  const moodName: Record<string, string> = {
+    declarative: '평서', interrogative: '의문', negative: '부정', volitional: '의지', concessive: '양보',
+  };
+  const spelled = ir.constituents.filter((c) => c.kind === 'phonetic').length;
+  const bits = [`성분 ${ir.constituents.length}개`, `${moodName[ir.mood] ?? ir.mood}문`];
+  if (spelled > 0) bits.push(`사전에 없는 말 ${spelled}개는 소리대로 적었습니다`);
+  captionEl.textContent = bits.join(' · ');
 
-// 폰에서 앱을 바꾸거나 인앱 브라우저가 컨텍스트를 빼앗으면 gl 호출이 조용히
-// 아무 일도 하지 않는다. 복구는 시도하지 않고, 마지막 SVG 로 대신한다.
-smokeCanvas.addEventListener('webglcontextlost', () => {
-  if (!smokeAlive) return;
-  smokeAlive = false;
-  smokeCanvas.hidden = true;
-  bloom.highlight = -1;
-  (document.getElementById('svgGlyph') as HTMLElement).innerHTML = lastSvg;
-});
-
-/**
- * 문장 하나를 그려 넣는다. 오류는 던지지 않고 화면에 적는다 —
- * 사용자가 무엇을 고쳐야 하는지 알아야 하기 때문이다.
- */
-export function renderInto(root: HTMLElement, text: string): void {
-  const errorEl = document.getElementById('error') as HTMLParagraphElement;
-  const captionEl = document.getElementById('caption') as HTMLElement;
-  const glyphEl = document.getElementById('glyph') as HTMLElement;
-  const svgEl = document.getElementById('svgGlyph') as HTMLElement;
-  const partsEl = document.getElementById('parts') as HTMLUListElement;
-
-  const trimmed = text.trim();
-  if (trimmed === '') {
-    svgEl.innerHTML = '';
-    clearSmoke();
-    glyphEl.setAttribute('aria-label', '로고그램');
-    captionEl.textContent = '';
-    partsEl.innerHTML = '';
-    errorEl.hidden = true;
-    lastSvg = '';
-    return;
+  partsEl.innerHTML = '';
+  for (const part of partsOf(result)) {
+    const li = document.createElement('li');
+    li.textContent = describePart(part);
+    li.tabIndex = 0;
+    const index = partKeys.indexOf(part.key);
+    const mark = (on: boolean) => { li.classList.toggle('on', on); hover = on ? index : -1; };
+    li.addEventListener('mouseenter', () => mark(true));
+    li.addEventListener('mouseleave', () => mark(false));
+    li.addEventListener('focus', () => mark(true));
+    li.addEventListener('blur', () => mark(false));
+    partsEl.appendChild(li);
   }
+}
 
+/** 장면에서 먹을 지운다 */
+function clearInk(): void {
+  current = null;
+  renderer?.setVertices(new Float32Array(0));
+  svgEl.innerHTML = '';
+  wordsEl.innerHTML = '';
+  sentenceEl.textContent = '';
+  painted = -2;
+}
+
+/** 문장을 그릴 준비 — 마스크(또는 SVG), 해독 순서, '자세히'. 실패하면 오류를 보이고 false. */
+function prepare(text: string, allowDecode: boolean): boolean {
+  const trimmed = text.trim();
+  showError(null);
+  if (trimmed === '') return false;
   try {
     const ir = parse(trimmed, lex);
     const result = render(ir, lex, look, { size: 640 });
-    lastSvg = result.svg;
-    glyphEl.setAttribute('aria-label', `${trimmed} 의 로고그램`);
-
-    // 먹 셰이더가 있으면 번짐을 시작하고 SVG 자리는 비운다
     const sk = buildStrokes(ir, lex, look);
     const arr = arrival(sk, look, screen.timing);
-    const sm = liveSmoke();
-    if (sm) {
+    const steps = decodeSteps(ir, arr, lex, trimmed);
+
+    current = { text: trimmed, svg: result.svg, strokes: result.strokes, partKeys: arr.parts };
+    painted = -2;
+    if (glAlive && renderer) {
+      renderer.setVertices(maskVertices(sk, arr));
       svgEl.innerHTML = '';
-      sm.setVertices(maskVertices(sk, arr));
-      bloom.t0 = performance.now();
-      bloom.duration = arr.duration;
-      bloom.highlight = -1;
     } else {
       svgEl.innerHTML = result.svg;
     }
+    svgEl.setAttribute('aria-label', `${trimmed} 의 로고그램`);
 
-    const words = ir.constituents.length;
-    const spelled = ir.constituents.filter((c) => c.kind === 'phonetic').length;
-    const moodName: Record<string, string> = {
-      declarative: '평서', interrogative: '의문', negative: '부정',
-      volitional: '의지', concessive: '양보',
-    };
-    const parts = [`성분 ${words}개`, `${moodName[ir.mood] ?? ir.mood}문`];
-    if (spelled > 0) parts.push(`사전에 없는 말 ${spelled}개는 소리대로 적었습니다`);
-    captionEl.textContent = parts.join(' · ');
-    errorEl.hidden = true;
-
-    // 분해 보기 — 어느 획이 어느 낱말인지 (스펙 3)
-    partsEl.innerHTML = '';
-    for (const part of partsOf(result)) {
+    wordsEl.innerHTML = '';
+    for (const step of steps) {
       const li = document.createElement('li');
-      li.textContent = describePart(part);
-      li.tabIndex = 0;
-      const partIndex = arr.parts.indexOf(part.key);
-      const mark = (on: boolean) => {
-        li.classList.toggle('on', on);
-        if (smokeAlive) { bloom.highlight = on ? partIndex : -1; return; }
-        // 컨텍스트를 잃은 뒤에는 그때의 SVG 가 들어 있으므로 누를 때 찾는다
-        const paths = [...svgEl.querySelectorAll('path')];
-        result.strokes.forEach((s, i) => {
-          if (partKeyOf(s) !== part.key) return;
-          paths[i]?.setAttribute('fill', on ? '#c0563f' : '#16120e');
-        });
-      };
-      li.addEventListener('mouseenter', () => mark(true));
-      li.addEventListener('mouseleave', () => mark(false));
-      li.addEventListener('focus', () => mark(true));
-      li.addEventListener('blur', () => mark(false));
-      partsEl.appendChild(li);
+      li.textContent = step.label;
+      wordsEl.appendChild(li);
     }
+    sentenceEl.textContent = trimmed;
+    fillDetails(ir, result, arr.parts);
+    flow = new Flow(steps.map((s) => s.part), timingFor(arr.duration), allowDecode);
+    lastState = null;
+    return true;
   } catch (e) {
-    svgEl.innerHTML = '';
-    clearSmoke();
-    glyphEl.setAttribute('aria-label', '로고그램');
-    captionEl.textContent = '';
-    partsEl.innerHTML = '';
-    errorEl.textContent = (e as Error).message;
-    errorEl.hidden = false;
-    lastSvg = '';
+    clearInk();
+    showError((e as Error).message);
+    return false;
   }
 }
 
-const form = document.getElementById('form') as HTMLFormElement;
-const input = document.getElementById('text') as HTMLInputElement;
-const glyph = document.getElementById('glyph') as HTMLElement;
+/** 받는 화면 — 링크로 들어왔다 */
+function enterReceive(text: string): void {
+  document.body.classList.add('receive');
+  document.body.classList.remove('make');
+  input.value = text;
+  if (prepare(text, true)) flow.arm();
+}
 
-function show(text: string, pushHash: boolean): void {
-  renderInto(glyph, text);
-  if (pushHash) {
-    const hash = text.trim() === '' ? '' : encodeShare(text.trim());
-    // replaceState 를 쓰면 뒤로 가기 기록이 문장마다 쌓이지 않는다
-    history.replaceState(null, '', hash === '' ? location.pathname : hash);
-  }
+/** 만드는 화면 — '나도 만들기' 를 눌렀거나 그냥 들어왔다 */
+function enterMake(): void {
+  document.body.classList.add('make');
+  document.body.classList.remove('receive');
+  history.replaceState(null, '', location.pathname);
+  clearInk();
+  flow = new Flow([], timingFor(1), false);
+  lastState = null;
+  shareBtn.hidden = true;
+  input.value = '';
 }
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  show(input.value, true);
+  if (!prepare(input.value, false) || !current) return;
+  flow.start(performance.now());
+  // replaceState 를 쓰면 뒤로 가기 기록이 문장마다 쌓이지 않는다
+  history.replaceState(null, '', encodeShare(current.text));
+  shareBtn.hidden = false;
 });
 
-// 링크로 들어온 경우 — 주소의 문장을 입력창에 채우고 바로 그린다
-const shared = decodeShare(location.hash);
-if (shared) {
-  input.value = shared.text;
-  show(shared.text, false);
+startBtn.addEventListener('click', () => flow.start(performance.now()));
+decodeBtn.addEventListener('click', () => flow.decode(performance.now()));
+againBtn.addEventListener('click', () => enterMake());
+
+shareBtn.addEventListener('click', async () => {
+  if (!current) return;
+  const url = `${location.origin}${location.pathname}${encodeShare(current.text)}`;
+  const old = shareBtn.textContent;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: '헵타포드 B', url });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    shareBtn.textContent = '링크를 복사했어요';
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') return;   // 공유 창을 닫았다
+    shareBtn.textContent = '복사하지 못했어요 — 주소창을 쓰세요';
+  }
+  setTimeout(() => { shareBtn.textContent = old; }, 1600);
+});
+
+el<HTMLButtonElement>('saveSvg').addEventListener('click', () => {
+  if (current) downloadSvg(current.svg, fileNameFor(current.text, 'svg'));
+});
+el<HTMLButtonElement>('savePng').addEventListener('click', () => {
+  if (current) void downloadPng(current.svg, fileNameFor(current.text, 'png'), 1200);
+});
+
+// 폰에서 앱을 바꾸거나 인앱 브라우저가 컨텍스트를 빼앗으면 gl 호출이 조용히
+// 아무 일도 하지 않는다. 복구는 시도하지 않고 SVG 로 대신한다.
+canvas.addEventListener('webglcontextlost', () => {
+  if (!glAlive) return;
+  glAlive = false;
+  document.body.classList.add('no-gl');
+  if (current) svgEl.innerHTML = current.svg;
+  painted = -2;
+});
+new ResizeObserver(() => renderer?.resize()).observe(canvas);
+
+/** 흐름 상태를 DOM 에 옮긴다 — 바뀐 프레임에서만 부른다 */
+function apply(st: FrameState): void {
+  startBtn.hidden = !st.showStart;
+  decodeBtn.hidden = !st.showDecode;
+  againBtn.hidden = !(document.body.classList.contains('receive') && st.phase === 'decoded');
+  [...wordsEl.children].forEach((li, i) => {
+    li.classList.toggle('shown', i < st.labelsShown);
+    li.classList.toggle('now', st.phase === 'decoding' && i === st.labelsShown - 1);
+  });
+  sentenceEl.hidden = !st.showSentence;
 }
+
+const same = (a: FrameState, b: FrameState) =>
+  a.phase === b.phase && a.highlight === b.highlight && a.labelsShown === b.labelsShown
+  && a.showStart === b.showStart && a.showDecode === b.showDecode && a.showSentence === b.showSentence;
+
+/** SVG 로 그릴 때의 강조 */
+function paintSvg(highlight: number): void {
+  if (!current || highlight === painted) return;
+  painted = highlight;
+  const key = highlight >= 0 ? current.partKeys[highlight] : undefined;
+  const paths = [...svgEl.querySelectorAll('path')];
+  current.strokes.forEach((s, i) => {
+    paths[i]?.setAttribute('fill', key !== undefined && partKeyOf(s) === key ? '#c0563f' : '#16120e');
+  });
+}
+
+// 장면 시계는 페이지가 열린 뒤로 흐른다 — 문장을 보낼 때마다 되감기지 않는다.
+// 600초로 감아 셰이더 sin 해시의 정밀도를 지킨다.
+const pageT0 = performance.now();
+function frame(now: number): void {
+  const st = flow.frame(now);
+  if (!lastState || !same(lastState, st)) apply(st);
+  lastState = st;
+  const highlight = st.highlight >= 0 ? st.highlight : hover;
+  if (glAlive && renderer) renderer.draw(3.7 + (Math.max(0, now - pageT0) / 1000) % 600, st.prog, highlight);
+  else paintSvg(highlight);
+  requestAnimationFrame(frame);
+}
+
+// 링크로 들어온 경우 — 받는 화면. 아니면 만드는 화면.
+const shared = decodeShare(location.hash);
+if (shared) enterReceive(shared.text);
+else document.body.classList.add('make');
 
 window.addEventListener('hashchange', () => {
   const next = decodeShare(location.hash);
-  if (next && next.text !== input.value) {
-    input.value = next.text;
-    show(next.text, false);
-  }
+  if (next && next.text !== current?.text) enterReceive(next.text);
 });
 
-const copyBtn = document.getElementById('copyLink') as HTMLButtonElement;
-copyBtn.addEventListener('click', async () => {
-  const url = `${location.origin}${location.pathname}${encodeShare(input.value.trim())}`;
-  const old = copyBtn.textContent;
-  try {
-    await navigator.clipboard.writeText(url);
-    copyBtn.textContent = '복사됨';
-  } catch {
-    copyBtn.textContent = '복사 실패 — 주소창을 쓰세요';
-  }
-  setTimeout(() => { copyBtn.textContent = old; }, 1500);
-});
-
-const svgBtn = document.getElementById('saveSvg') as HTMLButtonElement;
-const pngBtn = document.getElementById('savePng') as HTMLButtonElement;
-
-svgBtn.addEventListener('click', () => {
-  if (lastSvg === '') return;
-  downloadSvg(lastSvg, fileNameFor(input.value, 'svg'));
-});
-
-pngBtn.addEventListener('click', () => {
-  if (lastSvg === '') return;
-  void downloadPng(lastSvg, fileNameFor(input.value, 'png'), 1200);
-});
-
-// 번짐과 일렁임 — 문장이 없을 때도 돌지만 마스크가 비어 있어 안개만 보인다.
-// 탭이 가려지면 브라우저가 requestAnimationFrame 을 알아서 멈추고,
-// 캔버스가 화면 밖이면 셰이더는 그리지 않는다.
-if (smoke) {
-  new ResizeObserver(() => smoke.resize()).observe(smokeCanvas);
-  let onScreen = true;
-  if (typeof IntersectionObserver !== 'undefined') {
-    new IntersectionObserver((entries) => {
-      for (const en of entries) onScreen = en.isIntersecting;
-    }).observe(smokeCanvas);
-  }
-  // 일렁임 시계는 페이지가 열린 뒤로 흐른다 — 문장을 보낼 때마다 되감기지 않는다.
-  // 600초로 감아 sin 해시의 정밀도를 지킨다.
-  const pageT0 = performance.now();
-  const frame = (now: number) => {
-    if (!smokeAlive) return;
-    if (onScreen) {
-      const ambient = 3.7 + (Math.max(0, now - pageT0) / 1000) % 600;
-      const el = Math.max(0, now - bloom.t0) / 1000;
-      smoke.draw(ambient, Math.min(1, el / bloom.duration), bloom.highlight);
-    }
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
-}
+requestAnimationFrame(frame);

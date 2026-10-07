@@ -2,46 +2,54 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>헵타포드 B — 문장을 로고그램으로</title>
   <meta name="description" content="한국어나 영어 문장을 영화 《컨택트》의 헵타포드 B 양식 로고그램으로 바꿉니다. 팬 창작물입니다.">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <main>
-    <h1>헵타포드 B</h1>
-    <p class="lede">문장을 쓰면 로고그램이 됩니다. 한국어와 영어 모두 됩니다 — 같은 뜻이면 같은 그림이 나옵니다.</p>
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div id="svgGlyph" role="img" aria-label="로고그램"></div>
 
+  <h1 class="mark">헵타포드 B</h1>
+  <p class="notice-line">팬 창작물 · Paramount 와 무관</p>
+
+  <button type="button" id="start" class="veil-btn" hidden>눌러서 시작</button>
+
+  <div id="decodeArea" aria-live="polite">
+    <ol id="words"></ol>
+    <p id="sentence" hidden></p>
+    <button type="button" id="decodeBtn" class="veil-btn" hidden>해독하기</button>
+    <button type="button" id="again" class="veil-btn" hidden>나도 만들기</button>
+  </div>
+
+  <p id="error" class="error" role="alert" hidden></p>
+
+  <div id="dock">
     <form id="form" autocomplete="off">
-      <label for="text">문장</label>
-      <input id="text" name="text" type="text" maxlength="120"
-             placeholder="그럼에도 불구하고 나는 너를 사랑해">
-      <button type="submit">그리기</button>
+      <label for="text" class="sr-only">문장</label>
+      <input id="text" name="text" type="text" maxlength="120" placeholder="그럼에도 불구하고 나는 너를 사랑해">
+      <button type="submit">생성하기</button>
     </form>
-
-    <p id="error" class="error" role="alert" hidden></p>
-
-    <figure id="stage">
-      <div id="glyph" role="img" aria-label="로고그램">
-        <canvas id="smoke" hidden></canvas>
-        <div id="svgGlyph"></div>
-      </div>
-      <figcaption id="caption"></figcaption>
-      <ul id="parts" class="parts" aria-label="획 분해"></ul>
-    </figure>
-    <p class="actions">
-      <button type="button" id="copyLink">링크 복사</button>
-      <button type="button" id="saveSvg">SVG 받기</button>
-      <button type="button" id="savePng">PNG 받기</button>
-    </p>
-
-    <footer>
-      <p>팬 창작물이며 Paramount Pictures 및 영화 제작진과 무관합니다.
-         원작 로고그램 디자인 <strong>Martine Bertrand</strong>.
-         분석 자료 출처 <a href="https://github.com/WolframResearch/Arrival-Movie-Live-Coding" rel="noreferrer">Wolfram Research</a> (CC BY-NC 4.0).</p>
-      <p>이 페이지가 그리는 모든 획은 규칙에서 실시간으로 만들어집니다. 원본 이미지를 담고 있지 않습니다.</p>
-    </footer>
-  </main>
+    <div class="row">
+      <button type="button" id="share" hidden>링크 보내기</button>
+      <details id="more">
+        <summary>자세히</summary>
+        <p id="caption"></p>
+        <ul id="parts" class="parts" aria-label="획 분해"></ul>
+        <p class="actions">
+          <button type="button" id="saveSvg">SVG 받기</button>
+          <button type="button" id="savePng">PNG 받기</button>
+        </p>
+        <footer>
+          <p>팬 창작물이며 Paramount Pictures 및 영화 제작진과 무관합니다.
+             원작 로고그램 디자인 <strong>Martine Bertrand</strong>.
+             분석 자료 출처 <a href="https://github.com/WolframResearch/Arrival-Movie-Live-Coding" rel="noreferrer">Wolfram Research</a> (CC BY-NC 4.0).</p>
+          <p>이 페이지가 그리는 모든 것은 규칙에서 실시간으로 만들어집니다. 원본 이미지를 담고 있지 않습니다.</p>
+        </footer>
+      </details>
+    </div>
+  </div>
   <script type="module" src="./main.ts"></script>
 </body>
 </html>

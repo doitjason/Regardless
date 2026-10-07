@@ -1,33 +1,83 @@
-:root { color-scheme: dark; --bg: #0d1011; --panel: #15191b; --line: #252b2d;
-        --tx: #cfd8d9; --tx2: #7d8a8c; --acc: #7fb8a8; }
+:root {
+  --ink: #101416;
+  --glass: rgba(12, 16, 18, 0.55);
+  --glass-line: rgba(255, 255, 255, 0.14);
+  --on-glass: #e8eeee;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--tx);
-       font: 15px/1.6 -apple-system, system-ui, "Segoe UI", sans-serif; }
-main { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
-h1 { font-size: 20px; letter-spacing: .08em; margin: 0 0 4px; }
-.lede { color: var(--tx2); margin: 0 0 24px; }
-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-input { flex: 1 1 320px; background: var(--panel); color: var(--tx);
-        border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: inherit; }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
-button { background: var(--acc); color: #0d1011; border: 0; border-radius: 6px;
-         padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
-.error { color: #e08b7a; margin: 12px 0 0; }
-figure { margin: 24px 0 0; }
-#glyph { background: #f7f5f1; border-radius: 8px; padding: 12px; }
-#glyph svg { display: block; width: 100%; height: auto; }
-figcaption { color: var(--tx2); font-size: 13px; padding-top: 8px; text-align: center; }
-footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
-         color: var(--tx2); font-size: 12px; }
-footer a { color: var(--tx2); }
-.actions { display: flex; gap: 8px; justify-content: center; margin: 12px 0 0; }
-.actions button { background: transparent; color: var(--tx); border: 1px solid var(--line); }
-.actions button:hover { border-color: var(--acc); color: var(--acc); }
-.parts { list-style: none; margin: 12px 0 0; padding: 0; display: flex;
-         flex-wrap: wrap; gap: 6px; justify-content: center; }
-.parts li { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px;
-            font-size: 12px; color: var(--tx2); cursor: default; }
-.parts li.on, .parts li:focus-visible { border-color: var(--acc); color: var(--acc); outline: none; }
-#smoke { display: block; width: 100%; aspect-ratio: 1; }
-#smoke[hidden] { display: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body {
+  background: #9aa4a6;
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+#scene { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; }
+
+/* WebGL2 가 없거나 잃었을 때 — 안개 비슷한 고정 배경 위에 SVG */
+body.no-gl { background: radial-gradient(ellipse at 50% 35%, #e6ebeb 0%, #b9c2c3 55%, #7d8789 100%); }
+body.no-gl #scene { display: none; }
+#svgGlyph { position: fixed; left: 50%; top: 44%; transform: translate(-50%, -50%); width: min(78vmin, 640px); display: none; }
+body.no-gl #svgGlyph { display: block; }
+#svgGlyph svg { width: 100%; height: auto; display: block; }
+
+.mark, .notice-line {
+  position: fixed; margin: 0; color: #fff; mix-blend-mode: difference; opacity: 0.55;
+  pointer-events: none;
+}
+.mark { top: 14px; left: 18px; font-size: 12px; font-weight: 500; letter-spacing: 0.3em; }
+.notice-line { top: 14px; right: 18px; font-size: 10px; letter-spacing: 0.08em; }
+
+.veil-btn {
+  padding: 12px 26px; border-radius: 999px; border: 1px solid var(--glass-line);
+  background: var(--glass); color: var(--on-glass); font-size: 15px; letter-spacing: 0.08em;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); cursor: pointer;
+}
+#start { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+
+#decodeArea {
+  position: fixed; left: 0; right: 0; bottom: calc(140px + var(--safe-b));
+  display: grid; justify-items: center; gap: 14px; text-align: center; pointer-events: none;
+}
+#decodeArea button { pointer-events: auto; }
+#words { list-style: none; margin: 0; padding: 0 16px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 20px; }
+#words li {
+  opacity: 0; transform: translateY(6px); transition: opacity 0.8s ease, transform 0.8s ease;
+  font-size: 18px; letter-spacing: 0.12em;
+}
+#words li.shown { opacity: 0.55; transform: none; }
+#words li.now { opacity: 1; }
+#sentence {
+  margin: 0 16px; font-size: clamp(18px, 4.6vw, 28px); letter-spacing: 0.04em;
+  animation: rise 1.6s ease both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+#dock {
+  position: fixed; left: 50%; bottom: calc(16px + var(--safe-b)); transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px)); display: grid; gap: 8px;
+}
+body.receive #dock { display: none; }
+#form { display: flex; gap: 8px; }
+#form input, #form button, .row > button, #more {
+  border-radius: 10px; border: 1px solid var(--glass-line); background: var(--glass); color: var(--on-glass);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+#form input { flex: 1; min-width: 0; padding: 12px 14px; font-size: 16px; }
+#form input::placeholder { color: rgba(232, 238, 238, 0.5); }
+#form button, .row > button { padding: 10px 16px; font-size: 14px; cursor: pointer; }
+.row { display: flex; gap: 8px; align-items: flex-start; }
+#more { flex: 1; padding: 9px 12px; font-size: 13px; max-height: 50vh; overflow: auto; }
+#more summary { cursor: pointer; }
+#more button { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--glass-line); background: transparent; color: inherit; cursor: pointer; }
+#more a { color: inherit; }
+#more footer p { font-size: 11px; opacity: 0.8; }
+.parts { list-style: none; padding: 0; margin: 6px 0; }
+.parts li { padding: 2px 6px; border-radius: 4px; }
+.parts li.on { background: rgba(192, 86, 63, 0.4); }
+
+.error {
+  position: fixed; top: 44px; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 32px);
+  margin: 0; padding: 8px 12px; border-radius: 8px; background: rgba(120, 30, 20, 0.85); color: #fff; font-size: 13px;
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
