@@ -33,6 +33,12 @@ const sentenceEl = el<HTMLParagraphElement>('sentence');
 const shareBtn = el<HTMLButtonElement>('share');
 const captionEl = el<HTMLParagraphElement>('caption');
 const partsEl = el<HTMLUListElement>('parts');
+const shareUrlEl = el<HTMLInputElement>('shareUrl');
+
+const SHARE_LABEL = '링크 보내기';
+const FRIENDLY_ERROR = '이 문장은 아직 그릴 수 없어요. 다른 말로 바꿔 보세요.';
+/** 손가락으로 다루는 기기 — 공유 창과 화상 키보드가 있는 쪽 */
+const isTouch = (): boolean => window.matchMedia('(pointer: coarse)').matches;
 
 // WebGL2 가 있으면 장면 셰이더, 없거나 잃으면 SVG (화면 경험 설계 5절)
 const renderer = SceneRenderer.create(canvas, scene, look.pR);
@@ -93,7 +99,17 @@ function clearInk(): void {
   svgEl.innerHTML = '';
   wordsEl.innerHTML = '';
   sentenceEl.textContent = '';
+  captionEl.textContent = '';
+  partsEl.innerHTML = '';
+  hover = -1;
+  svgEl.setAttribute('aria-label', '로고그램');
   painted = -2;
+}
+
+/** 수동 복사용 링크 칸을 다시 숨긴다 */
+function hideShareUrl(): void {
+  shareUrlEl.hidden = true;
+  shareUrlEl.value = '';
 }
 
 /** 문장을 그릴 준비 — 마스크(또는 SVG), 해독 순서, '자세히'. 실패하면 오류를 보이고 false. */
@@ -122,16 +138,23 @@ function prepare(text: string, allowDecode: boolean): boolean {
     for (const step of steps) {
       const li = document.createElement('li');
       li.textContent = step.label;
+      li.setAttribute('aria-hidden', 'true');   // 나타나기 전에는 읽어 주지 않는다 (apply 가 푼다)
       wordsEl.appendChild(li);
     }
     sentenceEl.textContent = trimmed;
+    // 지워진 <li> 는 mouseleave 를 보내지 않으니 이전 강조 번호가 남지 않게 먼저 푼다
+    hover = -1;
+    hideShareUrl();
     fillDetails(ir, result, arr.parts);
     flow = new Flow(steps.map((s) => s.part), timingFor(arr.duration), allowDecode);
     lastState = null;
     return true;
   } catch (e) {
+    console.warn('prepare 실패', e);
     clearInk();
-    showError((e as Error).message);
+    flow = new Flow([], timingFor(1), false);
+    lastState = null;
+    showError(FRIENDLY_ERROR);
     return false;
   }
 }
@@ -141,7 +164,14 @@ function enterReceive(text: string): void {
   document.body.classList.add('receive');
   document.body.classList.remove('make');
   input.value = text;
-  if (prepare(text, true)) flow.arm();
+  if (prepare(text, true)) {
+    flow.arm();
+    return;
+  }
+  // 옛 링크나 손으로 고친 링크 — 막다른 길이 되지 않게 만드는 화면으로 보내고, 쓴 글은 남긴다
+  enterMake();
+  input.value = text;
+  showError(FRIENDLY_ERROR);
 }
 
 /** 만드는 화면 — '나도 만들기' 를 눌렀거나 그냥 들어왔다 */
@@ -153,38 +183,86 @@ function enterMake(): void {
   flow = new Flow([], timingFor(1), false);
   lastState = null;
   shareBtn.hidden = true;
+  hideShareUrl();
+  showError(null);
   input.value = '';
 }
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (!prepare(input.value, false) || !current) return;
+  if (input.value.trim() === '') return;
+  if (!prepare(input.value, false) || !current) {
+    // 먹은 지워졌다 — 이전 문장의 링크와 보내기 버튼이 남지 않게
+    shareBtn.hidden = true;
+    history.replaceState(null, '', location.pathname);
+    return;
+  }
   flow.start(performance.now());
   // replaceState 를 쓰면 뒤로 가기 기록이 문장마다 쌓이지 않는다
   history.replaceState(null, '', encodeShare(current.text));
   shareBtn.hidden = false;
+  if (isTouch()) input.blur();   // 화상 키보드가 번지는 먹을 가리지 않게
 });
 
 startBtn.addEventListener('click', () => flow.start(performance.now()));
 decodeBtn.addEventListener('click', () => flow.decode(performance.now()));
 againBtn.addEventListener('click', () => enterMake());
 
+let shareTimer: number | undefined;
+/** 버튼 글자를 잠깐 바꿨다가 되돌린다 — 연달아 눌러도 원래 글자로 돌아온다 */
+function flashShare(message: string): void {
+  shareBtn.textContent = message;
+  window.clearTimeout(shareTimer);
+  shareTimer = window.setTimeout(() => { shareBtn.textContent = SHARE_LABEL; }, 1600);
+}
+
+/** 클립보드 API 가 막힌 인앱 브라우저용 — 숨긴 textarea 를 골라 복사 명령을 쓴다 */
+function copyWithTextarea(text: string): boolean {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
+  document.body.appendChild(ta);
+  try {
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    ta.remove();
+  }
+}
+
 shareBtn.addEventListener('click', async () => {
   if (!current) return;
   const url = `${location.origin}${location.pathname}${encodeShare(current.text)}`;
-  const old = shareBtn.textContent;
-  try {
-    if (navigator.share) {
+  // 1. 공유 창 — 손가락 기기에서만. 데스크톱 브라우저의 공유 창은 어색하다.
+  if (typeof navigator.share === 'function' && isTouch()) {
+    try {
       await navigator.share({ title: '헵타포드 B', url });
       return;
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;   // 공유 창을 닫았다
     }
-    await navigator.clipboard.writeText(url);
-    shareBtn.textContent = '링크를 복사했어요';
-  } catch (err) {
-    if ((err as Error).name === 'AbortError') return;   // 공유 창을 닫았다
-    shareBtn.textContent = '복사하지 못했어요 — 주소창을 쓰세요';
   }
-  setTimeout(() => { shareBtn.textContent = old; }, 1600);
+  // 2. 클립보드
+  try {
+    await navigator.clipboard.writeText(url);
+    flashShare('링크를 복사했어요');
+    return;
+  } catch { /* NotAllowedError 등 — 다음 방법으로 */ }
+  // 3. 숨은 textarea + execCommand
+  if (copyWithTextarea(url)) {
+    flashShare('링크를 복사했어요');
+    return;
+  }
+  // 4. 모두 막혔다 — 링크를 보여 주고 손으로 복사하게 한다
+  shareUrlEl.value = url;
+  shareUrlEl.hidden = false;
+  shareUrlEl.focus();
+  shareUrlEl.select();
+  flashShare('길게 눌러 복사하세요');
 });
 
 el<HTMLButtonElement>('saveSvg').addEventListener('click', () => {
@@ -210,7 +288,9 @@ function apply(st: FrameState): void {
   startBtn.hidden = !st.showStart;
   decodeBtn.hidden = !st.showDecode;
   againBtn.hidden = !(document.body.classList.contains('receive') && st.phase === 'decoded');
+  wordsEl.classList.toggle('live', st.labelsShown > 0);
   [...wordsEl.children].forEach((li, i) => {
+    li.setAttribute('aria-hidden', String(!(i < st.labelsShown)));
     li.classList.toggle('shown', i < st.labelsShown);
     li.classList.toggle('now', st.phase === 'decoding' && i === st.labelsShown - 1);
   });

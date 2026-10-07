@@ -25,8 +25,15 @@ body.no-gl #svgGlyph { display: block; }
   position: fixed; margin: 0; color: #fff; mix-blend-mode: difference; opacity: 0.55;
   pointer-events: none;
 }
-.mark { top: 14px; left: 18px; font-size: 12px; font-weight: 500; letter-spacing: 0.3em; }
-.notice-line { top: 14px; right: 18px; font-size: 10px; letter-spacing: 0.08em; }
+.mark {
+  top: calc(14px + env(safe-area-inset-top, 0px)); left: calc(18px + env(safe-area-inset-left, 0px));
+  font-size: 12px; font-weight: 500; letter-spacing: 0.3em;
+}
+.notice-line {
+  top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(18px + env(safe-area-inset-right, 0px));
+  font-size: 10px; letter-spacing: 0.08em; text-align: right;
+  max-width: calc(100vw - 150px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+}
 
 .veil-btn {
   padding: 12px 26px; border-radius: 999px; border: 1px solid var(--glass-line);
@@ -59,14 +66,17 @@ body.no-gl #svgGlyph { display: block; }
 }
 body.receive #dock { display: none; }
 #form { display: flex; gap: 8px; }
-#form input, #form button, .row > button, #more {
+#form input, #form button, .row > button, #more, #shareUrl {
   border-radius: 10px; border: 1px solid var(--glass-line); background: var(--glass); color: var(--on-glass);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 #form input { flex: 1; min-width: 0; padding: 12px 14px; font-size: 16px; }
 #form input::placeholder { color: rgba(232, 238, 238, 0.5); }
 #form button, .row > button { padding: 10px 16px; font-size: 14px; cursor: pointer; }
-.row { display: flex; gap: 8px; align-items: flex-start; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+/* 클립보드를 못 쓸 때 링크를 보여 주는 칸 — 버튼 줄 아래로 내려 가로 전체를 쓴다 */
+#shareUrl { order: 1; flex: 1 0 100%; min-width: 0; padding: 9px 12px; font-size: 13px; user-select: all; -webkit-user-select: all; }
+#shareUrl[hidden] { display: none; }
 #more { flex: 1; padding: 9px 12px; font-size: 13px; max-height: 50vh; overflow: auto; }
 #more summary { cursor: pointer; }
 #more button { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--glass-line); background: transparent; color: inherit; cursor: pointer; }
@@ -77,17 +87,23 @@ body.receive #dock { display: none; }
 .parts li.on { background: rgba(192, 86, 63, 0.4); }
 
 .error {
-  position: fixed; top: 44px; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 32px);
+  position: fixed; top: calc(44px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+  max-width: calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
   margin: 0; padding: 8px 12px; border-radius: 8px; background: rgba(120, 30, 20, 0.85); color: #fff; font-size: 13px;
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* 넓은 화면 — 아래 영화 화면비 띠 안에 자막처럼 흰 글씨로. 버튼은 띠 바로 위 안개에 둔다.
-   띠 높이는 셰이더가 정한다 (가로 3:2 이상에서 화면 높이의 약 13%). */
+   띠 높이는 셰이더가 정한다 (가로 3:2 이상에서 화면 높이의 약 13%, 2.39 이상이면 0).
+   띠가 줄어도 읽히도록 글줄마다 어두운 반투명 바탕을 깐다. WebGL 이 없으면 띠가 없으니 적용하지 않는다. */
 @media (min-aspect-ratio: 3/2) {
-  #decodeArea { bottom: calc(2.2vh + var(--safe-b)); gap: 10px; }
-  #decodeArea .veil-btn { order: -1; margin-bottom: 4vh; }
-  #words li, #sentence { color: #e8eeee; }
-  #words li { font-size: 15px; }
-  #sentence { font-size: clamp(16px, 2.2vw, 24px); }
+  body:not(.no-gl) #decodeArea { bottom: calc(2.2vh + var(--safe-b)); gap: 10px; }
+  body:not(.no-gl) #decodeArea .veil-btn { order: -1; margin-bottom: 4vh; }
+  body:not(.no-gl) #words li, body:not(.no-gl) #sentence { color: #e8eeee; }
+  body:not(.no-gl) #words li { font-size: 15px; }
+  body:not(.no-gl) #sentence { font-size: clamp(16px, 2.2vw, 24px); }
+  body:not(.no-gl) #words.live, body:not(.no-gl) #sentence:not([hidden]) {
+    background: rgba(8, 10, 11, 0.55); padding: 4px 14px; border-radius: 999px;
+  }
+  body:not(.no-gl) #words.live { width: fit-content; max-width: calc(100vw - 32px); }
 }
