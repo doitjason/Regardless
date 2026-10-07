@@ -537,6 +537,24 @@ function concept(entry: LexiconEntry, role: Role): Constituent {
   return { kind: 'concept', lemma: entry.lemma, role: role === '양상' ? '대상' : role };
 }
 
+/**
+ * 이름 뒤의 친근한 접미사 `-이` (한별이, 로건이, 지민이). 받침 있는 이름 뒤에서만
+ * 붙는다 — 받침이 없으면 `이` 가 이름의 일부일 수 있다 (로하니, 미리).
+ * 사전에 없어 소리로 적게 된 말에만 쓴다. 이렇게 하지 않으면 `한별이,` 는 조사
+ * `이` 가 떨어져 `한별` 이 되고 `한별이를` 은 `한별이` 가 되어, 같은 사람이
+ * 다른 그림이 된다.
+ */
+function stripNameSuffix(name: string): string {
+  if (name.length < 2 || !name.endsWith('이')) return name;
+  const before = name.slice(0, -1);
+  const j = lastJamo(before);
+  return j && j.coda !== 0 ? before : name;
+}
+
+function nameOf(text: string, role: Role): Constituent | null {
+  return phonetic(stripNameSuffix(text), role);
+}
+
 function phonetic(text: string, role: Role): Constituent | null {
   const syllables = syllabify(text);
   if (syllables.length === 0) return null;
@@ -609,7 +627,7 @@ function readWord(word: string, lex: Lexicon): Constituent | null {
       if (noun) return concept(noun.entry, particleRole(noun.role, noun.entry));
       const homograph = readParticleHomograph(word, p.suffix, lex);
       if (homograph) return concept(homograph, '행위');
-      return phonetic(p.stem, particleRole(p.role, undefined));
+      return nameOf(p.stem, particleRole(p.role, undefined));
     }
     // 조건부 조사를 인정하지 않았다 — 조사 없는 어절로 읽는다
   }
@@ -628,7 +646,7 @@ function readWord(word: string, lex: Lexicon): Constituent | null {
 
   // 5) 음소 폴백. 어미가 분명하면 어미를 떼고 행위 자리에 둔다.
   if (verb.strongRem !== undefined) return phonetic(verb.strongRem, '행위');
-  return phonetic(word, '대상');
+  return nameOf(word, '대상');
 }
 
 /**
@@ -732,9 +750,40 @@ function animate(c: Constituent, lex: Lexicon): boolean {
   return c.kind === 'concept' && (lookup(lex, c.lemma)?.features.animacy ?? 0) >= ANIMATE;
 }
 
+/** 어절 끝의 쉼표 — 나열의 표지다. */
+const LIST_COMMA = /[,、]$/;
+
+/**
+ * 쉼표로 나열한 항목은 마지막 항목의 역할을 함께 받는다. `나는 한별이, 로건이,
+ * 로하니를 사랑해` 에서 `한별이,` 의 `이` 는 조사가 아니라 이름의 일부이고,
+ * 세 이름은 모두 `를` 이 가리키는 대상이다.
+ *
+ * 쉼표가 나열이 아닌 경우는 둘이다.
+ * - **주제 조사 `은/는` 이 붙은 어절** (`나는, 너를 사랑해`): 주제 뒤의 쉼표는
+ *   쉬어 가는 것이지 나열이 아니다. 이 어절은 나열에 들지 않고, 앞선 나열도 끊는다
+ *   (`parseKo` 의 `commaBefore && topicMarked` 분기).
+ * - **행위** (`비가 오고, 나는 울어`): 용언 뒤 쉼표는 절을 가르는 것이지 `오고` 를
+ *   주체로 만드는 나열이 아니다. 항목이 행위이거나 마지막 어절이 행위이면 역할을
+ *   나누지 않는다.
+ */
+function shareListRole(items: Slot[], last: Slot): void {
+  if (last.c.role === '행위') return;
+  for (const item of items) {
+    if (item.c.role === '행위') continue;
+    item.c = { ...item.c, role: last.c.role };
+    item.subjectMarked = last.subjectMarked;
+    item.topicMarked = last.topicMarked;
+  }
+}
+
 export function parseKo(text: string, lex: Lexicon): Constituent[] {
   const slots: Slot[] = [];
-  const words = text.trim().split(/\s+/).map(clean).filter((w) => w.length > 0);
+  const tokens = text.trim().split(/\s+/)
+    .map((raw) => ({ word: clean(raw), comma: LIST_COMMA.test(raw) }))
+    .filter((t) => t.word.length > 0);
+  const words = tokens.map((t) => t.word);
+  /** 쉼표로 이어진, 아직 마지막 항목을 만나지 못한 나열의 항목들 */
+  let pending: Slot[] = [];
   for (let i = 0; i < words.length; i++) {
     const word = words[i] ?? '';
     const next = words[i + 1];
@@ -743,22 +792,34 @@ export function parseKo(text: string, lex: Lexicon): Constituent[] {
     // 두 어절 구문: V고 싶다
     if (next !== undefined && word.length >= 2 && word.endsWith('고') && next.startsWith('싶')) {
       slots.push(...readGoSipda(word, next, lex));
+      pending = [];
       i++;
       continue;
     }
 
     const c = readWord(word, lex);
-    if (!c) continue;
+    if (!c) continue;   // 성분을 만들지 못한 어절은 나열을 끊지도 잇지도 않는다
     const suffix = stripParticle(word)?.suffix;
     const isSubject = c.role === '주체';
-    slots.push({
+    const slot: Slot = {
       c,
       subjectMarked: isSubject && (suffix === '이' || suffix === '가'),
       topicMarked: isSubject && (suffix === '은' || suffix === '는'),
       psych: c.kind === 'concept' && c.role === '행위' && PSYCH_LEMMAS.has(c.lemma)
         && suffix === undefined && !HADA_SYLLABLE.test(word),
       like: LIKE_FORM.test(word),
-    });
+    };
+    slots.push(slot);
+
+    const commaBefore = tokens[i]?.comma === true && next !== undefined;
+    if (commaBefore && slot.topicMarked) {
+      pending = [];                       // 주제 뒤의 쉼표 — 쉬어 가는 것, 나열이 아니다
+    } else if (commaBefore) {
+      pending.push(slot);                 // 나열의 한 항목 — 뒤에 마지막 항목이 온다
+    } else {
+      if (pending.length > 0) shareListRole(pending, slot);
+      pending = [];
+    }
   }
 
   // 좋다 → 좋아함: 느끼는 사람이 있을 때만

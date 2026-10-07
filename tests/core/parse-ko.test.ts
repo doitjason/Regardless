@@ -3,6 +3,7 @@ import { parseKo } from '../../src/core/parse-ko';
 import { parse } from '../../src/core/parse';
 import { loadSeedLexicon, lookup } from '../../src/core/lexicon';
 import { canonicalize, type Constituent } from '../../src/core/ir';
+import { syllabify } from '../../src/core/phonology';
 
 const lex = loadSeedLexicon();
 const lookupRole = (w: string) => lookup(lex, w)?.defaultRole;
@@ -450,5 +451,43 @@ describe('그 는 대명사로 읽히는 조사 앞에서만 사람이다', () =
     for (const s of ['그가 웃는다', '그를 기다려', '그에게 말해', '그들이 왔다', '그들과 함께']) {
       expect(hasPerson(s), s).toBe(true);
     }
+  });
+});
+
+describe('쉼표로 나열한 낱말과 이름 접미사 -이', () => {
+  const sylOf = (w: string) => JSON.stringify(syllabify(w));
+  const phoneticSyls = (cs: Constituent[]) =>
+    cs.flatMap((c) => (c.kind === 'phonetic' ? [JSON.stringify(c.syllables)] : []));
+
+  it('쉼표로 나열한 이름은 마지막 이름의 역할을 함께 받는다', () => {
+    const cs = parseKo('나는 한별이, 로건이, 로하니를 사랑해', lex);
+    expect(roleOf(cs, '나')).toBe('주체');
+    expect(roleOf(cs, '사랑')).toBe('행위');
+    const names = cs.filter((c) => c.kind === 'phonetic');
+    expect(names.map((c) => c.role)).toEqual(['대상', '대상', '대상']);
+    expect(phoneticSyls(cs)).toEqual([sylOf('한별'), sylOf('로건'), sylOf('로하니')]);
+  });
+
+  it('받침 있는 이름의 -이 는 어디서나 뗀다 — 한별이를 = 한별이,', () => {
+    expect(phoneticSyls(parseKo('한별이를 사랑해', lex))).toEqual([sylOf('한별')]);
+    expect(phoneticSyls(parseKo('한별이, 로건이를 사랑해', lex))).toEqual([sylOf('한별'), sylOf('로건')]);
+  });
+
+  it('받침 없는 이름은 -이 를 떼지 않는다', () => {
+    expect(phoneticSyls(parseKo('로하니를 사랑해', lex))).toEqual([sylOf('로하니')]);
+    expect(phoneticSyls(parseKo('미리를 사랑해', lex))).toEqual([sylOf('미리')]);
+  });
+
+  it('나열이 아닌 문장은 그대로다', () => {
+    expect(brief(parseKo('나는 너를 사랑해', lex))).toBe('주체:나 대상:너 행위:사랑');
+    expect(brief(parse('그럼에도 불구하고 나는 너를 사랑해', lex).constituents)).toBe('주체:나 대상:너 행위:사랑');
+    expect(parse('그럼에도 불구하고 나는 너를 사랑해', lex).mood).toBe('concessive');
+    // 표지어가 지워진 뒤 남은 쉼표는 나열이 아니다
+    expect(brief(parse('그럼에도 불구하고, 나는 너를 사랑해', lex).constituents)).toBe('주체:나 대상:너 행위:사랑');
+  });
+
+  it('사전 낱말은 -이 를 떼지 않는다', () => {
+    expect(brief(parseKo('고양이를 사랑해', lex))).toBe('대상:고양이 행위:사랑');
+    expect(brief(parseKo('고양이, 한별이를 사랑해', lex).slice(0, 1))).toBe('대상:고양이');
   });
 });
