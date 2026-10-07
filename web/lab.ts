@@ -7,6 +7,7 @@ import { maskVertices, FLOATS_PER_VERTEX } from './smoke/geometry';
 import { MASK_VS, MASK_FS, SMOKE_VS } from './smoke/shaders';
 import { loadScreen } from './screen';
 import { LAB_PARAMS, JS_ONLY_KEYS, SCENE_FS, NOISE_FS, NOISE_SIZE } from './lab-shader';
+import sceneJson from '../design/scene.json';
 
 /**
  * 장면 실험실 — 개발용 페이지 (배포 번들에 들어가지 않는다).
@@ -21,8 +22,12 @@ const MASK_SIZE = 1024;
 const STORE = 'regardless-scene-lab';
 
 // ── 파라미터 ──
+// 기본값은 design/scene.json (사용자가 고른 기준값). 거기 없는 키만 LAB_PARAMS 의 값을 쓴다.
 const DEF: Record<string, number> = {};
-for (const [, rows] of LAB_PARAMS) for (const [k, , , , , v] of rows) DEF[k] = v;
+for (const [, rows] of LAB_PARAMS) for (const [k, , , , , v] of rows) {
+  const chosen = (sceneJson as Record<string, unknown>)[k];
+  DEF[k] = typeof chosen === 'number' ? chosen : v;
+}
 const val: Record<string, number> = { ...DEF };
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) ?? '{}') as Record<string, unknown>;
