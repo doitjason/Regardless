@@ -30,14 +30,14 @@ export const LAB_PARAMS: readonly LabGroup[] = [
     ['sGrain',     '필름 그레인',      0.00, 0.08, 0.002, 0.022],
     ['sLetterbox', '영화 화면비 띠',   0.00, 1.00, 1.00, 1.00],
   ]],
-  ['장면 — 그림자와 사람', [
-    ['sShadow',       '거대한 그림자',   0.00, 1.00, 0.01, 0.85],
-    ['sShadowX',      '그림자 간격',     0.30, 1.20, 0.01, 0.60],
-    ['sShadowSpread', '줄기 벌어짐',     0.40, 2.00, 0.01, 1.00],
-    ['sShadowSway',   '그림자 흔들림',   0.00, 1.00, 0.01, 0.40],
-    ['sFig',          '사람',            0.00, 1.00, 0.01, 1.00],
-    ['sFigX',         '사람 가로 위치', -0.80, 0.80, 0.01, -0.22],
-    ['sFigSize',      '사람 크기',       0.15, 0.90, 0.01, 0.34],
+  ['장면 — 헵타포드', [
+    ['sShadow',       '진하기',          0.00, 1.00, 0.01, 0.82],
+    ['sShadowX',      '좌우 간격',       0.30, 1.20, 0.01, 0.62],
+    ['sShadowSize',   '크기',            0.50, 1.80, 0.01, 1.00],
+    ['sShadowSpread', '다리 벌어짐',     0.40, 2.00, 0.01, 1.00],
+    ['sShadowSway',   '움직임',          0.00, 1.50, 0.01, 0.60],
+    ['sShadowBlur',   '흐림',            0.004, 0.10, 0.001, 0.030],
+    ['sShadowDepth',  '오른쪽이 더 멀리', 0.00, 1.00, 0.01, 0.45],
   ]],
   ['로고그램 배치', [
     ['sLogoX',    '가로 위치',            -0.50, 0.50, 0.01, 0.00],
@@ -57,10 +57,17 @@ export const LAB_PARAMS: readonly LabGroup[] = [
     ['kSmoke',     '흘러나가는 연기',   0.00, 2.00, 0.01, 1.00],
     ['kSmokeLen',  '연기 줄기 길이',    0.00, 0.20, 0.002, 0.075],
     ['kSmokeFlow', '연기 흐름 속도',    0.00, 3.00, 0.01, 0.70],
-    ['kSheet',     '반투명 연기 막',    0.00, 1.50, 0.01, 0.60],
+    ['kSheet',     '반투명 연기 막',    0.00, 1.50, 0.01, 0.35],
     ['kHaze',      '링 안쪽 연기',      0.00, 1.00, 0.01, 0.25],
     ['kDrops',     '먹 방울',           0.00, 1.00, 0.01, 0.50],
     ['kVeil',      '안개가 먹을 덮음',  0.00, 1.00, 0.01, 0.20],
+  ]],
+  ['먹 — 입체감', [
+    ['kShade',  '굴곡 음영',           0.00, 1.50, 0.01, 0.70],
+    ['kSheen',  '젖은 먹 광택',        0.00, 1.50, 0.01, 0.45],
+    ['kDepth',  '깊이 (먼 쪽은 안개 속)', 0.00, 1.00, 0.01, 0.55],
+    ['kTwist',  '밧줄처럼 꼬인 결',    0.00, 1.00, 0.01, 0.30],
+    ['kSpin',   '깊이가 도는 속도',    0.00, 1.00, 0.01, 0.30],
   ]],
   ['번짐', [
     ['pLeadTurb',  '선두 난류',             0.0, 6.0, 0.05, 2.5],
@@ -119,10 +126,11 @@ uniform vec2 uRes;
 uniform float uT, uHalf, uProg, uHighlight, uRingR;
 
 uniform float sBright, sTint, sFogDens, sFogScale, sFogSpeed, sLight, sLightY, sBottom, sSide, sGrain, sLetterbox;
-uniform float sShadow, sShadowX, sShadowSpread, sShadowSway, sFig, sFigX, sFigSize;
+uniform float sShadow, sShadowX, sShadowSize, sShadowSpread, sShadowSway, sShadowBlur, sShadowDepth;
 uniform float sLogoX, sLogoY, sLogoSize;
 uniform float kRag, kLump, kFiber, kFiberAmt, kSoft, pInk, kSmokeTone;
 uniform float kSmoke, kSmokeLen, kSmokeFlow, kSheet, kHaze, kDrops, kVeil;
+uniform float kShade, kSheen, kDepth, kTwist, kSpin;
 uniform float pLeadTurb, pFrontSoft;
 
 vec4 nz(vec2 p){ return textureLod(uNoise, p, 0.0); }
@@ -140,45 +148,35 @@ float smin(float a, float b, float k){
   return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// 상반신 뒷모습 — 묶은 머리, 처진 어깨, 등. 국소 좌표: y=0 이 화면 아래, 머리 꼭대기 y≈1.
-float figure(vec2 a){
-  float d = length((a - vec2(0.0, 0.84)) / vec2(0.105, 0.125)) - 1.0;
-  d *= 0.11;
-  d = smin(d, sdCapsule(a, vec2(0.0, 0.76), vec2(0.012, 0.50), 0.040), 0.03);  // 묶은 머리
-  d = smin(d, sdCapsule(a, vec2(0.0, 0.62), vec2(0.0, 0.72), 0.058), 0.04);    // 목
-  float back = length((a - vec2(0.0, 0.18)) / vec2(0.40, 0.46)) - 1.0;          // 등
-  back *= 0.40;
-  back = smin(back, length(a - vec2(-0.25, 0.47)) - 0.13, 0.12);                // 어깨
-  back = smin(back, length(a - vec2( 0.25, 0.47)) - 0.13, 0.12);
-  return smin(d, back, 0.06);
+// 굵기가 한쪽 끝에서 다른 끝으로 변하는 캡슐
+float sdTaper(vec2 p, vec2 a, vec2 b, float ra, float rb){
+  vec2 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - mix(ra, rb, h);
 }
 
-// 거대한 그림자 한 쪽 — 위는 큰 덩어리, 아래로 늘어진 긴 줄기. 아주 흐리게.
-float giant(vec2 q, float cx, float side, float t){
-  float sway = sin(t * 0.06 + side * 1.3) * 0.025 * sShadowSway;
-  // 영화 화면비 띠에 가려지지 않게 몸통을 화면 안쪽에 둔다
-  vec2 c = vec2(cx + sway, 0.25);
-  // 몸통 — 화면 위쪽의 아주 큰 덩어리와, 그 아래로 넓게 퍼진 '손바닥'
-  vec2 d = (q - c) / vec2(0.22, 0.16);
-  float body = exp(-dot(d, d) * 0.8);
-  vec2 dp = (q - c - vec2(0.0, -0.13)) / vec2(0.22, 0.08);
-  body = max(body, exp(-dot(dp, dp) * 1.2));
-  // 줄기 — 사이에 뚜렷한 틈을 두고, 간격을 고르지 않게. 같은 굵기·같은 간격이면 커튼 주름이 된다
-  float limbs = 0.0;
-  float y = q.y;
-  float top = c.y - 0.12;
-  float k = clamp((top - y) / 0.62, 0.0, 1.0);    // 0 위 → 1 아래
-  for (int j = 0; j < 4; j++){
-    float fj = j == 0 ? -1.55 : j == 1 ? -0.50 : j == 2 ? 0.55 : 1.45;
-    float lx = c.x + fj * 0.105 * sShadowSpread + fj * k * 0.06 * sShadowSpread
-             + sin(t * 0.08 + fj * 1.7 + side) * 0.015 * sShadowSway * k;
-    float w = mix(0.040, 0.024, k) * (j == 1 || j == 2 ? 1.1 : 0.9);
-    // 막대처럼 곧지 않게 — 줄기마다 다른 자리의 노이즈로 살짝 구불거린다
-    float wob = (nz(vec2(fj * 0.37 + side * 0.21, q.y * 0.45 + t * 0.0015)).g - 0.5) * 0.07 * (0.3 + k);
-    limbs = max(limbs, exp(-pow((q.x - lx - wob) / w, 2.0)));
+// 헵타포드 한 쪽의 부호 있는 거리 (음수 = 안쪽).
+// 위로 이어져 사라지는 몸통, 넓은 손바닥, 관절이 하나씩 있는 긴 다리 다섯.
+// 다리는 손바닥에서 바깥으로 벌어졌다가 관절에서 꺾여 가늘게 내려온다.
+// 다리마다 다른 위상으로 아주 느리게 움직인다.
+float heptapod(vec2 q, vec2 c, float side, float t){
+  float sz = sShadowSize, sp = sShadowSpread, mv = sShadowSway;
+  float breathe = sin(t * 0.11 + side) * 0.006 * mv;
+  float d = sdTaper(q, c + vec2(0.0, 0.04) * sz, c + vec2(side * 0.06, 0.80) * sz, (0.13 + breathe) * sz, 0.24 * sz);
+  vec2 pc = (q - c) / (vec2(0.19, 0.095) * sz);
+  d = smin(d, (length(pc) - 1.0) * 0.095 * sz, 0.06 * sz);
+  for (int j = 0; j < 5; j++){
+    float fj = float(j) - 2.0;
+    float ph = t * 0.13 * mv + float(j) * 1.9 + side * 2.3;
+    vec2 root = c + vec2(fj * 0.062 * sp, -0.05) * sz;
+    vec2 knee = root + vec2(fj * 0.050 * sp + sin(ph) * 0.012 * mv, -0.26 + cos(ph * 0.7) * 0.014 * mv) * sz;
+    vec2 tip  = knee + vec2(fj * 0.075 * sp + sin(ph * 0.8) * 0.022 * mv, -0.40 - abs(fj) * 0.02) * sz;
+    float r0 = (0.030 - abs(fj) * 0.003) * sz;
+    float leg = sdTaper(q, root, knee, r0, r0 * 0.78);
+    leg = smin(leg, sdTaper(q, knee, tip, r0 * 0.80, 0.005 * sz), 0.02 * sz);
+    d = smin(d, leg, 0.035 * sz);
   }
-  limbs *= fall(top + 0.06, top - 0.02, y) * smoothstep(-0.62, -0.28, y);
-  return max(body, limbs);
+  return d;
 }
 
 void main(){
@@ -205,12 +203,27 @@ void main(){
   vec3 deepC  = mix(vec3(0.20), vec3(0.15, 0.20, 0.22), sTint);
   vec3 col = mix(deepC, lightC, clamp(lum, 0.0, 1.0));
 
-  // ── 거대한 그림자 — 안개 깊은 곳 ──
+  // ── 헵타포드 — 안개 깊은 곳의 두 형체 ──
+  // 가장자리는 아주 흐리고 안쪽으로 갈수록 짙다. 앞을 지나는 안개 자락이 윤곽을
+  // 흐트러뜨리고, 다리 끝은 바닥 안개에, 몸통 위쪽은 빛 속에 녹는다.
+  // 오른쪽 형체는 조금 더 멀어서 더 옅고 더 흐리다 — 깊이가 생긴다.
   float gx = max(halfW * sShadowX, 0.32);
-  float sh = max(giant(q, -gx, -1.0, t), giant(q, gx, 1.0, t));
-  sh *= sShadow * (0.85 + 0.4 * (l2 - 0.5));
-  vec3 shC = mix(deepC, lightC, 0.16);
-  col = mix(col, shC, clamp(sh, 0.0, 1.0));
+  for (int k = 0; k < 2; k++){
+    float side = k == 0 ? -1.0 : 1.0;
+    float depth = k == 0 ? 0.0 : sShadowDepth;
+    vec2 c = vec2(side * gx + sin(t * 0.05 + side) * 0.02 * sShadowSway,
+                  0.20 + sin(t * 0.07 + side * 1.3) * 0.008 * sShadowSway);
+    float wisp = (nz(q * 1.1 + vec2(t * 0.006, side * 0.3)).g - 0.5) * 0.05
+               + (nz(q * 2.6 + vec2(-t * 0.010, side * 0.7)).b - 0.5) * 0.015;
+    float d = heptapod(q, c, side, t) + wisp;
+    float blur = sShadowBlur * (1.0 + depth * 1.2);
+    float a = fall(blur, -blur, d);
+    a *= mix(0.55, 1.0, fall(0.0, -0.10, d));
+    a *= smoothstep(-0.62, -0.28, q.y) * (1.0 - smoothstep(0.25, 0.55, q.y) * 0.4);
+    a *= sShadow * (1.0 - depth * 0.40) * (0.88 + 0.3 * (l2 - 0.5));
+    vec3 shC = mix(deepC, lightC, 0.10 + depth * 0.18);
+    col = mix(col, shC, clamp(a, 0.0, 1.0));
+  }
 
   // ── 로고그램 ──
   vec2 p = (q - vec2(sLogoX, sLogoY)) * (2.0 * uHalf / sLogoSize);
@@ -240,10 +253,17 @@ void main(){
     float m2 = mask(uvR, 2.2);
     float m4 = mask(uvR, 4.0);
 
-    // 울퉁불퉁한 굵기 — 덩어리 진 곳은 두껍게
+    // ── 입체감 1: 깊이 — 링이 공간에서 기울어 천천히 돈다. 먼 쪽은 가늘고 흐리고 안개에 묻힌다 ──
+    float ang = atan(p.y, p.x);
+    float zf = 0.5 + 0.5 * sin(ang - t * 0.06 * kSpin + 0.8);
+    zf = clamp(zf + (nz(p * 0.5 + vec2(0.4, t * 0.001)).r - 0.5) * 0.5, 0.0, 1.0);
+    float far = zf * kDepth;
+
+    // 울퉁불퉁한 굵기 — 덩어리 진 곳은 두껍게, 먼 쪽은 가늘게
     float lump = nz(p * 1.25 + vec2(0.31, 0.83)).g - 0.5;
-    float thr = 0.5 - lump * 0.42 * kLump;
-    float body = smoothstep(thr - 0.04 - kSoft * 0.18, thr + 0.06, m1);
+    float thr = 0.5 - lump * 0.42 * kLump + far * 0.07;
+    float soft = 0.04 + kSoft * 0.18 + far * 0.10;
+    float body = smoothstep(thr - soft, thr + 0.06 + far * 0.04, m1);
 
     // 섬유 결 — 획 방향으로 길게 늘어난 노이즈
     vec2 tx = 1.0 / vec2(textureSize(uMask, 0));
@@ -253,6 +273,13 @@ void main(){
     vec2 tang = vec2(-nrm.y, nrm.x);
     float fib = nz(vec2(dot(p, tang) * 0.6, dot(p, nrm) * 7.0) * kFiber + vec2(0.17, 0.43)).a;
     body *= mix(1.0 - kFiberAmt, 1.0, smoothstep(0.15, 0.75, fib));
+
+    // ── 입체감 2: 밧줄처럼 꼬인 결 — 획을 비스듬히 감아 도는 줄무늬 ──
+    // 가로지르는 위치(가장자리 0 → 가운데 1)와 둘레를 따라 잰 길이로 나선을 만든다.
+    float across = clamp((m1 - thr) * 3.0, 0.0, 1.0);
+    float along = ang * max(r, 0.05);
+    float twist = sin(along * 38.0 * kFiber + across * 4.0 + (nz(p * 1.1 + vec2(0.9, 0.1)).g - 0.5) * 12.0);
+    body *= 1.0 - kTwist * 0.32 * (0.5 + 0.5 * twist) * smoothstep(0.1, 0.6, across);
 
     // 흘러나가는 연기 — 흐름장을 거슬러 올라가며 먹을 찾는다.
     // 거슬러 간 자리에 먹이 있으면 이 픽셀은 그 먹이 흘려보낸 연기 줄기 위에 있다.
@@ -292,9 +319,23 @@ void main(){
                   * (1.0 - haze * smoothstep(0.4, 1.0, uProg) * 0.40);
     // 먹 색: 단단한 먹(획·방울)의 비중만큼 짙고, 나머지는 옅은 연기 색
     vec3 coreC = vec3(pInk, pInk + 0.010, pInk + 0.016);
+
+    // ── 입체감 3: 굴곡 음영과 젖은 광택 — 흐린 마스크를 높이로 보고 빛을 비춘다 ──
+    // 빛은 로고그램 뒤 위쪽의 밝은 안개에서 온다. 한쪽 가장자리는 밝고 반대쪽은
+    // 그늘이 져서 획이 납작한 띠가 아니라 둥근 줄기로 읽힌다.
+    vec3 nrm3 = normalize(vec3(-g * 18.0 * kShade, 1.0));
+    vec3 L = normalize(vec3(-0.30, 0.80, 0.55));
+    float diff = clamp(dot(nrm3, L), 0.0, 1.0);
+    float sheen = pow(clamp(dot(reflect(-L, nrm3), vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 9.0);
+    sheen *= 0.6 + 0.4 * (0.5 + 0.5 * twist);
+    vec3 litCore = coreC + lightC * (0.09 * (diff - 0.6) * kShade + 0.14 * sheen * kSheen);
+    litCore = max(litCore, vec3(0.0));
+
     vec3 smokeC = mix(coreC, lightC, kSmokeTone * 0.5);
     float solid = clamp(body + drops, 0.0, 1.0);
-    inkCol = mix(smokeC, coreC, clamp(solid / max(a, 1e-3), 0.0, 1.0));
+    inkCol = mix(smokeC, litCore, clamp(solid / max(a, 1e-3), 0.0, 1.0));
+    // 먼 쪽은 안개 색으로 물러난다
+    inkCol = mix(inkCol, mix(deepC, lightC, 0.50), far * 0.28);
     a *= reveal;
 
     ivec2 ts = textureSize(uMask, 0);
@@ -309,16 +350,6 @@ void main(){
   // ── 앞 안개 — 아주 옅게 모든 것 앞을 지나간다 ──
   float ff = nz(q * 0.45 + vec2(t * 0.009, t * 0.001) * sFogSpeed + vec2(0.5, 0.2)).r;
   col = mix(col, lightC * 0.92, smoothstep(0.45, 0.85, ff) * 0.12 * sFogDens);
-
-  // ── 사람 — 가장 앞, 화면 아래에 걸친 뒷모습 ──
-  float bottom = -0.5;
-  vec2 fa = (q - vec2(sFigX * halfW, bottom)) / sFigSize;
-  float fd = figure(fa) * sFigSize;
-  float figA = fall(0.004, -0.008, fd) * sFig;
-  float rim = smoothstep(-0.02, 0.0, fd) * fall(0.004, -0.008, fd) * smoothstep(0.55, 1.0, fa.y);
-  vec3 figC = mix(vec3(0.075, 0.085, 0.09), lightC * 0.55, rim * 0.5);
-  figC = mix(figC, lightC * 0.6, fall(0.4, 0.0, fa.y) * 0.25);   // 아래쪽은 안개에 잠긴다
-  col = mix(col, figC, figA);
 
   // ── 필름 마감 ──
   col *= 1.0 - 0.18 * smoothstep(0.55, 1.25, length(q * vec2(0.7 / max(aspect, 0.6), 1.0)));
