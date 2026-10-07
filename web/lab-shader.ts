@@ -31,13 +31,13 @@ export const LAB_PARAMS: readonly LabGroup[] = [
     ['sLetterbox', '영화 화면비 띠',   0.00, 1.00, 1.00, 1.00],
   ]],
   ['장면 — 헵타포드', [
-    ['sShadow',       '진하기',          0.00, 1.00, 0.01, 0.82],
-    ['sShadowX',      '좌우 간격',       0.30, 1.20, 0.01, 0.62],
-    ['sShadowSize',   '크기',            0.50, 1.80, 0.01, 1.00],
-    ['sShadowSpread', '다리 벌어짐',     0.40, 2.00, 0.01, 1.00],
-    ['sShadowSway',   '움직임',          0.00, 1.50, 0.01, 0.60],
-    ['sShadowBlur',   '흐림',            0.004, 0.10, 0.001, 0.030],
-    ['sShadowDepth',  '오른쪽이 더 멀리', 0.00, 1.00, 0.01, 0.45],
+    ['sShadow',       '진하기',             0.00, 1.00, 0.01, 0.82],
+    ['sShadowSize',   '크기',               0.50, 1.80, 0.01, 1.00],
+    ['sShadowSpread', '다리 벌어짐',        0.40, 2.00, 0.01, 1.00],
+    ['sShadowRange',  '좌우로 다니는 범위', 0.00, 1.20, 0.01, 0.80],
+    ['sShadowDepth',  '앞뒤로 오가는 폭',   0.00, 1.00, 0.01, 0.80],
+    ['sShadowSpeed',  '움직임 속도',        0.00, 3.00, 0.01, 1.00],
+    ['sShadowBlur',   '흐림',               0.004, 0.10, 0.001, 0.030],
   ]],
   ['로고그램 배치', [
     ['sLogoX',    '가로 위치',            -0.50, 0.50, 0.01, 0.00],
@@ -45,29 +45,30 @@ export const LAB_PARAMS: readonly LabGroup[] = [
     ['sLogoSize', '크기 (화면 높이 대비)', 0.30, 1.40, 0.01, 0.74],
   ]],
   ['먹 — 획', [
-    ['kRag',      '가장자리 찢김',     0.00, 2.00, 0.01, 0.55],
+    ['kRag',      '가장자리 찢김',     0.00, 2.00, 0.01, 0.45],
     ['kLump',     '굵기 울퉁불퉁',     0.00, 2.00, 0.01, 0.90],
     ['kFiber',    '섬유 결 촘촘함',    0.30, 3.00, 0.05, 1.00],
     ['kFiberAmt', '섬유 결 세기',      0.00, 1.00, 0.01, 0.45],
-    ['kSoft',     '획 가장자리 부드러움', 0.00, 1.00, 0.01, 0.35],
+    ['kSoft',     '획 가장자리 부드러움', 0.00, 1.00, 0.01, 0.10],
     ['pInk',      '먹 밝기',           0.000, 0.200, 0.002, 0.030],
-    ['kSmokeTone','연기 밝기',         0.05, 0.50, 0.01, 0.20],
+    ['kSmokeTone','연기 밝기',         0.05, 0.50, 0.01, 0.12],
   ]],
   ['먹 — 연기', [
     ['kSmoke',     '흘러나가는 연기',   0.00, 2.00, 0.01, 1.00],
     ['kSmokeLen',  '연기 줄기 길이',    0.00, 0.20, 0.002, 0.075],
     ['kSmokeFlow', '연기 흐름 속도',    0.00, 3.00, 0.01, 0.70],
-    ['kSheet',     '반투명 연기 막',    0.00, 1.50, 0.01, 0.35],
+    ['kSheet',     '반투명 연기 막',    0.00, 1.50, 0.01, 0.20],
     ['kHaze',      '링 안쪽 연기',      0.00, 1.00, 0.01, 0.25],
     ['kDrops',     '먹 방울',           0.00, 1.00, 0.01, 0.50],
-    ['kVeil',      '안개가 먹을 덮음',  0.00, 1.00, 0.01, 0.20],
+    ['kVeil',      '안개가 먹을 덮음',  0.00, 1.00, 0.01, 0.08],
   ]],
   ['먹 — 입체감', [
     ['kShade',  '굴곡 음영',           0.00, 1.50, 0.01, 0.70],
     ['kSheen',  '젖은 먹 광택',        0.00, 1.50, 0.01, 0.45],
-    ['kDepth',  '깊이 (먼 쪽은 안개 속)', 0.00, 1.00, 0.01, 0.55],
+    ['kTilt',   '공간에서 기울기',     0.00, 1.00, 0.01, 0.55],
+    ['kDepth',  '먼 쪽이 안개에 묻힘',  0.00, 1.00, 0.01, 0.50],
     ['kTwist',  '밧줄처럼 꼬인 결',    0.00, 1.00, 0.01, 0.30],
-    ['kSpin',   '깊이가 도는 속도',    0.00, 1.00, 0.01, 0.30],
+    ['kSpin',   '기울기가 바뀌는 속도', 0.00, 2.00, 0.01, 0.50],
   ]],
   ['번짐', [
     ['pLeadTurb',  '선두 난류',             0.0, 6.0, 0.05, 2.5],
@@ -126,11 +127,11 @@ uniform vec2 uRes;
 uniform float uT, uHalf, uProg, uHighlight, uRingR;
 
 uniform float sBright, sTint, sFogDens, sFogScale, sFogSpeed, sLight, sLightY, sBottom, sSide, sGrain, sLetterbox;
-uniform float sShadow, sShadowX, sShadowSize, sShadowSpread, sShadowSway, sShadowBlur, sShadowDepth;
+uniform float sShadow, sShadowSize, sShadowSpread, sShadowRange, sShadowDepth, sShadowSpeed, sShadowBlur;
 uniform float sLogoX, sLogoY, sLogoSize;
 uniform float kRag, kLump, kFiber, kFiberAmt, kSoft, pInk, kSmokeTone;
 uniform float kSmoke, kSmokeLen, kSmokeFlow, kSheet, kHaze, kDrops, kVeil;
-uniform float kShade, kSheen, kDepth, kTwist, kSpin;
+uniform float kShade, kSheen, kTilt, kDepth, kTwist, kSpin;
 uniform float pLeadTurb, pFrontSoft;
 
 vec4 nz(vec2 p){ return textureLod(uNoise, p, 0.0); }
@@ -155,28 +156,41 @@ float sdTaper(vec2 p, vec2 a, vec2 b, float ra, float rb){
   return length(pa - ba * h) - mix(ra, rb, h);
 }
 
-// 헵타포드 한 쪽의 부호 있는 거리 (음수 = 안쪽).
+// 헵타포드 한 마리의 부호 있는 거리 (음수 = 안쪽).
 // 위로 이어져 사라지는 몸통, 넓은 손바닥, 관절이 하나씩 있는 긴 다리 다섯.
-// 다리는 손바닥에서 바깥으로 벌어졌다가 관절에서 꺾여 가늘게 내려온다.
-// 다리마다 다른 위상으로 아주 느리게 움직인다.
-float heptapod(vec2 q, vec2 c, float side, float t){
-  float sz = sShadowSize, sp = sShadowSpread, mv = sShadowSway;
-  float breathe = sin(t * 0.11 + side) * 0.006 * mv;
+// gait 는 지금까지 걸어온 거리에 비례하는 걸음 위상이다 — 다리가 차례로 들렸다 놓인다.
+float heptapod(vec2 q, vec2 c, float sz, float gait, float side, float t){
+  float sp = sShadowSpread;
+  float breathe = sin(t * 0.11 + side) * 0.006;
   float d = sdTaper(q, c + vec2(0.0, 0.04) * sz, c + vec2(side * 0.06, 0.80) * sz, (0.13 + breathe) * sz, 0.24 * sz);
   vec2 pc = (q - c) / (vec2(0.19, 0.095) * sz);
   d = smin(d, (length(pc) - 1.0) * 0.095 * sz, 0.06 * sz);
   for (int j = 0; j < 5; j++){
     float fj = float(j) - 2.0;
-    float ph = t * 0.13 * mv + float(j) * 1.9 + side * 2.3;
+    float ph = gait + float(j) * 1.26;                 // 다리마다 어긋난 걸음
+    float lift = max(0.0, sin(ph));                    // 들린 다리
+    float swing = cos(ph);                             // 앞뒤로 옮겨 딛는 다리
     vec2 root = c + vec2(fj * 0.062 * sp, -0.05) * sz;
-    vec2 knee = root + vec2(fj * 0.050 * sp + sin(ph) * 0.012 * mv, -0.26 + cos(ph * 0.7) * 0.014 * mv) * sz;
-    vec2 tip  = knee + vec2(fj * 0.075 * sp + sin(ph * 0.8) * 0.022 * mv, -0.40 - abs(fj) * 0.02) * sz;
+    vec2 knee = root + vec2(fj * 0.050 * sp + swing * 0.025, -0.26 + lift * 0.035) * sz;
+    vec2 tip  = knee + vec2(fj * 0.075 * sp + swing * 0.050, -0.40 - abs(fj) * 0.02 + lift * 0.06) * sz;
     float r0 = (0.030 - abs(fj) * 0.003) * sz;
     float leg = sdTaper(q, root, knee, r0, r0 * 0.78);
     leg = smin(leg, sdTaper(q, knee, tip, r0 * 0.80, 0.005 * sz), 0.02 * sz);
     d = smin(d, leg, 0.035 * sz);
   }
   return d;
+}
+
+// 헵타포드 한 마리가 지금 어디에 있는가: (가로 위치, 깊이 0=가까움..1=멂, 걸음 위상).
+// 서로 다른 느린 주기를 겹쳐서 좌우로 걸어 다니고, 앞으로 다가왔다 뒤로 물러난다.
+// 시간의 순수 함수라 같은 시각이면 늘 같은 자리다.
+vec3 roam(float id, float t, float halfW){
+  float s = id * 7.31 + 1.7;
+  float tt = t * sShadowSpeed;
+  float x = (sin(tt * 0.031 + s) * 0.62 + sin(tt * 0.019 + s * 1.9) * 0.38) * halfW * sShadowRange
+          + (id < 0.5 ? -0.30 : 0.30) * halfW;
+  float z = clamp(0.5 + 0.5 * (sin(tt * 0.023 + s * 2.3) * 0.7 + sin(tt * 0.041 + s * 0.6) * 0.3), 0.0, 1.0) * sShadowDepth;
+  return vec3(x, z, x * 9.0 + z * 5.0);
 }
 
 void main(){
@@ -203,30 +217,48 @@ void main(){
   vec3 deepC  = mix(vec3(0.20), vec3(0.15, 0.20, 0.22), sTint);
   vec3 col = mix(deepC, lightC, clamp(lum, 0.0, 1.0));
 
-  // ── 헵타포드 — 안개 깊은 곳의 두 형체 ──
-  // 가장자리는 아주 흐리고 안쪽으로 갈수록 짙다. 앞을 지나는 안개 자락이 윤곽을
+  // ── 헵타포드 — 안개 깊은 곳을 걸어 다니는 두 형체 ──
+  // 가까이 오면 크고 짙고 또렷하고, 멀어지면 작고 옅고 흐려지며 조금 위로 물러난다.
+  // 먼 것부터 그려서 가까운 것이 앞을 가린다. 앞을 지나는 안개 자락이 윤곽을
   // 흐트러뜨리고, 다리 끝은 바닥 안개에, 몸통 위쪽은 빛 속에 녹는다.
-  // 오른쪽 형체는 조금 더 멀어서 더 옅고 더 흐리다 — 깊이가 생긴다.
-  float gx = max(halfW * sShadowX, 0.32);
+  vec3 hA = roam(0.0, t, halfW), hB = roam(1.0, t, halfW);
   for (int k = 0; k < 2; k++){
-    float side = k == 0 ? -1.0 : 1.0;
-    float depth = k == 0 ? 0.0 : sShadowDepth;
-    vec2 c = vec2(side * gx + sin(t * 0.05 + side) * 0.02 * sShadowSway,
-                  0.20 + sin(t * 0.07 + side * 1.3) * 0.008 * sShadowSway);
+    bool aFar = hA.y >= hB.y;
+    vec3 h = (k == 0) == aFar ? hA : hB;
+    float side = ((k == 0) == aFar) ? -1.0 : 1.0;
+    float z = h.y;
+    float sz = sShadowSize * mix(1.20, 0.62, z);
+    vec2 c = vec2(h.x, 0.18 + z * 0.12);
     float wisp = (nz(q * 1.1 + vec2(t * 0.006, side * 0.3)).g - 0.5) * 0.05
                + (nz(q * 2.6 + vec2(-t * 0.010, side * 0.7)).b - 0.5) * 0.015;
-    float d = heptapod(q, c, side, t) + wisp;
-    float blur = sShadowBlur * (1.0 + depth * 1.2);
+    float d = heptapod(q, c, sz, h.z, side, t) + wisp;
+    float blur = sShadowBlur * mix(1.0, 2.6, z);
     float a = fall(blur, -blur, d);
     a *= mix(0.55, 1.0, fall(0.0, -0.10, d));
     a *= smoothstep(-0.62, -0.28, q.y) * (1.0 - smoothstep(0.25, 0.55, q.y) * 0.4);
-    a *= sShadow * (1.0 - depth * 0.40) * (0.88 + 0.3 * (l2 - 0.5));
-    vec3 shC = mix(deepC, lightC, 0.10 + depth * 0.18);
+    a *= sShadow * mix(1.0, 0.42, z) * (0.88 + 0.3 * (l2 - 0.5));
+    vec3 shC = mix(deepC, lightC, 0.08 + z * 0.24);
     col = mix(col, shC, clamp(a, 0.0, 1.0));
   }
 
-  // ── 로고그램 ──
-  vec2 p = (q - vec2(sLogoX, sLogoY)) * (2.0 * uHalf / sLogoSize);
+  // ── 로고그램 — 공간 속에 떠 있는 판 ──
+  // 로고그램을 3D 공간의 판으로 놓고 아주 천천히 기울인다. 화면 픽셀에서 판으로
+  // 광선을 쏘아 맞는 자리를 읽으므로 원근이 그대로 생긴다 — 링이 비스듬히 돈 타원이
+  // 되고, 판의 깊이(z)로 어느 쪽이 먼지 정확히 안다.
+  // 세로 화면(폰)에서는 높이가 아니라 폭에 맞춘다 — 그러지 않으면 링이 좌우로 잘린다
+  float logoSize = sLogoSize * min(1.0, aspect * 1.05);
+  vec2 s0 = (q - vec2(sLogoX, sLogoY)) * (2.0 * uHalf / logoSize);
+  float yaw = (sin(t * 0.050 * kSpin) * 0.75 + sin(t * 0.021 * kSpin + 2.0) * 0.25) * 0.42 * kTilt;
+  float pitch = (sin(t * 0.037 * kSpin + 1.3) * 0.7 + sin(t * 0.017 * kSpin + 0.4) * 0.3) * 0.26 * kTilt;
+  float cy = cos(yaw), sy = sin(yaw), cp = cos(pitch), spt = sin(pitch);
+  vec3 E1 = vec3(cy, 0.0, -sy);
+  vec3 E2 = vec3(spt * sy, cp, spt * cy);
+  vec3 N = vec3(cp * sy, -spt, cp * cy);
+  const float CAM = 3.2;
+  vec3 dirR = vec3(s0, -CAM);
+  vec3 X = vec3(0.0, 0.0, CAM) + dirR * (-(N.z * CAM) / dot(N, dirR));
+  vec2 p = vec2(dot(X, E1), dot(X, E2));
+  float planeZ = X.z;                                  // + 가까움, - 멂
   vec2 uv = p / (2.0 * uHalf) + 0.5;
   float r = length(p);
   float inkA = 0.0;
@@ -249,21 +281,19 @@ void main(){
     vec2 n2 = nz(p * 2.4 + vec2(0.57, 0.29) - t * 0.004).ba - 0.5;
     vec2 uvR = uv + (n1 * 0.020 + n2 * 0.008) * kRag * turb;
 
-    float m1 = mask(uvR, 1.0);
+    float m1 = mask(uvR, 0.6);
     float m2 = mask(uvR, 2.2);
     float m4 = mask(uvR, 4.0);
 
-    // ── 입체감 1: 깊이 — 링이 공간에서 기울어 천천히 돈다. 먼 쪽은 가늘고 흐리고 안개에 묻힌다 ──
+    // ── 입체감 1: 깊이 — 판의 먼 쪽은 가늘고 조금 흐리고 안개에 묻힌다 ──
     float ang = atan(p.y, p.x);
-    float zf = 0.5 + 0.5 * sin(ang - t * 0.06 * kSpin + 0.8);
-    zf = clamp(zf + (nz(p * 0.5 + vec2(0.4, t * 0.001)).r - 0.5) * 0.5, 0.0, 1.0);
-    float far = zf * kDepth;
+    float far = clamp(0.5 - planeZ * 2.4, 0.0, 1.0) * kDepth;
 
     // 울퉁불퉁한 굵기 — 덩어리 진 곳은 두껍게, 먼 쪽은 가늘게
     float lump = nz(p * 1.25 + vec2(0.31, 0.83)).g - 0.5;
     float thr = 0.5 - lump * 0.42 * kLump + far * 0.07;
-    float soft = 0.04 + kSoft * 0.18 + far * 0.10;
-    float body = smoothstep(thr - soft, thr + 0.06 + far * 0.04, m1);
+    float soft = 0.015 + kSoft * 0.15 + far * 0.06;
+    float body = smoothstep(thr - soft, thr + 0.02 + far * 0.03, m1);
 
     // 섬유 결 — 획 방향으로 길게 늘어난 노이즈
     vec2 tx = 1.0 / vec2(textureSize(uMask, 0));
@@ -297,7 +327,7 @@ void main(){
     float trail = acc / wsum;
     // 연기는 띠가 아니라 가는 실이어야 한다 — 실 모양 노이즈로 강하게 자른다
     float wispy = nz(p * 1.6 + vec2(t * 0.002 * kSmokeFlow, 0.0)).a;
-    float strands = smoothstep(0.45, 0.95, wispy);
+    float strands = smoothstep(0.55, 0.97, wispy);
     float smoke = trail * strands * kSmoke * turb * (1.0 - body);
 
     // 반투명한 연기 막 — 몇 군데에서만 넓게 퍼진다
@@ -314,7 +344,7 @@ void main(){
     float drops = smoothstep(0.80, 0.86, dropN) * smoothstep(0.08, 0.35, m2) * (1.0 - body) * kDrops;
 
     float a = 1.0 - (1.0 - body) * (1.0 - drops)
-                  * (1.0 - clamp(smoke, 0.0, 1.0) * 0.80)
+                  * (1.0 - clamp(smoke, 0.0, 1.0) * 0.65)
                   * (1.0 - clamp(sheet, 0.0, 1.0) * 0.45)
                   * (1.0 - haze * smoothstep(0.4, 1.0, uProg) * 0.40);
     // 먹 색: 단단한 먹(획·방울)의 비중만큼 짙고, 나머지는 옅은 연기 색
@@ -355,7 +385,8 @@ void main(){
   col *= 1.0 - 0.18 * smoothstep(0.55, 1.25, length(q * vec2(0.7 / max(aspect, 0.6), 1.0)));
   col += (fract(sin(dot(gl_FragCoord.xy + fract(t * 7.0) * 61.0, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * sGrain;
   // 영화 화면비 띠 — 넓은 화면에서만
-  float barH = sLetterbox * clamp((1.0 - aspect / 2.39) * 0.5, 0.0, 0.13);
+  // 세로·정사각 화면에서 띠를 두면 그림이 좁아질 뿐이다 — 가로로 넓을 때만 둔다
+  float barH = sLetterbox * smoothstep(1.2, 1.5, aspect) * clamp((1.0 - aspect / 2.39) * 0.5, 0.0, 0.13);
   if (abs(q.y) > 0.5 - barH) col = vec3(0.0);
   outColor = vec4(col, 1.0);
 }`;
