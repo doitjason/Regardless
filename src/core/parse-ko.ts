@@ -758,14 +758,30 @@ const LIST_COMMA = /[,、]$/;
  * 로하니를 사랑해` 에서 `한별이,` 의 `이` 는 조사가 아니라 이름의 일부이고,
  * 세 이름은 모두 `를` 이 가리키는 대상이다.
  *
- * 쉼표가 나열이 아닌 경우는 둘이다.
- * - **주제 조사 `은/는` 이 붙은 어절** (`나는, 너를 사랑해`): 주제 뒤의 쉼표는
- *   쉬어 가는 것이지 나열이 아니다. 이 어절은 나열에 들지 않고, 앞선 나열도 끊는다
- *   (`parseKo` 의 `commaBefore && topicMarked` 분기).
- * - **행위** (`비가 오고, 나는 울어`): 용언 뒤 쉼표는 절을 가르는 것이지 `오고` 를
- *   주체로 만드는 나열이 아니다. 항목이 행위이거나 마지막 어절이 행위이면 역할을
- *   나누지 않는다.
+ * 그러나 쉼표가 나열이 아닌 경우가 훨씬 많다. 그래서 항목은 **역할을 스스로
+ * 정하지 않은 때만** 마지막 항목을 따른다 (`isListable`).
+ * - **조사가 없거나 `이/가` 일 때만.** `이/가` 는 이름 접미사 `-이` 와 겹쳐 역할을
+ *   알 수 없다. 다른 명시 조사(`에서` `에` `를` `에게` `로` `와` `도` `만` …)가
+ *   붙었으면 항목은 자기 역할을 이미 말한 것이다 (`바다에서, 너를` 의 바다는 장소).
+ *   주제 조사 `은/는` 뒤의 쉼표(`나는, 너를 사랑해`)도 여기서 걸러진다 — 쉬어 가는 것이다.
+ * - **시간·꾸밈·용언이 아닐 때만.** `어제, 나는 너를 보았다` 의 `어제` 는 조사가
+ *   없어도 시간이고, 행위(`오고, 나는 울어`)나 꾸밈말은 나열의 항목이 아니다.
+ *   사전에 없어 소리로 적은 말(이름)이거나, 기본 역할이 시간·시간수식·행위수식·
+ *   행위가 아닌 사전 낱말만 나열의 항목이다.
+ * 항목이 이 조건을 못 채우면 앞선 나열도 거기서 끊긴다. 마지막 어절이 행위이면
+ * 역할을 나누지 않는다.
  */
+const NON_LIST_DEFAULT_ROLES: ReadonlySet<Role> = new Set<Role>(['시간', '시간수식', '행위수식', '행위']);
+
+function isListable(word: string, c: Constituent, lex: Lexicon): boolean {
+  // 어절 전체가 사전에서 찾아지면 끝 글자는 조사가 아니다 (가을, 고양이)
+  const particle = lookupNoun(word, lex) ? undefined : stripParticle(word)?.suffix;
+  if (particle !== undefined && particle !== '이' && particle !== '가') return false;
+  if (c.kind === 'phonetic') return true;
+  const role = lookup(lex, c.lemma)?.defaultRole;
+  return role === undefined || !NON_LIST_DEFAULT_ROLES.has(role);
+}
+
 function shareListRole(items: Slot[], last: Slot): void {
   if (last.c.role === '행위') return;
   for (const item of items) {
@@ -812,8 +828,8 @@ export function parseKo(text: string, lex: Lexicon): Constituent[] {
     slots.push(slot);
 
     const commaBefore = tokens[i]?.comma === true && next !== undefined;
-    if (commaBefore && slot.topicMarked) {
-      pending = [];                       // 주제 뒤의 쉼표 — 쉬어 가는 것, 나열이 아니다
+    if (commaBefore && !isListable(word, c, lex)) {
+      pending = [];                       // 제 역할이 분명한 말 뒤의 쉼표 — 나열이 아니다
     } else if (commaBefore) {
       pending.push(slot);                 // 나열의 한 항목 — 뒤에 마지막 항목이 온다
     } else {
