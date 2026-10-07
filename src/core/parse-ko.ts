@@ -784,6 +784,9 @@ function isListable(word: string, c: Constituent, lex: Lexicon): boolean {
 
 function shareListRole(items: Slot[], last: Slot): void {
   if (last.c.role === '행위') return;
+  // 주제어(은/는) 앞의 쉼표 항목은 거의 접속어·감탄사·부르는 말이다 —
+  // `그래서, 나는 …` `철수, 나는 …`. 나열이라면 주제어가 아니라 목적어·부사어 쪽이다.
+  if (last.topicMarked) return;
   for (const item of items) {
     if (item.c.role === '행위') continue;
     item.c = { ...item.c, role: last.c.role };

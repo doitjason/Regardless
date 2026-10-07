@@ -503,6 +503,19 @@ describe('쉼표로 나열한 낱말과 이름 접미사 -이', () => {
     expect(brief(parseKo('가을, 겨울에 사랑해', lex))).toBe('시간:가을 시간:겨울 행위:사랑');
   });
 
+  it('접속어·감탄사·부르는 말 뒤의 쉼표는 나열이 아니다 — 뒤의 주제어 역할을 베끼지 않는다', () => {
+    const roleAt = (sentence: string) => parseKo(sentence, lex)[0]?.role;
+    for (const w of ['그래서', '응', '있잖아', '철수']) {
+      expect(roleAt(`${w}, 나는 너를 사랑해`), w).toBe('대상');   // 기준선 87f2397 과 같다
+    }
+    expect(brief(parseKo('철수, 나는 너를 사랑해', lex).slice(1))).toBe('주체:나 대상:너 행위:사랑');
+  });
+
+  it('용언 뒤 쉼표는 절을 가른다 — 사랑해, 너를', () => {
+    expect(brief(parseKo('사랑해, 너를', lex))).toBe('행위:사랑 대상:너');
+    expect(brief(parseKo('나는 사랑해, 너를', lex))).toBe('주체:나 행위:사랑 대상:너');
+  });
+
   it('사전 낱말은 -이 를 떼지 않는다', () => {
     expect(brief(parseKo('고양이를 사랑해', lex))).toBe('대상:고양이 행위:사랑');
     expect(brief(parseKo('고양이, 한별이를 사랑해', lex).slice(0, 1))).toBe('대상:고양이');
