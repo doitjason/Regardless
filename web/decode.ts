@@ -18,9 +18,15 @@ const MOOD_LABEL: Record<'ko' | 'en', Partial<Record<Mood, string>>> = {
 };
 
 /** 획의 묶음 키와 같은 규칙 — 역할|라벨 (`src/render/parts.ts`, `compose.ts` 의 라벨). */
-function keyOf(c: Constituent): string {
+export function partKeyOfConstituent(c: Constituent): string {
   if (c.kind === 'concept') return `${c.role}|${c.lemma}`;
   return `${c.role}|${c.syllables.map((s) => `${s.onset}${s.nucleus}${s.coda}`).join('')}`;
+}
+
+/** 낱말 라벨 — 소리로 적은 말은 한글, 한국어는 표제어, 영어는 영어 뜻. */
+export function wordLabel(c: Constituent, lang: 'ko' | 'en', lex: Lexicon): string {
+  if (c.kind === 'phonetic') return c.syllables.map(composeHangul).join('');
+  return lang === 'ko' ? c.lemma : (lookup(lex, c.lemma)?.gloss_en ?? c.lemma);
 }
 
 /**
@@ -33,10 +39,7 @@ export function decodeSteps(ir: IR, arr: Arrival, lex: Lexicon, text: string): D
   const lang = detectLanguage(text);
   const labels = new Map<string, string>();
   for (const c of ir.constituents) {
-    const label = c.kind === 'phonetic'
-      ? c.syllables.map(composeHangul).join('')
-      : lang === 'ko' ? c.lemma : (lookup(lex, c.lemma)?.gloss_en ?? c.lemma);
-    labels.set(keyOf(c), label);
+    labels.set(partKeyOfConstituent(c), wordLabel(c, lang, lex));
   }
   const mood = MOOD_LABEL[lang][ir.mood];
   if (mood) labels.set(`양상|${ir.mood}`, mood);
