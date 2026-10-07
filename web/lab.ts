@@ -1,13 +1,12 @@
 import { parse } from '../src/core/parse';
 import { loadSeedLexicon } from '../src/core/lexicon';
-import { buildStrokes, P_SPAN } from '../src/render/compose';
+import { buildStrokes } from '../src/render/compose';
 import { arrival } from '../src/render/arrival';
 import { loadLook } from '../src/render/look';
-import { maskVertices, FLOATS_PER_VERTEX } from './smoke/geometry';
-import { MASK_VS, MASK_FS, SMOKE_VS } from './smoke/shaders';
 import { loadScreen } from './screen';
-import { LAB_PARAMS, JS_ONLY_KEYS, SCENE_FS, NOISE_FS, NOISE_SIZE } from './lab-shader';
-import sceneJson from '../design/scene.json';
+import { SCENE_PARAMS, loadScene } from './scene/params';
+import { SceneRenderer } from './scene/renderer';
+import { maskVertices } from './smoke/geometry';
 
 /**
  * 장면 실험실 — 개발용 페이지 (배포 번들에 들어가지 않는다).
@@ -18,125 +17,35 @@ import sceneJson from '../design/scene.json';
 const lex = loadSeedLexicon();
 const look = loadLook();
 const screen = loadScreen();
-const MASK_SIZE = 1024;
 const STORE = 'regardless-scene-lab';
 
 // ── 파라미터 ──
-// 기본값은 design/scene.json (사용자가 고른 기준값). 거기 없는 키만 LAB_PARAMS 의 값을 쓴다.
-const DEF: Record<string, number> = {};
-for (const [, rows] of LAB_PARAMS) for (const [k, , , , , v] of rows) {
-  const chosen = (sceneJson as Record<string, unknown>)[k];
-  DEF[k] = typeof chosen === 'number' ? chosen : v;
-}
+// 기본값은 design/scene.json (사용자가 고른 기준값).
+const DEF: Record<string, number> = loadScene();
 const val: Record<string, number> = { ...DEF };
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) ?? '{}') as Record<string, unknown>;
   for (const k of Object.keys(DEF)) if (typeof saved[k] === 'number') val[k] = saved[k] as number;
 } catch { /* 저장소를 못 쓰면 기본값 */ }
 
-// ── WebGL ──
+// ── 장면 ──
 const canvas = document.getElementById('c') as HTMLCanvasElement;
-const gl = canvas.getContext('webgl2', { antialias: false });
-if (!gl) throw new Error('WebGL2 를 쓸 수 없다');
-
-function compile(type: number, src: string): WebGLShader {
-  const s = gl!.createShader(type)!;
-  gl!.shaderSource(s, src);
-  gl!.compileShader(s);
-  if (!gl!.getShaderParameter(s, gl!.COMPILE_STATUS)) throw new Error(gl!.getShaderInfoLog(s) ?? '컴파일 실패');
-  return s;
-}
-function link(vs: string, fs: string): WebGLProgram {
-  const p = gl!.createProgram()!;
-  gl!.attachShader(p, compile(gl!.VERTEX_SHADER, vs));
-  gl!.attachShader(p, compile(gl!.FRAGMENT_SHADER, fs));
-  gl!.linkProgram(p);
-  if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) throw new Error(gl!.getProgramInfoLog(p) ?? '링크 실패');
-  return p;
-}
-
-const maskProg = link(MASK_VS, MASK_FS);
-const sceneProg = link(SMOKE_VS, SCENE_FS);
-
-const maskTex = gl.createTexture()!;
-gl.bindTexture(gl.TEXTURE_2D, maskTex);
-gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, MASK_SIZE, MASK_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-const fbo = gl.createFramebuffer()!;
-gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, maskTex, 0);
-gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-const geoBuf = gl.createBuffer()!;
-const quadBuf = gl.createBuffer()!;
-gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-
-// ── 노이즈 텍스처 — 시작할 때 한 번 굽고, 장면 셰이더는 읽기만 한다 ──
-const noiseTex = gl.createTexture()!;
-{
-  gl.bindTexture(gl.TEXTURE_2D, noiseTex);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, NOISE_SIZE, NOISE_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-  const nfbo = gl.createFramebuffer()!;
-  gl.bindFramebuffer(gl.FRAMEBUFFER, nfbo);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, noiseTex, 0);
-  gl.viewport(0, 0, NOISE_SIZE, NOISE_SIZE);
-  const noiseProg = link(SMOKE_VS, NOISE_FS);
-  gl.useProgram(noiseProg);
-  gl.uniform1f(gl.getUniformLocation(noiseProg, 'uSize'), NOISE_SIZE);
-  const a = gl.getAttribLocation(noiseProg, 'a');
-  gl.enableVertexAttribArray(a);
-  gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.deleteFramebuffer(nfbo);
-}
-
-const U = (n: string) => gl!.getUniformLocation(sceneProg, n);
-const uniforms = Object.keys(DEF).filter((k) => !JS_ONLY_KEYS.has(k)).map((k) => [k, U(k)] as const);
-const uMask = U('uMask'), uRes = U('uRes'), uT = U('uT'), uHalf = U('uHalf'),
-  uProg = U('uProg'), uHighlight = U('uHighlight'), uRingR = U('uRingR'), uNoise = U('uNoise');
-
-// ── 문장 → 마스크 ──
+const renderer = SceneRenderer.create(canvas, val, look.pR);
+if (!renderer) throw new Error('WebGL2 를 쓸 수 없다');
 const bloom = { t0: performance.now(), duration: 1 };
 
+// ── 문장 → 마스크 ──
 function draw(text: string): void {
   const ir = parse(text, lex);
   const sk = buildStrokes(ir, lex, look);
   const arr = arrival(sk, look, screen.timing);
-  const data = maskVertices(sk, arr);
-  gl!.bindBuffer(gl!.ARRAY_BUFFER, geoBuf);
-  gl!.bufferData(gl!.ARRAY_BUFFER, data, gl!.STATIC_DRAW);
-  gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo);
-  gl!.viewport(0, 0, MASK_SIZE, MASK_SIZE);
-  gl!.clearColor(0, 0, 0, 1);
-  gl!.clear(gl!.COLOR_BUFFER_BIT);
-  gl!.useProgram(maskProg);
-  gl!.uniform1f(gl!.getUniformLocation(maskProg, 'uHalf'), P_SPAN);
-  const loc = gl!.getAttribLocation(maskProg, 'aV');
-  gl!.enableVertexAttribArray(loc);
-  gl!.vertexAttribPointer(loc, FLOATS_PER_VERTEX, gl!.FLOAT, false, 0, 0);
-  gl!.drawArrays(gl!.TRIANGLES, 0, data.length / FLOATS_PER_VERTEX);
-  gl!.bindTexture(gl!.TEXTURE_2D, maskTex);
-  gl!.generateMipmap(gl!.TEXTURE_2D);
-  gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
+  renderer!.setVertices(maskVertices(sk, arr));
   bloom.t0 = performance.now();
   bloom.duration = arr.duration;
 }
 
 // ── 크기 ──
-function resize(): void {
-  const scale = Math.min(window.devicePixelRatio || 1, 1.5) * (val.sResScale ?? 0.6);
-  canvas.width = Math.max(1, Math.round(canvas.clientWidth * scale));
-  canvas.height = Math.max(1, Math.round(canvas.clientHeight * scale));
-}
+function resize(): void { renderer!.resize(); }
 new ResizeObserver(resize).observe(canvas);
 
 // ── 루프 ──
@@ -144,28 +53,7 @@ const t0 = performance.now();
 const fpsEl = document.getElementById('fps')!;
 let frames = 0, lastFps = performance.now();
 function frame(now: number): void {
-  gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
-  gl!.viewport(0, 0, canvas.width, canvas.height);
-  gl!.useProgram(sceneProg);
-  gl!.bindBuffer(gl!.ARRAY_BUFFER, quadBuf);
-  const a = gl!.getAttribLocation(sceneProg, 'a');
-  gl!.enableVertexAttribArray(a);
-  gl!.vertexAttribPointer(a, 2, gl!.FLOAT, false, 0, 0);
-  gl!.activeTexture(gl!.TEXTURE0);
-  gl!.bindTexture(gl!.TEXTURE_2D, maskTex);
-  gl!.uniform1i(uMask, 0);
-  gl!.activeTexture(gl!.TEXTURE1);
-  gl!.bindTexture(gl!.TEXTURE_2D, noiseTex);
-  gl!.uniform1i(uNoise, 1);
-  gl!.activeTexture(gl!.TEXTURE0);
-  gl!.uniform2f(uRes, canvas.width, canvas.height);
-  gl!.uniform1f(uT, 3.7 + ((now - t0) / 1000) % 600);
-  gl!.uniform1f(uHalf, P_SPAN);
-  gl!.uniform1f(uProg, Math.min(1, Math.max(0, now - bloom.t0) / 1000 / bloom.duration));
-  gl!.uniform1f(uHighlight, -1);
-  gl!.uniform1f(uRingR, look.pR);
-  for (const [k, loc] of uniforms) gl!.uniform1f(loc, val[k]!);
-  gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+  renderer!.draw(3.7 + ((now - t0) / 1000) % 600, Math.min(1, Math.max(0, now - bloom.t0) / 1000 / bloom.duration), -1);
   frames++;
   if (now - lastFps > 700) {
     fpsEl.textContent = `${Math.round(frames * 1000 / (now - lastFps))} fps · ${canvas.width}×${canvas.height}`;
@@ -183,7 +71,7 @@ function sync(): void {
   try { localStorage.setItem(STORE, JSON.stringify(val)); } catch { /* 무시 */ }
 }
 const groups = document.getElementById('groups')!;
-LAB_PARAMS.forEach(([name, rows], gi) => {
+SCENE_PARAMS.forEach(([name, rows], gi) => {
   const det = document.createElement('details');
   det.open = gi < 4;
   det.innerHTML = `<summary>${name}</summary>`;
