@@ -131,7 +131,7 @@ body.sheet-open #decodeArea, body.sheet-open #dock {
     padding-bottom: 20px; transform: translateX(calc(100% + 32px));
   }
   .sheet.open { transform: none; }
-  .sheet-handle { display: none; }
+  .sheet .sheet-handle { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet.open { transition: opacity 0.01s, visibility 0s; }
@@ -141,7 +141,7 @@ body.sheet-open #decodeArea, body.sheet-open #dock {
 .sheet-handle span { width: 36px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.28); }
 .sheet-head {
   position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center;
-  padding: 4px 0 6px; background: linear-gradient(rgba(10, 13, 15, 0.9) 65%, rgba(10, 13, 15, 0));
+  padding: 4px 0 6px; background: linear-gradient(rgba(10, 13, 15, 0.78) 60%, rgba(10, 13, 15, 0));
 }
 .sheet-eyebrow { margin: 0; font-size: 12px; font-weight: 400; letter-spacing: 0.18em; color: rgba(232, 238, 238, 0.6); }
 .sheet-close {
@@ -205,3 +205,9 @@ body.sheet-open #decodeArea, body.sheet-open #dock {
   }
   body:not(.no-gl) #words.live { width: fit-content; max-width: calc(100vw - 32px); }
 }
+
+/* 시트 스크롤바 — 밝은 기본 막대 대신 가늘고 옅게 */
+.sheet { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+.sheet::-webkit-scrollbar { width: 6px; }
+.sheet::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 3px; }
+.sheet::-webkit-scrollbar-track { background: transparent; }
