@@ -81,3 +81,13 @@ body.receive #dock { display: none; }
   margin: 0; padding: 8px 12px; border-radius: 8px; background: rgba(120, 30, 20, 0.85); color: #fff; font-size: 13px;
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 넓은 화면 — 아래 영화 화면비 띠 안에 자막처럼 흰 글씨로. 버튼은 띠 바로 위 안개에 둔다.
+   띠 높이는 셰이더가 정한다 (가로 3:2 이상에서 화면 높이의 약 13%). */
+@media (min-aspect-ratio: 3/2) {
+  #decodeArea { bottom: calc(2.2vh + var(--safe-b)); gap: 10px; }
+  #decodeArea .veil-btn { order: -1; margin-bottom: 4vh; }
+  #words li, #sentence { color: #e8eeee; }
+  #words li { font-size: 15px; }
+  #sentence { font-size: clamp(16px, 2.2vw, 24px); }
+}
