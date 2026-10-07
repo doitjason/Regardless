@@ -1,5 +1,5 @@
 {
-  "_": "화면 장면 기준값 (2026-10-07, 사용자가 장면 실험실 web/lab.html 에서 고름). 키의 뜻과 범위는 web/lab-shader.ts 의 LAB_PARAMS. 사이트의 장면 셰이더와 실험실이 함께 읽는다.",
+  "_": "화면 장면 기준값 (2026-10-07, 사용자가 장면 실험실 web/lab.html 에서 고름). 키의 뜻과 범위는 web/scene/params.ts 의 SCENE_PARAMS. 사이트의 장면 셰이더와 실험실이 함께 읽는다.",
   "sBright": 0.74,
   "sTint": 0.55,
   "sFogDens": 0.85,
