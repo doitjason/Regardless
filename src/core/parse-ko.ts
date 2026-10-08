@@ -551,8 +551,24 @@ function stripNameSuffix(name: string): string {
   return j && j.coda !== 0 ? before : name;
 }
 
-function nameOf(text: string, role: Role): Constituent | null {
-  return phonetic(stripNameSuffix(text), role);
+/**
+ * 부르는 말 `-아/-야` (한별아, 로하니야). 받침 있는 이름 뒤에는 `아`, 받침 없는
+ * 이름 뒤에는 `야` 가 붙는다. 이름 자체가 아니므로 뗀다.
+ * 다른 조사가 붙지 않은 어절 전체(`vocative`)일 때만 부른다. 이름 부분이 두
+ * 음절 미만이면(나야, 아야) 건드리지 않는다.
+ */
+function stripVocative(name: string): string {
+  if (name.length < 3) return name;
+  const tail = name.charAt(name.length - 1);
+  if (tail !== '아' && tail !== '야') return name;
+  const prev = lastJamo(name.slice(0, -1));
+  if (!prev) return name;
+  const hasCoda = prev.coda !== CODA.NONE;
+  return (tail === '아') === hasCoda ? name.slice(0, -1) : name;
+}
+
+function nameOf(text: string, role: Role, vocative = false): Constituent | null {
+  return phonetic(stripNameSuffix(vocative ? stripVocative(text) : text), role);
 }
 
 function phonetic(text: string, role: Role): Constituent | null {
@@ -646,7 +662,7 @@ function readWord(word: string, lex: Lexicon): Constituent | null {
 
   // 5) 음소 폴백. 어미가 분명하면 어미를 떼고 행위 자리에 둔다.
   if (verb.strongRem !== undefined) return phonetic(verb.strongRem, '행위');
-  return nameOf(word, '대상');
+  return nameOf(word, '대상', true);
 }
 
 /**
@@ -751,7 +767,7 @@ function animate(c: Constituent, lex: Lexicon): boolean {
 }
 
 /** 어절 끝의 쉼표 — 나열의 표지다. */
-const LIST_COMMA = /[,、]$/;
+const LIST_COMMA = /[,、，]$/;
 
 /**
  * 쉼표로 나열한 항목은 마지막 항목의 역할을 함께 받는다. `나는 한별이, 로건이,
@@ -795,11 +811,30 @@ function shareListRole(items: Slot[], last: Slot): void {
   }
 }
 
+/**
+ * 공백으로 자른 뒤, 쉼표 뒤에서 한 번 더 자른다 — `한별이,로건이` 는 두 어절이다.
+ * 쉼표(`,` `、` `，`)만 있는 조각(`한별이 , 로건이`)은 어절이 아니라 앞 어절의
+ * 쉼표 표지다. 후방 탐색 정규식은 구형 iOS Safari 가 못 읽으므로 쓰지 않는다.
+ */
+function tokenize(text: string): { word: string; comma: boolean }[] {
+  const tokens: { word: string; comma: boolean }[] = [];
+  for (const raw of text.trim().split(/\s+/)) {
+    for (const piece of raw.match(/[^,、，]+[,、，]*|[,、，]+/g) ?? []) {
+      const word = clean(piece);
+      const comma = LIST_COMMA.test(piece);
+      if (word.length > 0) tokens.push({ word, comma });
+      else if (comma) {
+        const prev = tokens[tokens.length - 1];
+        if (prev) prev.comma = true;
+      }
+    }
+  }
+  return tokens;
+}
+
 export function parseKo(text: string, lex: Lexicon): Constituent[] {
   const slots: Slot[] = [];
-  const tokens = text.trim().split(/\s+/)
-    .map((raw) => ({ word: clean(raw), comma: LIST_COMMA.test(raw) }))
-    .filter((t) => t.word.length > 0);
+  const tokens = tokenize(text);
   const words = tokens.map((t) => t.word);
   /** 쉼표로 이어진, 아직 마지막 항목을 만나지 못한 나열의 항목들 */
   let pending: Slot[] = [];

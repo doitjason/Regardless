@@ -468,6 +468,33 @@ describe('쉼표로 나열한 낱말과 이름 접미사 -이', () => {
     expect(phoneticSyls(cs)).toEqual([sylOf('한별'), sylOf('로건'), sylOf('로하니')]);
   });
 
+  it('쉼표 앞뒤 공백이 있든 없든, 전각 쉼표든 같은 나열이다', () => {
+    for (const s of [
+      '나는 한별이,로건이,로하니를 사랑해',
+      '나는 한별이，로건이，로하니를 사랑해',
+      '나는 한별이 , 로건이 , 로하니를 사랑해',
+    ]) {
+      const cs = parseKo(s, lex);
+      expect(phoneticSyls(cs), s).toEqual([sylOf('한별'), sylOf('로건'), sylOf('로하니')]);
+      expect(cs.filter((c) => c.kind === 'phonetic').map((c) => c.role), s).toEqual(['대상', '대상', '대상']);
+      expect(roleOf(cs, '사랑'), s).toBe('행위');
+    }
+  });
+
+  it('부르는 말 -아/-야 는 이름이 아니다 — 한별아, 로하니야', () => {
+    expect(phoneticSyls(parseKo('한별아, 사랑해', lex))).toEqual([sylOf('한별')]);
+    expect(phoneticSyls(parseKo('한별아 사랑해', lex))).toEqual([sylOf('한별')]);
+    expect(phoneticSyls(parseKo('로하니야 사랑해', lex))).toEqual([sylOf('로하니')]);
+  });
+
+  it('사전 낱말은 -아/-야 로 끝나도 자르지 않는다', () => {
+    // 시드 사전의 표제어·별칭 중 아/야 로 끝나는 말은 없다 (스캔으로 확인). 그래서
+    // 합성 사전으로 잠근다 — 어절 전체 조회가 부르는 말 떼기보다 먼저다.
+    const base = lookup(lex, '사랑')!;
+    const synth = { ...lex, 코알라: { ...base, lemma: '코알라', defaultRole: '대상' as const, aliases: [] } };
+    expect(brief(parseKo('코알라 사랑해', synth))).toBe('대상:코알라 행위:사랑');
+  });
+
   it('받침 있는 이름의 -이 는 어디서나 뗀다 — 한별이를 = 한별이,', () => {
     expect(phoneticSyls(parseKo('한별이를 사랑해', lex))).toEqual([sylOf('한별')]);
     expect(phoneticSyls(parseKo('한별이, 로건이를 사랑해', lex))).toEqual([sylOf('한별'), sylOf('로건')]);
