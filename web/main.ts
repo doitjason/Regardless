@@ -105,8 +105,17 @@ function clockIcon(hour: number): SVGSVGElement {
 /** 시트에서 가리킨 묶음을 바꾸고, 시트 안의 강조 표시를 맞춘다 */
 function setHover(part: number): void {
   hover = part;
-  for (const row of sheetRows.children) row.classList.toggle('on', Number((row as HTMLElement).dataset.part) === part);
-  moodCard.classList.toggle('on', sheetMoodPart !== null && part === sheetMoodPart);
+  const touch = isTouch();
+  for (const row of sheetRows.children) {
+    const on = Number((row as HTMLElement).dataset.part) === part;
+    row.classList.toggle('on', on);
+    // 터치에서는 눌러 켜고 끄는 토글이다 — 보조 기술에도 같은 상태를 알린다
+    if (touch) row.setAttribute('aria-pressed', String(on)); else row.removeAttribute('aria-pressed');
+  }
+  const moodOn = sheetMoodPart !== null && part === sheetMoodPart;
+  moodCard.classList.toggle('on', moodOn);
+  if (touch && sheetMoodPart !== null) moodCard.setAttribute('aria-pressed', String(moodOn));
+  else moodCard.removeAttribute('aria-pressed');
 }
 
 /**
@@ -136,6 +145,10 @@ function fillSheet(d: Details): void {
   sheetMoodPart = d.moodPart;
   moodCard.classList.toggle('has-part', d.moodPart !== null);
   moodCard.classList.remove('on');
+  // 가리킬 묶음이 없으면 모양은 그대로 두고 누를 수 없게만 한다
+  moodCard.tabIndex = d.moodPart === null ? -1 : 0;
+  if (d.moodPart === null) moodCard.setAttribute('aria-disabled', 'true');
+  else moodCard.removeAttribute('aria-disabled');
   spelledNote.hidden = d.spelled <= 0;
 
   sheetRows.innerHTML = '';
@@ -160,6 +173,7 @@ function fillSheet(d: Details): void {
     bindHighlight(row, () => r.part);
     sheetRows.appendChild(row);
   }
+  setHover(-1);   // 새 줄들에 aria-pressed 의 처음 상태를 채운다
 }
 
 /** 장면에서 먹을 지운다 */
@@ -181,6 +195,17 @@ function clearInk(): void {
 function hideShareUrl(): void {
   shareUrlEl.hidden = true;
   shareUrlEl.value = '';
+}
+
+let fontWarmed = false;
+/** 첫 문장이 그려진 뒤 시트 글꼴을 미리 받아 둔다 — 시트를 열 때 글자가 바뀌어 보이지 않게 */
+function warmFont(): void {
+  if (fontWarmed) return;
+  fontWarmed = true;
+  try {
+    ensureSheetFont();
+    void document.fonts?.load('600 18px "Noto Serif KR"')?.catch(() => {});
+  } catch { /* 글꼴은 꾸밈일 뿐이다 */ }
 }
 
 /** 문장을 그릴 준비 — 마스크(또는 SVG), 해독 순서, '자세히'. 실패하면 오류를 보이고 false. */
@@ -219,10 +244,12 @@ function prepare(text: string, allowDecode: boolean): boolean {
     fillSheet(detailsOf(ir, arr, result, lex, trimmed));
     flow = new Flow(steps.map((s) => s.part), timingFor(arr.duration), allowDecode);
     lastState = null;
+    warmFont();
     return true;
   } catch (e) {
     console.warn('prepare 실패', e);
     clearInk();
+    setHasGlyph(false);   // 닫을 때 포커스가 곧 사라질 '자세히' 버튼으로 가지 않게 먼저 숨긴다
     closeSheet();
     flow = new Flow([], timingFor(1), false);
     lastState = null;
@@ -340,13 +367,27 @@ el<HTMLButtonElement>('savePng').addEventListener('click', () => {
 let sheetCloseTimer: number | undefined;
 const sheetIsOpen = (): boolean => sheet.classList.contains('open');
 
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap';
+let fontLinked = false;
+/** 시트 글꼴 — 첫 화면을 막지 않으려고 <head> 에 두지 않고 필요할 때 붙인다 */
+function ensureSheetFont(): void {
+  if (fontLinked) return;
+  fontLinked = true;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = FONT_CSS;
+  document.head.appendChild(link);
+}
+
 /** 시트를 연다 — hidden 을 풀고 한 프레임 뒤 .open 을 붙여야 미끄러져 들어온다 */
 function openSheet(): void {
   if (!current || sheetIsOpen()) return;
   window.clearTimeout(sheetCloseTimer);
+  ensureSheetFont();
   sheet.hidden = false;
   void sheet.offsetHeight;   // 전환의 출발점을 확정
   sheet.classList.add('open');
+  detailsBtn.setAttribute('aria-expanded', 'true');
   document.body.classList.add('sheet-open');
   sheetClose.focus({ preventScroll: true });
 }
@@ -356,11 +397,12 @@ function closeSheet(): void {
   if (!sheetIsOpen()) return;
   const wasInside = sheet.contains(document.activeElement);
   sheet.classList.remove('open');
+  detailsBtn.setAttribute('aria-expanded', 'false');
   document.body.classList.remove('sheet-open');
   setHover(-1);
   window.clearTimeout(sheetCloseTimer);
   sheetCloseTimer = window.setTimeout(() => { if (!sheetIsOpen()) sheet.hidden = true; }, 400);
-  if (wasInside && !actionsEl.hidden) detailsBtn.focus({ preventScroll: true });
+  if (wasInside) (actionsEl.hidden ? input : detailsBtn).focus({ preventScroll: true });
 }
 
 detailsBtn.addEventListener('click', openSheet);
@@ -375,7 +417,8 @@ document.addEventListener('keydown', (e) => {
 // 가운데가 원점, y 위쪽이 + (q.y = 0.5 - pxY / innerHeight).
 const base = { ...scene };
 const wideSheet = window.matchMedia('(min-width: 900px)');
-function moveLogo(): void {
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+function moveLogo(dtMs: number): void {
   const bx = base.sLogoX ?? 0, by = base.sLogoY ?? 0, bs = base.sLogoSize ?? 1;
   let tx = bx, ty = by, ts = bs;
   if (sheetIsOpen()) {
@@ -383,6 +426,8 @@ function moveLogo(): void {
     if (wideSheet.matches) {
       const visW = w - sheet.offsetWidth - 16;   // 시트 왼쪽까지 (전환 중의 transform 은 보지 않는다)
       tx = (visW / 2 - w / 2) / h;
+      // 시트 옆 빈 자리가 좁으면 로고를 줄인다 (세로 화면 보정과 같은 식, visW 가 폭 기준)
+      ts = Math.min(bs, (0.85 * visW / h) / Math.min(1, (w / h) * 1.05));
     } else {
       const vis = h - sheet.offsetHeight;        // 시트 위쪽까지
       ty = 0.5 - vis / 2 / h;
@@ -390,7 +435,9 @@ function moveLogo(): void {
       ts = Math.min(bs, (0.85 * vis / h) / Math.min(1, (w / h) * 1.05));
     }
   }
-  const ease = (v: number, t: number): number => (Math.abs(t - v) < 1e-4 ? t : v + (t - v) * 0.12);
+  // 프레임 시간에 맞춘 지수 접근 — 60Hz 와 120Hz 에서 같은 속도다. 움직임 줄이기면 바로 간다.
+  const k = reducedMotion.matches ? 1 : 1 - Math.exp(-dtMs / 140);
+  const ease = (v: number, t: number): number => (Math.abs(t - v) < 1e-4 ? t : v + (t - v) * k);
   scene.sLogoX = ease(scene.sLogoX ?? tx, tx);
   scene.sLogoY = ease(scene.sLogoY ?? ty, ty);
   scene.sLogoSize = ease(scene.sLogoSize ?? ts, ts);
@@ -437,9 +484,12 @@ function paintSvg(highlight: number): void {
 // 장면 시계는 페이지가 열린 뒤로 흐른다 — 문장을 보낼 때마다 되감기지 않는다.
 // 600초로 감아 셰이더 sin 해시의 정밀도를 지킨다.
 const pageT0 = performance.now();
+let lastFrameT = pageT0;
 function frame(now: number): void {
   const st = flow.frame(now);
-  if (glAlive) moveLogo();
+  const dt = Math.max(0, now - lastFrameT);
+  lastFrameT = now;
+  if (glAlive) moveLogo(dt);
   if (!lastState || !same(lastState, st)) apply(st);
   lastState = st;
   const highlight = st.highlight >= 0 ? st.highlight : hover;
