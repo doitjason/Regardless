@@ -1,4 +1,6 @@
 import { parse } from '../src/core/parse';
+import type { IR } from '../src/core/ir';
+import type { Arrival } from '../src/render/arrival';
 import { loadSeedLexicon } from '../src/core/lexicon';
 import { render, buildStrokes, type RenderResult } from '../src/render/compose';
 import { arrival } from '../src/render/arrival';
@@ -7,6 +9,7 @@ import { encodeShare, decodeShare } from './share';
 import { downloadSvg, downloadPng, fileNameFor } from './download';
 import { partKeyOf } from './breakdown';
 import { detailsOf, type Details } from './details';
+import { initialLang, saveLang, UI, type Lang } from './i18n';
 import { maskVertices } from './smoke/geometry';
 import { SceneRenderer } from './scene/renderer';
 import { loadScene } from './scene/params';
@@ -43,10 +46,11 @@ const moodNoteEl = el<HTMLSpanElement>('moodNote');
 const sheetRows = el<HTMLDivElement>('sheetRows');
 const spelledNote = el<HTMLParagraphElement>('spelledNote');
 
-const SHARE_LABEL = '공유하기';
-/** 입력줄이 비어 있을 때 쓰는 문장 (index.html 의 placeholder 와 같다) */
-const DEFAULT_SENTENCE = '그럼에도 불구하고 나는 너를 사랑한다';
-const FRIENDLY_ERROR = '이 문장은 아직 그릴 수 없어요. 다른 말로 바꿔 보세요.';
+const langToggle = el<HTMLButtonElement>('langToggle');
+
+/** 화면(UI) 언어 — 로고그램과 해독 낱말은 입력한 문장의 언어를 따르니 여기에 묶이지 않는다 */
+let lang: Lang = initialLang();
+const T = () => UI[lang];
 /** 손가락으로 다루는 기기 — 공유 창과 화상 키보드가 있는 쪽 */
 const isTouch = (): boolean => window.matchMedia('(pointer: coarse)').matches;
 
@@ -56,7 +60,11 @@ let glAlive = renderer !== null;
 document.body.classList.toggle('no-gl', !glAlive);
 
 /** 지금 그려진 문장 */
-interface Current { text: string; svg: string; strokes: RenderResult['strokes']; partKeys: string[] }
+interface Current {
+  text: string; svg: string; strokes: RenderResult['strokes']; partKeys: string[];
+  /** 언어를 바꿀 때 '자세히'를 같은 문장으로 다시 채우려고 둔다 */
+  ir: IR; arr: Arrival; result: RenderResult;
+}
 let current: Current | null = null;
 
 const timingFor = (bloomSeconds: number): FlowTiming => ({
@@ -164,11 +172,11 @@ function fillSheet(d: Details): void {
     word.textContent = r.word;
     const sub = document.createElement('span');
     sub.className = 'word-sub';
-    sub.textContent = `${r.roleWord} · ${r.hour}시`;
+    sub.textContent = `${r.roleWord} · ${T().hour(r.hour)}`;
     mid.append(word, sub);
     const strokes = document.createElement('span');
     strokes.className = 'word-strokes';
-    strokes.textContent = `획 ${r.strokes}`;
+    strokes.textContent = T().strokes(r.strokes);
     row.append(mid, strokes);
     bindHighlight(row, () => r.part);
     sheetRows.appendChild(row);
@@ -187,7 +195,7 @@ function clearInk(): void {
   sheetSentence.textContent = '';
   sheetMoodPart = null;
   hover = -1;
-  svgEl.setAttribute('aria-label', '로고그램');
+  svgEl.setAttribute('aria-label', T().glyphLabel);
   painted = -2;
 }
 
@@ -220,7 +228,7 @@ function prepare(text: string, allowDecode: boolean): boolean {
     const arr = arrival(sk, look, screen.timing);
     const steps = decodeSteps(ir, arr, lex, trimmed);
 
-    current = { text: trimmed, svg: result.svg, strokes: result.strokes, partKeys: arr.parts };
+    current = { text: trimmed, svg: result.svg, strokes: result.strokes, partKeys: arr.parts, ir, arr, result };
     painted = -2;
     if (glAlive && renderer) {
       renderer.setVertices(maskVertices(sk, arr));
@@ -228,7 +236,7 @@ function prepare(text: string, allowDecode: boolean): boolean {
     } else {
       svgEl.innerHTML = result.svg;
     }
-    svgEl.setAttribute('aria-label', `${trimmed} 의 로고그램`);
+    svgEl.setAttribute('aria-label', T().glyphOf(trimmed));
 
     wordsEl.innerHTML = '';
     for (const step of steps) {
@@ -241,7 +249,7 @@ function prepare(text: string, allowDecode: boolean): boolean {
     // 지워진 <li> 는 mouseleave 를 보내지 않으니 이전 강조 번호가 남지 않게 먼저 푼다
     hover = -1;
     hideShareUrl();
-    fillSheet(detailsOf(ir, arr, result, lex, trimmed));
+    fillSheet(detailsOf(ir, arr, result, lex, trimmed, lang));
     flow = new Flow(steps.map((s) => s.part), timingFor(arr.duration), allowDecode);
     lastState = null;
     warmFont();
@@ -253,7 +261,7 @@ function prepare(text: string, allowDecode: boolean): boolean {
     closeSheet();
     flow = new Flow([], timingFor(1), false);
     lastState = null;
-    showError(FRIENDLY_ERROR);
+    showError(T().error);
     return false;
   }
 }
@@ -280,12 +288,12 @@ function arrive(text: string): void {
   }
   // 옛 링크나 손으로 고친 링크 — 막다른 길이 되지 않게 쓴 글을 남기고 오류를 보인다
   dropGlyph(text);
-  showError(FRIENDLY_ERROR);
+  showError(T().error);
 }
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (input.value.trim() === '') input.value = DEFAULT_SENTENCE;
+  if (input.value.trim() === '') input.value = T().defaultSentence;
   if (!prepare(input.value, false) || !current) {
     // 먹은 지워졌다 — 이전 문장의 링크와 공유 줄이 남지 않게
     dropGlyph(input.value);
@@ -305,7 +313,7 @@ let shareTimer: number | undefined;
 function flashShare(message: string): void {
   shareLabelEl.textContent = message;
   window.clearTimeout(shareTimer);
-  shareTimer = window.setTimeout(() => { shareLabelEl.textContent = SHARE_LABEL; }, 1600);
+  shareTimer = window.setTimeout(() => { shareLabelEl.textContent = T().share; }, 1600);
 }
 
 /** 클립보드 API 가 막힌 인앱 브라우저용 — 숨긴 textarea 를 골라 복사 명령을 쓴다 */
@@ -332,7 +340,7 @@ shareBtn.addEventListener('click', async () => {
   // 1. 공유 창 — 손가락 기기에서만. 데스크톱 브라우저의 공유 창은 어색하다.
   if (typeof navigator.share === 'function' && isTouch()) {
     try {
-      await navigator.share({ title: '헵타포드 B', url });
+      await navigator.share({ title: T().shareTitle, url });
       return;
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;   // 공유 창을 닫았다
@@ -341,12 +349,12 @@ shareBtn.addEventListener('click', async () => {
   // 2. 클립보드
   try {
     await navigator.clipboard.writeText(url);
-    flashShare('링크를 복사했어요');
+    flashShare(T().copied);
     return;
   } catch { /* NotAllowedError 등 — 다음 방법으로 */ }
   // 3. 숨은 textarea + execCommand
   if (copyWithTextarea(url)) {
-    flashShare('링크를 복사했어요');
+    flashShare(T().copied);
     return;
   }
   // 4. 모두 막혔다 — 링크를 보여 주고 손으로 복사하게 한다
@@ -354,7 +362,7 @@ shareBtn.addEventListener('click', async () => {
   shareUrlEl.hidden = false;
   shareUrlEl.focus();
   shareUrlEl.select();
-  flashShare(isTouch() ? '길게 눌러 복사하세요' : '선택해서 복사하세요');
+  flashShare(isTouch() ? T().holdToCopy : T().selectToCopy);
 });
 
 el<HTMLButtonElement>('saveSvg').addEventListener('click', () => {
@@ -480,6 +488,40 @@ function paintSvg(highlight: number): void {
     paths[i]?.setAttribute('fill', key !== undefined && partKeyOf(s) === key ? '#c0563f' : '#16120e');
   });
 }
+
+/**
+ * 화면 글을 모두 지금 언어로 바꾼다. 정적인 글은 index.html 의 data-i18n* 표시를 따라 채우고,
+ * 문장에 따라 달라지는 글(시트, 오류, 공유 버튼, 로고그램 이름)은 따로 다시 채운다.
+ */
+function applyLang(): void {
+  const t = T();
+  document.documentElement.lang = lang;
+  document.title = t.title;
+  document.querySelector('meta[name="description"]')?.setAttribute('content', t.metaDescription);
+  for (const node of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
+    node.textContent = t[node.dataset.i18n as 'mark'] as string;
+  }
+  for (const node of document.querySelectorAll<HTMLElement>('[data-i18n-html]')) {
+    node.innerHTML = t[node.dataset.i18nHtml as 'legal1'];   // 고정 문자열이다
+  }
+  for (const node of document.querySelectorAll<HTMLElement>('[data-i18n-aria]')) {
+    node.setAttribute('aria-label', t[node.dataset.i18nAria as 'close'] as string);
+  }
+  input.placeholder = t.defaultSentence;
+  window.clearTimeout(shareTimer);   // 잠깐 바뀐 공유 버튼 글자도 지금 언어의 처음 글자로
+  shareLabelEl.textContent = t.share;
+  svgEl.setAttribute('aria-label', current ? t.glyphOf(current.text) : t.glyphLabel);
+  if (!errorEl.hidden) errorEl.textContent = t.error;
+  // 같은 문장으로 시트를 다시 채운다 (열려 있어도 닫히지 않는다)
+  if (current) fillSheet(detailsOf(current.ir, current.arr, current.result, lex, current.text, lang));
+}
+
+langToggle.addEventListener('click', () => {
+  lang = lang === 'ko' ? 'en' : 'ko';
+  saveLang(lang);
+  applyLang();
+});
+applyLang();
 
 // 장면 시계는 페이지가 열린 뒤로 흐른다 — 문장을 보낼 때마다 되감기지 않는다.
 // 600초로 감아 셰이더 sin 해시의 정밀도를 지킨다.

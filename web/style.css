@@ -39,13 +39,35 @@ body.no-gl.sheet-open #svgGlyph { top: 24%; width: min(60vmin, 420px); }
   font-size: 12px; font-weight: 500; letter-spacing: 0.3em;
 }
 .notice-line {
-  top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(18px + env(safe-area-inset-right, 0px));
+  /* 오른쪽 위 언어 전환 버튼(#langToggle) 폭만큼 더 띄운다 */
+  top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(76px + env(safe-area-inset-right, 0px));
   font-size: 10px; letter-spacing: 0.08em; text-align: right;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: calc(100vw - 150px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  max-width: calc(100vw - 208px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
 }
-@media (max-width: 600px) { .notice-line .long { display: none; } }
+@media (max-width: 600px) {
+  .notice-line .long { display: none; }
+  /* 영어 고지는 한 줄에 다 안 들어가니 두 줄로 접는다 */
+  .notice-line { white-space: normal; line-height: 1.45; }
+}
 @media (min-width: 601px) { .notice-line .short { display: none; } }
+
+/* UI 언어 전환 — 오른쪽 위 모서리에 작게. 지금 언어 쪽 글자가 밝다 */
+#langToggle {
+  position: fixed; z-index: 6;
+  top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px));
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 999px; border: 1px solid var(--glass-line);
+  background: var(--glass); color: #fff; font: inherit; font-size: 12px; letter-spacing: 0.06em; line-height: 1.2;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+#langToggle [data-l], #langToggle .sep { opacity: 0.45; }
+html[lang="ko"] #langToggle [data-l="ko"], html[lang="en"] #langToggle [data-l="en"] { opacity: 0.95; }
+/* 넓은 화면에서 오른쪽 패널(right 16px + width 380px)이 열려 있으면 그 왼쪽으로 비킨다 */
+@media (min-width: 900px) {
+  body.sheet-open #langToggle { right: calc(16px + 380px + 12px); }
+}
 
 .veil-btn {
   padding: 12px 26px; border-radius: 999px; border: 1px solid var(--glass-line);

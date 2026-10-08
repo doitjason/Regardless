@@ -13,13 +13,14 @@
   <canvas id="scene" aria-hidden="true"></canvas>
   <div id="svgGlyph" role="img" aria-label="로고그램"></div>
 
-  <h1 class="mark">헵타포드 B</h1>
-  <p class="notice-line"><span class="long">팬 창작물 · Paramount 와 무관 · 로고그램 디자인 Martine Bertrand</span><span class="short">팬 창작물 · Paramount 와 무관</span></p>
+  <h1 class="mark" data-i18n="mark">헵타포드 B</h1>
+  <p class="notice-line"><span class="long" data-i18n="noticeLong">팬 창작물 · Paramount 와 무관 · 로고그램 디자인 Martine Bertrand</span><span class="short" data-i18n="noticeShort">팬 창작물 · Paramount 와 무관</span></p>
+  <button type="button" id="langToggle" aria-label="언어 바꾸기" data-i18n-aria="langLabel"><span data-l="ko">한</span><span class="sep">/</span><span data-l="en">EN</span></button>
 
   <div id="decodeArea" aria-live="polite">
     <ol id="words"></ol>
     <p id="sentence" hidden></p>
-    <button type="button" id="decodeBtn" class="veil-btn" hidden>해독하기</button>
+    <button type="button" id="decodeBtn" class="veil-btn" data-i18n="decode" hidden>해독하기</button>
   </div>
 
   <p id="error" class="error" role="alert" hidden></p>
@@ -28,26 +29,26 @@
     <div id="actions" class="actions" hidden>
       <button type="button" id="share" class="pill-main">
         <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10V2.2M5.2 4.8 8 2l2.8 2.8M4.5 7H3.8v6.4h8.4V7h-.7"/></svg>
-        <span id="shareLabel">공유하기</span>
+        <span id="shareLabel" data-i18n="share">공유하기</span>
       </button>
       <button type="button" id="detailsBtn" class="pill-sub" aria-haspopup="dialog" aria-expanded="false" aria-controls="sheet">
         <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.4"/><path d="M8 7.2v3.6"/><circle cx="8" cy="4.9" r="0.4" fill="currentColor"/></svg>
-        <span>자세히</span>
+        <span data-i18n="details">자세히</span>
       </button>
     </div>
-    <input id="shareUrl" type="text" readonly hidden aria-label="공유 링크">
+    <input id="shareUrl" type="text" readonly hidden aria-label="공유 링크" data-i18n-aria="shareLinkLabel">
     <form id="form" autocomplete="off">
-      <label for="text" class="sr-only">문장</label>
+      <label for="text" class="sr-only" data-i18n="inputLabel">문장</label>
       <input id="text" name="text" type="text" maxlength="120" placeholder="그럼에도 불구하고 나는 너를 사랑한다">
-      <button type="submit">생성하기</button>
+      <button type="submit" data-i18n="create">생성하기</button>
     </form>
   </div>
 
-  <aside id="sheet" class="sheet" role="dialog" aria-label="이 로고그램 자세히" hidden>
+  <aside id="sheet" class="sheet" role="dialog" aria-label="이 로고그램 자세히" data-i18n-aria="sheetLabel" hidden>
     <div id="sheetHandle" class="sheet-handle" aria-hidden="true"><span></span></div>
     <div class="sheet-head">
-      <span class="sheet-eyebrow">이 로고그램은</span>
-      <button type="button" id="sheetClose" class="sheet-close" aria-label="닫기">
+      <span class="sheet-eyebrow" data-i18n="eyebrow">이 로고그램은</span>
+      <button type="button" id="sheetClose" class="sheet-close" aria-label="닫기" data-i18n-aria="close">
         <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg>
       </button>
     </div>
@@ -56,18 +57,18 @@
       <span id="moodName" class="mood-name"></span>
       <span id="moodNote" class="mood-note"></span>
     </button>
-    <h2 class="sheet-eyebrow sheet-sub">낱말과 자리</h2>
+    <h2 class="sheet-eyebrow sheet-sub" data-i18n="wordsAndPlaces">낱말과 자리</h2>
     <div id="sheetRows" class="word-rows"></div>
-    <p id="spelledNote" class="sheet-note" hidden>사전에 없는 말(이름 등)은 소리를 따라 나선으로 적었어요.</p>
+    <p id="spelledNote" class="sheet-note" data-i18n="spelledNote" hidden>사전에 없는 말(이름 등)은 소리를 따라 나선으로 적었어요.</p>
     <div class="sheet-save">
-      <button type="button" id="savePng">이미지로 저장</button>
-      <button type="button" id="saveSvg">SVG</button>
+      <button type="button" id="savePng" data-i18n="savePng">이미지로 저장</button>
+      <button type="button" id="saveSvg" data-i18n="saveSvg">SVG</button>
     </div>
     <footer class="sheet-legal">
-      <p>팬 창작물이며 Paramount Pictures 및 영화 제작진과 무관합니다.
+      <p data-i18n-html="legal1">팬 창작물이며 Paramount Pictures 및 영화 제작진과 무관합니다.
          원작 로고그램 디자인 <strong>Martine Bertrand</strong>.
          분석 자료 출처 <a href="https://github.com/WolframResearch/Arrival-Movie-Live-Coding" rel="noreferrer">Wolfram Research</a> (CC BY-NC 4.0).</p>
-      <p>이 페이지가 그리는 모든 것은 규칙에서 실시간으로 만들어집니다. 원본 이미지를 담고 있지 않습니다.</p>
+      <p data-i18n-html="legal2">이 페이지가 그리는 모든 것은 규칙에서 실시간으로 만들어집니다. 원본 이미지를 담고 있지 않습니다.</p>
     </footer>
   </aside>
   <script type="module" src="./main.ts"></script>
