@@ -40,10 +40,10 @@ body.no-gl.sheet-open #svgGlyph { top: 24%; width: min(60vmin, 420px); }
 }
 .notice-line {
   /* 오른쪽 위 언어 전환 버튼(#langToggle) 폭만큼 더 띄운다 */
-  top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(76px + env(safe-area-inset-right, 0px));
+  top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(88px + env(safe-area-inset-right, 0px));
   font-size: 10px; letter-spacing: 0.08em; text-align: right;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: calc(100vw - 208px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  max-width: calc(100vw - 220px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
 }
 @media (max-width: 600px) {
   .notice-line .long { display: none; }
